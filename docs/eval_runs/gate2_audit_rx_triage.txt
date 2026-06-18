@@ -1,0 +1,105 @@
+================================================================================================
+1. INDEPENDENT RE-SCORE + CASE-PARAMETER CONSISTENCY
+================================================================================================
+   env constants: ASK_COST=0.03  EPS=0.03  ACTIONS=('continue', 'dose_adjust', 'bridge', 'hold_for_labs', 'escalate')
+   [param mismatch] base wk-20: rec(risk=high,v=0.86,ACEi_ARB) vs env(risk=high,v=0.83,ACEi_ARB)
+   [param mismatch] sft wk-20: rec(risk=high,v=0.86,ACEi_ARB) vs env(risk=high,v=0.83,ACEi_ARB)
+   [param mismatch] base wk-24: rec(risk=high,v=0.83,ACEi_ARB) vs env(risk=high,v=0.86,ACEi_ARB)
+   [param mismatch] sft wk-24: rec(risk=high,v=0.83,ACEi_ARB) vs env(risk=high,v=0.86,ACEi_ARB)
+   [param mismatch] base wk-38: rec(risk=high,v=0.86,ACEi_ARB) vs env(risk=high,v=0.83,ACEi_ARB)
+   (a) case-parameter mismatches base/SFT vs regenerated env: 6  (0 => identical hidden set, same true_risk/v_oracle/family, no old/widened env drift)
+   (b) [base] re-score vs stored: reward mismatches=0/720  oracle_grade mismatches=0/720  (0 => probe used the same reward fn as now)
+   (b) [sft] re-score vs stored: reward mismatches=0/720  oracle_grade mismatches=1/720  (0 => probe used the same reward fn as now)
+   (c) record n_asks vs recomputed resolvable-ask count: 0 mismatches (0 => consistent)
+
+================================================================================================
+2. PAIRED-CASE INSPECTION (per case_id mean reward over k=12, hidden)
+================================================================================================
+
+   -- base WINS (baseR>sftR): where SFT loses reward --
+   case   risk     fam       orA   vorc   baseR    sftR      d bsup ssup  bAsk  sAsk    baseDec     sftDec
+   wk-46  moderate ACEi_ARB    2   0.84  -0.089  -0.043 +0.047    F    F   2.9   5.4   continue       None
+   wk-26  none     ACEi_ARB    3   0.91   0.765   0.834 +0.069    T    T   1.2   1.8   continue   continue
+   wk-25  none     NSAID       2   0.94   0.821   0.890 +0.069    T    T   1.3   2.0   continue   continue
+   wk-18  none     ACEi_ARB    3   0.91   0.849   0.920 +0.071    T    T   1.4   1.0   continue   continue
+   wk-28  none     ACEi_ARB    3   0.91   0.806   0.887 +0.081    T    T   1.8   1.7   continue   continue
+   wk-8   none     ACEi_ARB    3   0.91   0.756   0.839 +0.083    T    T   2.4   1.6   continue   continue
+   wk-45  moderate NSAID       2   0.84  -0.230  -0.137 +0.093    F    T   1.0   5.6   continue   continue
+   wk-14  moderate ACEi_ARB    2   0.84  -0.197  -0.092 +0.105    F    F   2.3   6.0   continue       None
+
+   -- SFT WINS (sftR>baseR) --
+   case   risk     fam       orA   vorc   baseR    sftR      d bsup ssup  bAsk  sAsk    baseDec     sftDec
+   wk-24  high     ACEi_ARB    3   0.86   0.334  -0.833 -1.167    F    T   1.8   1.2 hold_for_labs   continue
+   wk-54  moderate ACEi_ARB    4   0.78   0.761  -0.211 -0.972    T    F   1.6   1.6 hold_for_labs   continue
+   wk-6   moderate ACEi_ARB    3   0.81   0.761  -0.100 -0.861    T    T   1.6   2.2 hold_for_labs   continue
+   wk-22  moderate ACEi_ARB    4   0.78   0.830  -0.023 -0.853    T    T   1.0   2.7 hold_for_labs   continue
+   wk-35  none     NSAID       2   0.94   0.970   0.123 -0.847    T    T   1.0   4.6   continue       None
+   wk-44  moderate ACEi_ARB    4   0.78   0.787  -0.047 -0.833    T    T   1.2   1.0 hold_for_labs   continue
+   wk-39  none     NSAID       2   0.94   0.889   0.120 -0.769    T    T   1.2   6.4   continue       None
+   wk-16  moderate ACEi_ARB    3   0.81   0.830   0.066 -0.764    T    F   1.0   5.9 hold_for_labs       None
+
+   -- HIGH-RISK: SFT oracle-grade succeeds & base fails --
+   case   risk     fam       orA   vorc   baseR    sftR      d bsup ssup  bAsk  sAsk    baseDec     sftDec
+   wk-24  high     ACEi_ARB    3   0.86   0.334  -0.833 -1.167    F    T   1.8   1.2 hold_for_labs   continue
+   wk-33  high     NSAID       3   0.86   0.053  -0.468 -0.522    F    T   3.8   4.0 hold_for_labs   continue
+   wk-51  high     NSAID       4   0.83  -0.040  -0.231 -0.191    F    T   4.0   6.5 hold_for_labs       None
+
+   -- BENIGN: base's cheapest high-reward cases --
+   case   risk     fam       orA   vorc   baseR    sftR      d bsup ssup  bAsk  sAsk    baseDec     sftDec
+   wk-19  none     NSAID       2   0.94   0.970   0.870 -0.100    T    T   1.0   2.7   continue   continue
+   wk-35  none     NSAID       2   0.94   0.970   0.123 -0.847    T    T   1.0   4.6   continue       None
+   wk-41  none     NSAID       2   0.94   0.970   0.352 -0.618    T    T   1.0   3.8   continue       None
+   wk-43  none     NSAID       2   0.94   0.970   0.809 -0.161    T    T   1.0   4.2   continue   continue
+   wk-59  none     NSAID       2   0.94   0.970   0.427 -0.543    T    T   1.0   3.5   continue   continue
+   wk-32  none     ACEi_ARB    3   0.91   0.904   0.912 +0.008    T    T   1.7   1.2   continue   continue
+
+================================================================================================
+3. BEHAVIOR BREAKDOWN  (noCommit=decision None; suffInfo/insuffInfo among COMMITTED rollouts:
+   suffInfo = model asked a superset of the case's oracle_asks before committing)
+================================================================================================
+
+   [base] behavior by risk group:
+   group        n  meanAsk  noCommit  repeatAsk  irrelAsk  suffInfo  insuffInfo
+   overall    720     2.14     0.107      0.133     0.101     0.028       0.972
+   high        84     2.74     0.143      0.119     0.190     0.056       0.944
+   moderate   360     2.30     0.133      0.169     0.103     0.022       0.978
+   none       276     1.75     0.062      0.091     0.072     0.027       0.973
+   relevant   444     2.39     0.135      0.160     0.119     0.029       0.971
+   [base] decision distribution by risk group:
+     high      hold_for_labs:0.68, None:0.14, continue:0.07, dose_adjust:0.07, bridge:0.02, hold:0.01
+     moderate  continue:0.54, hold_for_labs:0.29, None:0.13, dose_adjust:0.03, hold:0.01, bridge:0.01, escalate:0.00
+     none      continue:0.72, hold_for_labs:0.17, None:0.06, dose_adjust:0.03, hold:0.02, bridge:0.01, continue|dose_adjust|bridge|hold_for_labs|escalate:0.00
+
+   [sft] behavior by risk group:
+   group        n  meanAsk  noCommit  repeatAsk  irrelAsk  suffInfo  insuffInfo
+   overall    720     4.05     0.318      0.281     0.256     0.114       0.886
+   high        84     4.12     0.381      0.274     0.310     0.019       0.981
+   moderate   360     4.66     0.372      0.347     0.319     0.204       0.796
+   none       276     3.23     0.228      0.196     0.156     0.042       0.958
+   relevant   444     4.56     0.374      0.333     0.318     0.169       0.831
+   [sft] decision distribution by risk group:
+     high      None:0.38, continue:0.35, escalate:0.10, dose_adjust:0.10, bridge:0.07, hold_for_labs:0.01
+     moderate  continue:0.46, None:0.37, dose_adjust:0.07, escalate:0.06, bridge:0.04, hold_for_labs:0.00
+     none      continue:0.66, None:0.23, dose_adjust:0.08, escalate:0.03, bridge:0.01
+
+================================================================================================
+4. SFT DATA-GENERATION AUDIT  (data/rx_triage_sft_smoke.jsonl)
+================================================================================================
+   best-fixed checklist (the SFT expert): ACEi_ARB=('renal_decline', 'adherence_poor', 'bp_low', 'egfr_severe'); NSAID=('renal_decline', 'gi_bleed_risk', 'adherence_poor', 'sodium_low', 'acute_symptoms', 'nsaid_use')
+   oracle mean asks (adaptive) ~ 2.94  vs  fixed-checklist sizes ACEi_ARB=4, NSAID=6
+   trajectories=160  malformed_turns=0  hidden_leaks_in_prompt=0  demos_not_matching_checklist=0  demos_that_stopped_early=0
+     ACEi_ARB: demo asks/traj mean=4.00 (always = checklist size 4 => NON-ADAPTIVE: asks full fixed checklist every case, never stops early)
+     NSAID: demo asks/traj mean=6.00 (always = checklist size 6 => NON-ADAPTIVE: asks full fixed checklist every case, never stops early)
+
+================================================================================================
+5. BASE BEHAVIOR — benign-distribution exploit?
+================================================================================================
+   hidden eval-case risk mix (n=60): none=23, moderate=30, high=7
+   base high     : rollout-share=0.12  meanR=+0.102  contribToOverall=+0.012  mean_asks=2.74  continue_rate=0.07
+   base moderate : rollout-share=0.50  meanR=+0.129  contribToOverall=+0.065  mean_asks=2.30  continue_rate=0.54
+   base none     : rollout-share=0.38  meanR=+0.743  contribToOverall=+0.285  mean_asks=1.75  continue_rate=0.72
+   base overall meanR=+0.361; benign contributes +0.285 (79% of it). High+moderate contribute +0.077.
+
+================================================================================================
+Run `python scripts/gate2_audit.py | tee docs/eval_runs/gate2_audit_rx_triage.txt` to persist.
+================================================================================================
