@@ -9,7 +9,7 @@ y = RL − SFT held-out value, only where latent support was confirmed.
 
 | task | model | reward | BC-gap (deep) | latent support@k | RL − SFT (held-out) | verdict |
 |---|---|---|---|---|---|---|
-| rx_triage | medgemma-4b (text) | SFT 0.168 / GRPO 0.261 | +0.105 | base 0.58 / SFT 0.60 / GRPO 0.85 | +0.093 (but 1-ask collapse) | **Exploit/termination — NOT thesis-positive** |
+| rx_triage | medgemma-4b (text) | smoke-SFT 0.168 / GRPO 0.261 / SFT-v2 0.409 | +0.105 | base 0.58 / smoke 0.60 / GRPO 0.85 / SFT-v2 0.93 | +0.093 GRPO (1-ask collapse) | GRPO#1 Exploit; **SFT-v2 termination-fixed but under-gathers (Gate-2 FAIL 1-ask) → curriculum v3 next** |
 | diagnostics | — | — | — | — | — | (pending) |
 | longterm_care | — | — | — | — | — | (pending) |
 
@@ -71,6 +71,14 @@ ask-hist), the bounded GRPO config + training trajectory (KL, frac_reward_zero_s
   baseline (curriculum generator, commit `cb3bce0`) to teach ask→stop→commit, re-run Gate 2, then re-evaluate;
   no second GRPO until that review.** (`framework.report` mislabels this THESIS-POSITIVE — it lacks an
   ask-collapse / action-quality guard; see the report.)
+- **Improved-SFT (curriculum) Gate 2:** full report
+  [docs/eval_runs/sft_v2_gate2_rx_triage.md](eval_runs/sft_v2_gate2_rx_triage.md). The curriculum fixed
+  termination (no-commit 0.304→**0.010**, parse 0.998) and lifted reward to **+0.409** (best non-oracle; high-risk
+  reward −0.43→−0.08, high-risk support→1.0) — BUT **over-corrected into under-gathering**: mean asks 1.33,
+  1-ask rate 0.90 → **Gate 2 FAILS** the anti-1-ask-shortcut check, and reward 0.409 ≪ best-fixed 0.749 (it
+  under-fit the gathering it was trained to clone). Not yet a clean baseline. **Next: curriculum v3** (more rho=0
+  full-checklist-then-commit, fewer commit-now/short) so the SFT both gathers AND commits before any GRPO.
+  **No GRPO #2 proposed/launched.**
 
 ### diagnostics / longterm_care
 - pending env build.
