@@ -9,7 +9,7 @@ y = RL − SFT held-out value, only where latent support was confirmed.
 
 | task | model | reward | BC-gap (deep) | latent support@k | RL − SFT (held-out) | verdict |
 |---|---|---|---|---|---|---|
-| rx_triage | medgemma-4b (text) | smoke-SFT 0.180 | +0.105 | base 0.55 / SFT 0.62 | (pending GRPO) | Gates 1+2 PASS |
+| rx_triage | medgemma-4b (text) | SFT 0.168 / GRPO 0.261 | +0.105 | base 0.58 / SFT 0.60 / GRPO 0.85 | +0.093 (but 1-ask collapse) | **Exploit/termination — NOT thesis-positive** |
 | diagnostics | — | — | — | — | — | (pending) |
 | longterm_care | — | — | — | — | — | (pending) |
 
@@ -61,7 +61,16 @@ ask-hist), the bounded GRPO config + training trajectory (KL, frac_reward_zero_s
   ample rollout diversity for an RL signal, and there is no degenerate collapse (no-ask-commit 0, 1-ask 0.44,
   mean asks 4.05 < rel-union 7, blind-escalate 0). → An ideal RL starting point: the policy *can* reach
   oracle-grade (0.62) but doesn't *reliably* (reward 0.18); RL has a clear, safe gradient.
-- **GRPO: proposed, NOT launched** — see [tasks/rx_triage/design.md](../tasks/rx_triage/design.md).
+- **GRPO #1 (bounded, 60 steps): ran — verdict Exploit/termination, NOT thesis-positive.** Full report:
+  [docs/eval_runs/grpo_report_rx_triage.md](eval_runs/grpo_report_rx_triage.md). GRPO cleanly fixed termination
+  (no-commit 0.304→**0.004**, parse→1.0) but **collapsed to a 1-ask shortcut** (mean asks 4.48→**1.10**, 98%
+  one-ask), so overall reward rose only to 0.261 (< base 0.386 ≪ best-fixed 0.749) and **high-risk reward
+  regressed −0.43→−0.77** (1 ask can't serve high-risk; high-risk support@12 0.14→0.43 is a k=12 sampling
+  artifact). This is the expected consequence of RL optimizing against a smoke-SFT init confounded by ~30%
+  non-termination — RL's easiest win was commit-after-one-ask, not adaptive gathering. **Next: rebuild the SFT
+  baseline (curriculum generator, commit `cb3bce0`) to teach ask→stop→commit, re-run Gate 2, then re-evaluate;
+  no second GRPO until that review.** (`framework.report` mislabels this THESIS-POSITIVE — it lacks an
+  ask-collapse / action-quality guard; see the report.)
 
 ### diagnostics / longterm_care
 - pending env build.
