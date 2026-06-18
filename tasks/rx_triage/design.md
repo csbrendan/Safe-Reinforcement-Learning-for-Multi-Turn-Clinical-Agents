@@ -30,9 +30,15 @@ See [docs/results.md](../../docs/results.md#rx_triage) for the full table/verdic
 smoke-SFT reward 0.180 ≪ best-fixed 0.749 ≪ oracle 0.854 (capability latent, not yet expressed). Reproduce:
 `bash scripts/run_gate2.sh` (base = `framework.infra.prep_text_base --src google/medgemma-4b-it`).
 
-## Proposed bounded GRPO (NOT launched — awaiting explicit go)
-**Goal:** climb reward 0.18 → toward best-fixed/oracle by trimming wasted asks (mean 4.05 → oracle ≈2.9) and
-fixing high/moderate commits, **without regressing the high-risk support (0.43) that SFT just unlocked**.
+## Proposed bounded GRPO (NOT launched — awaiting review)
+**Updated after the Gate-2 audit + remediation** (`4879cf2`; horizon now MAX_TURNS=10, deterministic oracle).
+The audit refuted the turn-budget hypothesis: SFT's ~30% no-commit is genuine non-termination, not truncation.
+
+**Goal (priority order):** (1) **commit reliably** — kill the ~30% no-commit (decision=None → reward 0); (2) trim
+wasted asks (mean 4.48 → oracle ≈2.9), cutting ask-cost; (3) fix high/moderate commit accuracy — **without**
+regressing high-risk support or inflating benign over-escalation.
+**Report MUST track committed-rate** alongside reward/support so a gain from "learned to commit" (legitimate) is
+reported distinctly from adaptive-gathering gains, and is not mistaken for either ask-cost exploitation or it.
 
 - **Init policy:** merge `checkpoints/sft_rx_smoke/final` into `checkpoints/medgemma4b_text`
   (`framework.rl.merge_adapter`) → serves as both the GRPO init and the vLLM rollout model.

@@ -1,0 +1,99 @@
+{
+  "tag": "base",
+  "env": "tasks.rx_triage.env",
+  "model": "checkpoints/medgemma4b_text",
+  "adapter": null,
+  "max_turns": 10,
+  "hidden": {
+    "support_at_k": 0.5833,
+    "mean_reward": 0.3858,
+    "reward_std_overall": 0.5186,
+    "parse_validity": 0.9938,
+    "mean_asks": 2.189,
+    "ask_hist": {
+      "0": 0.0,
+      "1": 0.729,
+      "2": 0.076,
+      "3+": 0.194
+    },
+    "oracle_grade_ask_hist": {
+      "0": 0.0,
+      "1": 0.896,
+      "2": 0.071,
+      "3+": 0.034
+    },
+    "oracle_grade_blind_rate": 0.0,
+    "zero_ask_commit_rate": 0.0,
+    "ask_dist": {
+      "renal_decline": 763,
+      "egfr_severe": 45,
+      "lft_abnormal": 53,
+      "bp_low": 48,
+      "sodium_low": 21,
+      "adherence_poor": 83,
+      "nsaid_use": 410,
+      "volume_dehydrated": 25,
+      "gi_bleed_risk": 64,
+      "a1c_high": 25,
+      "potassium_high": 19,
+      "acute_symptoms": 20
+    },
+    "commit_dist": {
+      "hold_for_labs": 227,
+      "hold": 6,
+      "continue": 403,
+      "dose_adjust": 17,
+      "bridge": 3,
+      "continue|dose_adjust|bridge|hold_for_labs|escalate": 2,
+      "escalate": 1
+    },
+    "n_cases": 60,
+    "k": 12
+  },
+  "anchor": {
+    "support_at_k": 0.1833,
+    "mean_reward": 0.3515,
+    "reward_std_overall": 0.3631,
+    "parse_validity": 0.9804,
+    "mean_asks": 3.938,
+    "ask_hist": {
+      "0": 0.0,
+      "1": 0.55,
+      "2": 0.083,
+      "3+": 0.367
+    },
+    "oracle_grade_ask_hist": {
+      "0": 0.0,
+      "1": 1.0,
+      "2": 0.0,
+      "3+": 0.0
+    },
+    "oracle_grade_blind_rate": 0.0,
+    "zero_ask_commit_rate": 0.0,
+    "ask_dist": {
+      "renal_decline": 1327,
+      "nsaid_use": 225,
+      "acute_symptoms": 133,
+      "adherence_poor": 187,
+      "gi_bleed_risk": 129,
+      "sodium_low": 91,
+      "egfr_severe": 308,
+      "lft_abnormal": 58,
+      "bp_low": 129,
+      "potassium_high": 117,
+      "volume_dehydrated": 105,
+      "a1c_high": 26
+    },
+    "commit_dist": {
+      "hold_for_labs": 414,
+      "continue": 39,
+      "bridge": 4,
+      "dose_adjust": 11,
+      "adhere_to_regimen": 1,
+      "hold": 2,
+      "continue|dose_adjust|bridge|hold_for_labs|escalate": 1
+    },
+    "n_cases": 60,
+    "k": 12
+  }
+}

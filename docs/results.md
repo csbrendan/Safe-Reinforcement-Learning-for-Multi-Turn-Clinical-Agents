@@ -26,16 +26,29 @@ ask-hist), the bounded GRPO config + training trajectory (KL, frac_reward_zero_s
   trajectories (`tasks.rx_triage.gen_data`), 2 ep / 80 steps. Probe k=12, n=60 cases/condition, hidden
   prioritized. Driver: `scripts/run_gate2.sh`; report: `framework.gates.gate2_report`.
 
+  **Canonical run: MAX_TURNS=10, deterministic oracle ordering** (remediation `4879cf2` after the audit below).
   Hidden-condition, by risk subset (supp@12 / mean reward / mean asks):
 
-  | run | overall | high | moderate | benign | relevant | parse | reward std | high-risk supp | benign over-esc |
-  |---|---|---|---|---|---|---|---|---|---|
-  | base | 0.55 / +0.361 / 2.14 | 0.00 / +0.10 / 2.7 | 0.43 / +0.13 / 2.3 | 0.87 / +0.74 / 1.8 | 0.35 / +0.12 / 2.4 | 0.994 | 0.523 | **0.00** | 0.167 |
-  | smoke-SFT | 0.62 / +0.180 / 4.05 | 0.43 / −0.38 / 4.1 | 0.40 / −0.05 / 4.7 | 0.96 / +0.65 / 3.2 | 0.41 / −0.11 / 4.6 | 0.987 | 0.551 | **0.43** | 0.025 |
+  | run | overall | high | moderate | benign | relevant | parse | reward std | high-risk supp | benign over-esc | no-commit |
+  |---|---|---|---|---|---|---|---|---|---|---|
+  | base | 0.58 / +0.386 / 2.19 | 0.00 / +0.15 / 3.0 | 0.50 / +0.16 / 2.3 | 0.87 / +0.75 / 1.9 | 0.41 / +0.16 / 2.4 | 0.994 | 0.519 | **0.00** | 0.181 (overesc) | 0.085 |
+  | smoke-SFT | 0.60 / +0.168 / 4.48 | 0.14 / −0.43 / 4.7 | 0.43 / −0.06 / 5.1 | 0.96 / +0.65 / 3.6 | 0.38 / −0.13 / 5.0 | 0.985 | 0.544 | **0.143** | 0.022 | **0.304** |
 
   Analytic baselines (hidden, cost 0.03): oracle 0.854, best-fixed 0.749, ask-all 0.747, no-ask 0.601,
   1-ask 0.608, blind-escalate 0.376. `oracle_grade_blind_rate = 0.0` for BOTH runs → every oracle-grade
   success used real gathering (not blind-commit coincidence). All 10 Gate-2 checks PASS.
+
+  **Anomaly audit + remediation** (full: [docs/eval_runs/gate2_audit_rx_triage.md](eval_runs/gate2_audit_rx_triage.md)).
+  Independent re-score (1440 rollouts) cleared any reward/env/parser/prompt bug (0/720 reward mismatches, 0
+  leaks). base>SFT mean reward is the demonstrability trap (base banks 79% of its reward from benign cheap-
+  `continue` + a blind `hold_for_labs` hedge on high that scores 0.40 without being oracle-grade). Two confounds
+  were addressed: (i) a `v_oracle` ±0.03 wobble from `PYTHONHASHSEED`-dependent set ordering in the oracle path
+  (fixed: sort `rel_items`; affects only the oracle-grade threshold, never reward); (ii) the SFT no-commit rate.
+  **Raising MAX_TURNS 8→10 did NOT reduce no-commit (0.318→0.304); the model just asked more (4.05→4.48)** — so
+  no-commit is a genuine non-termination pathology of the undertrained smoke SFT, not a turn-budget artifact.
+  Net: the SFT reward shortfall is dominated by behavior RL must fix (commit reliably; stop asking earlier),
+  with a real safety/support signal underneath (high-risk support 0→0.14, noisy on 7 cases; benign over-esc
+  0.181→0.022). The earlier t8 run (high-risk support 0.43) is retained in git history (`b34341c`) for provenance.
 
   **Verdict — latent support confirmed, capability latent not expressed.** Support@12 is non-trivial (0.55 →
   0.62) and clean (blind-rate 0). Smoke-SFT's mean reward (0.180) sits far below best-fixed (0.749) and oracle

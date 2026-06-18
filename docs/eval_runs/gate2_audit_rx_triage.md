@@ -69,3 +69,36 @@ Two clean options before/around GRPO (neither touches reward/env/data):
   can commit, then re-probe SFT for a fair baseline — *or* simply ensure the final GRPO report tracks **committed-rate**
   alongside reward so a gain isn't misread as mere "commits more."
 - **Proceed as-is:** GRPO will be rewarded for committing within budget and trimming asks anyway.
+
+---
+
+## Remediation addendum (2026-06-18) — what the fix actually showed
+
+Applied (no reward/env/data change): (1) deterministic oracle ordering — `rel_items()` sorted, so `v_oracle`
+is now hash-seed-stable (vsum 51.55 across seeds; model reward re-score still 0/720); (2) `MAX_TURNS` 8→10;
+(3) re-ran Gate 1 (all 10 checks PASS, BC-gap +0.105) and Gate 2 (reusing the SFT adapter — data unchanged).
+Outputs: `results/probe_{base,sft}_t10.json`; report `gate2_t10_rx_triage.txt`.
+
+**Key finding — the truncation-confound hypothesis is partly REFUTED.** Raising the horizon did NOT reduce the
+SFT no-commit rate; the model just asked *more*:
+
+| SFT (hidden) | t8 (MAX_TURNS 8) | t10 (MAX_TURNS 10) |
+|---|---|---|
+| no-commit (decision=None) | 0.318 | **0.304** (flat) |
+| mean asks | 4.05 | **4.48** (↑) |
+| support@12 | 0.62 | 0.60 |
+| mean reward | 0.180 | 0.168 |
+| high-risk support | 0.43 | 0.143 (noisy, 1/7 cases) |
+| benign over-escalation | 0.025 | 0.022 |
+
+Given more rope, the smoke-SFT policy gathers more (high 4.12→4.68, moderate 4.66→5.12) and still fails to
+commit — so **no-commit is a genuine non-termination / over-asking pathology of the undertrained smoke SFT, not
+a measurement artifact of the turn budget.** This *sharpens* verdict A→C: the SFT reward shortfall is dominated
+by behavior RL must fix (commit reliably; stop asking), not by scoring or harness. The high-risk-support drop
+(0.43→0.14) is within sampling noise on 7 high cases, compounded by *more* no-commits on high (0.38→0.43) — the
+extra turns hurt exactly the subset that needs disciplined deep gathering.
+
+**Consequence for GRPO:** the #1 target is commit-termination (≈30% of rollouts score 0 purely by never
+committing). The bounded GRPO config is unchanged, but the final report MUST track **committed-rate** alongside
+reward/support so a reward gain that comes from "learned to commit" (legitimate) is reported distinctly from
+adaptive-gathering gains. Determinism + horizon are now fixed; re-proposing the same bounded GRPO for review.

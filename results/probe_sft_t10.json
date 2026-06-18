@@ -1,0 +1,94 @@
+{
+  "tag": "sft",
+  "env": "tasks.rx_triage.env",
+  "model": "checkpoints/medgemma4b_text",
+  "adapter": "checkpoints/sft_rx_smoke/final",
+  "max_turns": 10,
+  "hidden": {
+    "support_at_k": 0.6,
+    "mean_reward": 0.1683,
+    "reward_std_overall": 0.5439,
+    "parse_validity": 0.9852,
+    "mean_asks": 4.485,
+    "ask_hist": {
+      "0": 0.0,
+      "1": 0.442,
+      "2": 0.006,
+      "3+": 0.553
+    },
+    "oracle_grade_ask_hist": {
+      "0": 0.0,
+      "1": 0.852,
+      "2": 0.019,
+      "3+": 0.129
+    },
+    "oracle_grade_blind_rate": 0.0,
+    "zero_ask_commit_rate": 0.0,
+    "ask_dist": {
+      "adherence_poor": 907,
+      "bp_low": 162,
+      "renal_decline": 565,
+      "a1c_high": 7,
+      "sodium_low": 385,
+      "acute_symptoms": 387,
+      "gi_bleed_risk": 356,
+      "nsaid_use": 296,
+      "egfr_severe": 68,
+      "volume_dehydrated": 28,
+      "potassium_high": 62,
+      "lft_abnormal": 6
+    },
+    "commit_dist": {
+      "continue": 383,
+      "dose_adjust": 67,
+      "escalate": 28,
+      "bridge": 22,
+      "hold_for_labs": 1
+    },
+    "n_cases": 60,
+    "k": 12
+  },
+  "anchor": {
+    "support_at_k": 0.55,
+    "mean_reward": 0.1495,
+    "reward_std_overall": 0.5436,
+    "parse_validity": 0.9768,
+    "mean_asks": 4.761,
+    "ask_hist": {
+      "0": 0.0,
+      "1": 0.414,
+      "2": 0.043,
+      "3+": 0.543
+    },
+    "oracle_grade_ask_hist": {
+      "0": 0.0,
+      "1": 1.0,
+      "2": 0.0,
+      "3+": 0.0
+    },
+    "oracle_grade_blind_rate": 0.0,
+    "zero_ask_commit_rate": 0.0,
+    "ask_dist": {
+      "adherence_poor": 1067,
+      "bp_low": 276,
+      "nsaid_use": 369,
+      "gi_bleed_risk": 274,
+      "renal_decline": 725,
+      "acute_symptoms": 56,
+      "sodium_low": 228,
+      "a1c_high": 115,
+      "egfr_severe": 93,
+      "volume_dehydrated": 56,
+      "potassium_high": 77,
+      "lft_abnormal": 92
+    },
+    "commit_dist": {
+      "continue": 354,
+      "dose_adjust": 41,
+      "escalate": 41,
+      "bridge": 9
+    },
+    "n_cases": 60,
+    "k": 12
+  }
+}
