@@ -24,7 +24,14 @@ from tasks.rx_triage import env as E
 from framework.gates import bc_gap
 
 # curriculum pre-observation mix: (rho, fraction). rho=0 -> full gather; rho=1.0 -> commit-now (chart complete).
-RHO_MIX = [(0.0, 0.40), (0.4, 0.25), (0.7, 0.20), (1.0, 0.15)]
+# v2 (40% rho=0) terminated but collapsed to ~1.3 asks: too much short/commit-now signal swamped gathering.
+# v3 puts ~70% on rho=0 full-checklist (4-6 asks -> commit, incl. high/moderate multi-ask), trims termination
+# teaching to the minimum (12% commit-now + 18% rho=0.4 mid-length 2-4 asks), and DROPS the 1-ask-prone rho=0.7
+# bucket -> mean demo asks ~4, few 1-ask commits, while still teaching reliable commitment.
+RHO_MIX = {
+    "curriculum":    [(0.0, 0.40), (0.4, 0.25), (0.7, 0.20), (1.0, 0.15)],
+    "curriculum_v3": [(0.0, 0.70), (0.4, 0.18), (1.0, 0.12)],
+}
 
 
 def build_traj(c, sub, commit_now_min_obs=0):
@@ -49,9 +56,9 @@ def build_traj(c, sub, commit_now_min_obs=0):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--mode", choices=["fixed", "curriculum"], default="curriculum")
-    ap.add_argument("--n", type=int, default=480)
-    ap.add_argument("--out", default="data/rx_triage_sft_v2.jsonl")
+    ap.add_argument("--mode", choices=["fixed", "curriculum", "curriculum_v3"], default="curriculum_v3")
+    ap.add_argument("--n", type=int, default=600)
+    ap.add_argument("--out", default="data/rx_triage_sft_v3.jsonl")
     ap.add_argument("--seed", type=int, default=7)
     args = ap.parse_args()
     _, _, _, BEST, _ = bc_gap.run(E, E.ASK_COST)   # best fixed checklist per deep family (under the env reward)
@@ -62,16 +69,18 @@ def main():
         for c in cases:
             msgs, na, dec = build_traj(c, list(BEST[c["family"]]))
             rows.append({"case_id": c["case_id"], "messages": msgs, "n_assistant_turns": na + 1,
-                         "metadata": {"family": c["family"], "rho": 0.0, "n_asks": na}})
+                         "metadata": {"family": c["family"], "rho": 0.0, "n_asks": na,
+                                      "true_risk": c["true_risk"], "decision": dec}})
     else:
         idx = 0
-        for rho, frac in RHO_MIX:
+        for rho, frac in RHO_MIX[args.mode]:
             m = max(1, round(args.n * frac))
             cases = E.gen_cases(m, rho=rho, seed=args.seed + idx, families=E.DEEP_FAMILIES, prefix=f"v2r{int(rho*100)}-")
             for c in cases:
                 msgs, na, dec = build_traj(c, list(BEST[c["family"]]))
                 rows.append({"case_id": c["case_id"], "messages": msgs, "n_assistant_turns": na + 1,
-                             "metadata": {"family": c["family"], "rho": rho, "n_asks": na}})
+                             "metadata": {"family": c["family"], "rho": rho, "n_asks": na,
+                                          "true_risk": c["true_risk"], "decision": dec}})
             idx += 1
 
     out = Path(args.out); out.parent.mkdir(parents=True, exist_ok=True)
@@ -79,15 +88,37 @@ def main():
         for r in rows:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
 
-    # validation summary (CPU): commit rate must be 1.0; ask-length spread; family/rho mix
-    ask_hist = Counter(min(r["metadata"]["n_asks"], 7) for r in rows)
-    commit_now = sum(1 for r in rows if r["metadata"]["n_asks"] == 0)
-    short = sum(1 for r in rows if 1 <= r["metadata"]["n_asks"] <= 3)
-    print(f"[gen_data:{args.mode}] {len(rows)} trajectories -> {out}")
-    print(f"  every trajectory ends in commit: {all(json.loads(r['messages'][-1]['content']).get('action_type')=='commit' for r in rows)}")
-    print(f"  commit-now (0 asks): {commit_now} ({100*commit_now/len(rows):.0f}%)   short (1-3 asks): {short} ({100*short/len(rows):.0f}%)")
-    print(f"  asks/traj histogram (0..7+): " + ", ".join(f"{k}:{ask_hist.get(k,0)}" for k in range(8)))
-    print(f"  family mix: {dict(Counter(r['metadata']['family'] for r in rows))}")
+    # ---- sanity audit (CPU) ----------------------------------------------------------------------
+    n = len(rows)
+    md = [r["metadata"] for r in rows]
+    ask_hist = Counter(min(m["n_asks"], 7) for m in md)
+    commit_rate = sum(1 for r in rows if json.loads(r["messages"][-1]["content"]).get("action_type") == "commit") / n
+    one_ask = sum(1 for m in md if m["n_asks"] == 1)
+    commit_now = sum(1 for m in md if m["n_asks"] == 0)
+    risk = Counter(m.get("true_risk") for m in md)
+    hi_mod = [m for m in md if m.get("true_risk") in ("high", "moderate")]
+    himod_3plus = sum(1 for m in hi_mod if m["n_asks"] >= 3)
+    # hidden-state leakage: assistant turns must contain ONLY action JSON (no chart/assign values); the only
+    # state in any user turn is the case's own observed chart (rho) or an answer to an item the model asked.
+    leak = 0
+    for r in rows:
+        for mmsg in r["messages"]:
+            if mmsg["role"] == "assistant":
+                try:
+                    o = json.loads(mmsg["content"])
+                    if o.get("action_type") not in ("ask", "commit"):
+                        leak += 1
+                except Exception:
+                    leak += 1
+    lengths = Counter(r["n_assistant_turns"] for r in rows)
+    print(f"[gen_data:{args.mode}] {n} trajectories -> {out}")
+    print(f"  commit-rate: {commit_rate:.3f} (target 1.0)   no-hidden-leak (assistant=action-only): {leak==0}")
+    print(f"  ask-count dist (0..7+): " + ", ".join(f"{k}:{ask_hist.get(k,0)}" for k in range(8)))
+    print(f"  traj-length dist (assistant turns): " + ", ".join(f"{k}:{v}" for k, v in sorted(lengths.items())))
+    print(f"  1-ask commits: {one_ask} ({100*one_ask/n:.0f}%)   commit-now 0-ask: {commit_now} ({100*commit_now/n:.0f}%)")
+    print(f"  risk distribution: {dict(risk)}")
+    print(f"  high/moderate cases with 3+ asks: {himod_3plus}/{len(hi_mod)} ({100*himod_3plus/max(len(hi_mod),1):.0f}% of hi+mod)")
+    print(f"  family mix: {dict(Counter(m['family'] for m in md))}")
     print(f"  checklists: " + "; ".join(f"{f}={tuple(E.ITEMS[i] for i in BEST[f])}" for f in BEST))
 
 
