@@ -24,6 +24,26 @@ oracle 0.854 vs best-fixed 0.749 → **BC-gap +0.105** (ACEi +0.114, NSAID +0.09
 oracle 0.849); benign over-escalation penalized (blind-escalate benign 0.10 ≪ oracle 0.916); anchor ≈ 0;
 oracle selective (≈2.9 asks vs rel-union 7).
 
-## Next
-Gate 2 (re-probe base + new smoke-SFT via `gen_data.py` → `framework.rl.sft_warmup` → `support_probe`) →
-one bounded GRPO → `framework.report`.
+## Gate 2 — PASS (2026-06-18)
+See [docs/results.md](../../docs/results.md#rx_triage) for the full table/verdict. Headline: base support@12
+0.55 → smoke-SFT 0.62 (hidden), `oracle_grade_blind_rate=0` both; high-risk support unlocked 0.00 → 0.43;
+smoke-SFT reward 0.180 ≪ best-fixed 0.749 ≪ oracle 0.854 (capability latent, not yet expressed). Reproduce:
+`bash scripts/run_gate2.sh` (base = `framework.infra.prep_text_base --src google/medgemma-4b-it`).
+
+## Proposed bounded GRPO (NOT launched — awaiting explicit go)
+**Goal:** climb reward 0.18 → toward best-fixed/oracle by trimming wasted asks (mean 4.05 → oracle ≈2.9) and
+fixing high/moderate commits, **without regressing the high-risk support (0.43) that SFT just unlocked**.
+
+- **Init policy:** merge `checkpoints/sft_rx_smoke/final` into `checkpoints/medgemma4b_text`
+  (`framework.rl.merge_adapter`) → serves as both the GRPO init and the vLLM rollout model.
+- **Topology:** disaggregated 2-node. Rollout (Spark-B): `framework/infra/serve_b.sh` (trl vllm-serve, detached
+  tmux). Trainer (Spark-A): `framework.rl.grpo_disagg --env tasks.rx_triage.env --base <merged> --server-host <B>`.
+- **Config:** per_device_bs 8, num_generations 8, grad_accum 4, max_completion_length 512, eos `[1,106]`,
+  IS off; **lr 1e-5, beta (KL) 0.0** (validated setup) — if high-risk support regresses, fall back to beta 0.02
+  to anchor the fragile smoke-SFT; rollout-temp 1.25; **max-steps 60** (bounded smoke); **save-steps 20**
+  (intra-epoch saves — pick best pre-regression checkpoint); n-cases 300, seed 1.
+- **Held-out gate (after):** re-probe the RL'd adapter (`support_probe --tag rl`) then
+  `framework.report --sft results/probe_sft.records.jsonl --rl results/probe_rl.records.jsonl`. **Require
+  THESIS-POSITIVE** (reward↑ AND oracle-grade support↑, no high-risk regression). **Abort/recalibrate reward**
+  if ASK-COST EXPLOITATION (reward↑ via fewer asks while high-risk support drops).
+- **Watch during:** `frac_reward_zero_std` (want low → diverse rewards per group), KL vs beta, mean-asks trend.
