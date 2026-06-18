@@ -81,6 +81,7 @@ def summarize(env, st, k):
 
 
 def main():
+    global MAX_TURNS
     ap = argparse.ArgumentParser()
     ap.add_argument("--env", default="tasks.rx_triage.env")
     ap.add_argument("--model", required=True, help="base model path/id served by vLLM")
@@ -92,7 +93,6 @@ def main():
     ap.add_argument("--max-turns", type=int, default=MAX_TURNS, help="dialogue-horizon cap")
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
-    global MAX_TURNS
     MAX_TURNS = args.max_turns
     env = importlib.import_module(args.env)
     from transformers import AutoTokenizer
