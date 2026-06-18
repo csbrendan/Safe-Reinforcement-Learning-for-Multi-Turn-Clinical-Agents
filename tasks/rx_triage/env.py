@@ -86,7 +86,11 @@ def _walk_items(node, acc):
     return acc
 
 def rel_items(fam):
-    return _walk_items(FAMILIES[fam], set())
+    # Deterministic order (by item index): oracle_rollout's greedy best-ask tie-break iterates this, so an
+    # unordered set made the oracle path (hence v_oracle / the oracle-grade THRESHOLD) wobble ±ask_cost across
+    # PYTHONHASHSEED on value-of-information ties. oracle_value/risk_dist are max/sum reductions (order-free) and
+    # model reward (env.score) uses neither — so sorting fixes only support-threshold reproducibility.
+    return sorted(_walk_items(FAMILIES[fam], set()), key=lambda n: IDX[n])
 
 def screen_item(fam):
     return FAMILIES[fam][1]

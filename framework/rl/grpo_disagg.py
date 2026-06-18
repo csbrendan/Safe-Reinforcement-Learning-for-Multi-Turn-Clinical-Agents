@@ -22,7 +22,7 @@ from peft import LoraConfig
 from trl import GRPOConfig, GRPOTrainer
 from framework.parsing import parse_action
 
-MAX_DIALOG_TURNS = 8
+MAX_DIALOG_TURNS = 10  # keep in sync with support_probe --max-turns so GRPO and the Gate-2 probe share a horizon
 CASES: dict = {}
 _CID = re.compile(r"\[case ([\w\-]+)\]")
 

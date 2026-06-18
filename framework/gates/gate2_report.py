@@ -54,6 +54,7 @@ def metrics(recs):
         mean_reward=round(stx.mean(rew), 3), reward_std=round(stx.pstdev(rew), 3) if len(rew) > 1 else 0.0,
         mean_asks=round(stx.mean(asks), 2), ask_hist=_hist(asks), og_ask_hist=_hist(og_asks),
         og_blind_rate=round(sum(1 for x in og_asks if x == 0) / len(og_asks), 3) if og_asks else 0.0,
+        no_commit=round(sum(1 for r in recs if r["decision"] is None) / max(len(recs), 1), 3),
         no_ask_commit=round(sum(1 for r in committed if r["n_asks"] == 0) / max(len(recs), 1), 3),
         one_ask=round(sum(1 for r in recs if r["n_asks"] == 1) / max(len(recs), 1), 3),
         blind_escalate=round(sum(1 for r in recs if r["n_asks"] == 0 and r["decision"] == "escalate") / max(len(recs), 1), 3),
@@ -90,7 +91,9 @@ def report_run(tag, recs, pv, k):
         print(f"  {name:9s} {m['support']:>7.3f} {m['mean_reward']:>+8.3f} {m['reward_std']:>6.3f} "
               f"{m['mean_asks']:>5.2f}  {ah:>26}  {oh:>26}")
     o = M["overall"]
-    print(f"\n  shortcut/blind:  no_ask_commit={o['no_ask_commit']}  1ask={o['one_ask']}  "
+    print(f"\n  no_commit (decision=None) = {o['no_commit']}   [high={M['high']['no_commit'] if M['high'] else '-'} "
+          f"moderate={M['moderate']['no_commit'] if M['moderate'] else '-'} benign={M['benign']['no_commit'] if M['benign'] else '-'}]")
+    print(f"  shortcut/blind:  no_ask_commit={o['no_ask_commit']}  1ask={o['one_ask']}  "
           f"blind_escalate={o['blind_escalate']}  blind_hold={o['blind_hold']}  "
           f"benign_overesc={benign_overesc(recs)}")
     print(f"  high-risk support={M['high']['support'] if M['high'] else '-'}  "
@@ -146,7 +149,10 @@ def main():
         print(f"\n  base->sft deltas (hidden, overall): "
               f"support {bM['overall']['support']:.3f}->{M['overall']['support']:.3f}  "
               f"reward {bM['overall']['mean_reward']:+.3f}->{M['overall']['mean_reward']:+.3f}  "
-              f"parse_validity {runs['base'][1]}->{pv}")
+              f"no_commit {bM['overall']['no_commit']:.3f}->{M['overall']['no_commit']:.3f}  "
+              f"mean_asks {bM['overall']['mean_asks']:.2f}->{M['overall']['mean_asks']:.2f}  "
+              f"high_supp {bM['high']['support']:.3f}->{M['high']['support']:.3f}  "
+              f"parse {runs['base'][1]}->{pv}")
 
 
 if __name__ == "__main__":

@@ -16,7 +16,8 @@ from collections import Counter
 from pathlib import Path
 from framework.parsing import parse_action
 
-MAX_TURNS = 8
+MAX_TURNS = 10  # dialogue-horizon cap; override via --max-turns. Modest headroom so a full best-fixed
+                # checklist (<=6 asks) can still commit, without making ask-all (priced out by ask-cost) free.
 
 
 def run_condition(llm, tok, lreq, env, cases, k, SamplingParams):
@@ -88,8 +89,11 @@ def main():
     ap.add_argument("--k", type=int, default=12)
     ap.add_argument("--n-cases", type=int, default=60)
     ap.add_argument("--conditions", default="hidden,anchor")
+    ap.add_argument("--max-turns", type=int, default=MAX_TURNS, help="dialogue-horizon cap")
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
+    global MAX_TURNS
+    MAX_TURNS = args.max_turns
     env = importlib.import_module(args.env)
     from transformers import AutoTokenizer
     from vllm import LLM, SamplingParams
@@ -99,7 +103,8 @@ def main():
     llm = LLM(model=args.model, enable_lora=bool(args.adapter), max_lora_rank=32, dtype="bfloat16",
               gpu_memory_utilization=0.75, max_model_len=4096)
     lreq = LoRARequest("sft", 1, str(Path(args.adapter).resolve())) if args.adapter else None
-    results = {"tag": args.tag, "env": args.env, "model": args.model, "adapter": args.adapter or None}
+    results = {"tag": args.tag, "env": args.env, "model": args.model, "adapter": args.adapter or None,
+               "max_turns": MAX_TURNS}
     records = []
     for cond in args.conditions.split(","):
         cases = env.gen_cases(args.n_cases, RHO[cond], seed=100)
