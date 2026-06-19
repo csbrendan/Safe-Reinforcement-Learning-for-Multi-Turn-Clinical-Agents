@@ -1,7 +1,14 @@
 # Results (fresh — populated only by new runs in this repo)
 
-No experimental results yet. Each task records its results here as it clears the gated workflow. Prior-project
-numbers are NOT results of this repo; see [lessons_learned.md](lessons_learned.md) for conceptual carry-over.
+Each task records its results here as it clears the gated workflow. Prior-project numbers are NOT results of this
+repo; see [lessons_learned.md](lessons_learned.md) for conceptual carry-over.
+
+> **Case study 1 — rx_triage: COMPLETE & FROZEN.** Paper-ready writeup:
+> **[rx_triage_case_study.md](rx_triage_case_study.md)**. Headline: Gate 1 (BC-gap +0.105) and Gate 2 (latent
+> support 0.58) both PASS, but neither SFT (v2–v5) nor two bounded GRPO runs realize adaptive gathering — both
+> collapse to a 1-ask shortcut under the ask-cost. **Gates are necessary but not sufficient**; reward geometry
+> (concentrated vs diffuse gathering benefit) is the third factor. Visual dashboard:
+> [learning_dashboard.md](learning_dashboard.md). Next: replicate the pattern on Task 2 (diagnostics).
 
 ## Headline (to be filled): RL gain vs demonstrability
 Plot: `results/figs/rl_gain_vs_bcgap.png` — one point per (task, reward/scale setting): x = BC-gap,
