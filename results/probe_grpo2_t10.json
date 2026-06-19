@@ -1,0 +1,73 @@
+{
+  "tag": "grpo2",
+  "env": "tasks.rx_triage.env",
+  "model": "checkpoints/sft_rx_v3_merged",
+  "adapter": "checkpoints/grpo_rx_v3/final",
+  "max_turns": 10,
+  "hidden": {
+    "support_at_k": 0.9667,
+    "mean_reward": 0.4307,
+    "reward_std_overall": 0.5298,
+    "parse_validity": 0.9982,
+    "mean_asks": 1.312,
+    "ask_hist": {
+      "0": 0.0,
+      "1": 0.874,
+      "2": 0.043,
+      "3+": 0.083
+    },
+    "oracle_grade_ask_hist": {
+      "0": 0.0,
+      "1": 0.883,
+      "2": 0.056,
+      "3+": 0.062
+    },
+    "oracle_grade_blind_rate": 0.0,
+    "zero_ask_commit_rate": 0.0,
+    "ask_dist": {
+      "renal_decline": 723,
+      "adherence_poor": 87,
+      "egfr_severe": 19,
+      "bp_low": 20,
+      "sodium_low": 40,
+      "gi_bleed_risk": 29,
+      "acute_symptoms": 27
+    },
+    "commit_dist": {
+      "dose_adjust": 298,
+      "continue": 294,
+      "escalate": 125
+    },
+    "n_cases": 60,
+    "k": 12
+  },
+  "anchor": {
+    "support_at_k": 0.95,
+    "mean_reward": 0.6074,
+    "reward_std_overall": 0.4964,
+    "parse_validity": 1.0,
+    "mean_asks": 0.0,
+    "ask_hist": {
+      "0": 1.0,
+      "1": 0.0,
+      "2": 0.0,
+      "3+": 0.0
+    },
+    "oracle_grade_ask_hist": {
+      "0": 1.0,
+      "1": 0.0,
+      "2": 0.0,
+      "3+": 0.0
+    },
+    "oracle_grade_blind_rate": 1.0,
+    "zero_ask_commit_rate": 1.0,
+    "ask_dist": {},
+    "commit_dist": {
+      "continue": 247,
+      "dose_adjust": 353,
+      "escalate": 120
+    },
+    "n_cases": 60,
+    "k": 12
+  }
+}

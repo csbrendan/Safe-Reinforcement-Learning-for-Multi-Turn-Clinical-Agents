@@ -9,7 +9,7 @@ y = RL − SFT held-out value, only where latent support was confirmed.
 
 | task | model | reward | BC-gap (deep) | latent support@k | RL − SFT (held-out) | verdict |
 |---|---|---|---|---|---|---|
-| rx_triage | medgemma-4b (text) | v2 0.409 / v3 0.318 / v4 0.372 | +0.105 | base 0.58 / v2 0.93 / v3 0.97 / v4 0.88 | +0.093 GRPO (1-ask collapse) | GRPO#1 Exploit; **SFT oscillates validity↔gathering (v3 gathers/parse-fail; v4 valid+commits/under-gathers) — no clean baseline yet, no GRPO** |
+| rx_triage | medgemma-4b (text) | v3 0.318 / GRPO2 0.431 | +0.105 | base 0.58 / v3 0.97 / GRPO2 0.97 | GRPO2: asks 2.78→1.31, hi-rew 0.195→0.032 | **GRPO#1 & #2 EXPLOIT (1-ask collapse); SFT can't stably gather. Gates necessary, NOT sufficient under this reward** |
 | diagnostics | — | — | — | — | — | (pending) |
 | longterm_care | — | — | — | — | — | (pending) |
 
@@ -107,6 +107,15 @@ ask-hist), the bounded GRPO config + training trajectory (KL, frac_reward_zero_s
   **adaptive gathering is unstable/rare under SFT**, direct evidence that demonstrations under-specify the optimal
   policy. **Decision: SFT search capped; proceed to a guarded GRPO #2 from v3** (KL-anchored β=0.02; ask-collapse
   + high-risk-reward guards) — **proposed, NOT launched**, awaiting review.
+- **Guarded GRPO #2 (from v3, β=0.02, temp 1.0):** full report
+  [docs/eval_runs/grpo2_rx_triage.md](eval_runs/grpo2_rx_triage.md). Held-out trajectory: asks declined
+  monotonically 2.78→1.81(s20)→1.38(s40)→**1.31**(s60), 1-ask 0.54→**0.87**; reward 0.318→**0.431**, parse
+  0.95→**0.998**, no-commit 0.196→**0.004**; but **high-risk acceptable-decisions fell 0.50→0.43** and high-risk
+  reward 0.195→**0.032**. Guarded verdict **EXPLOIT / under-gathering — NOT thesis-positive** (no mid-run peak;
+  KL anchor + gatherer init *mitigated* the collapse vs GRPO #1's −0.77 high-risk reward, but didn't prevent it).
+  **Conclusion: BC-gap + latent support are necessary but NOT sufficient** for a bounded GRPO to realize the
+  gain here — the ask-cost vs rare-high-risk-benefit credit assignment is a strong 1-ask attractor for both SFT
+  and RL. Realizing the gain likely needs reward redesign (less-diffuse gathering benefit), not more RL.
 
 ### diagnostics / longterm_care
 - pending env build.

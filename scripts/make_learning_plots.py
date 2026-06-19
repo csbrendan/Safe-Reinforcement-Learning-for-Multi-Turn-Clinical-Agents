@@ -26,7 +26,7 @@ G1 = {  # policy: (value, mean_asks)
 INTENDED = {"oracle", "best-fixed"}   # the policies we WANT; the rest are priced-out shortcuts
 
 # ---- learned/base policies (committed Gate-2 @ MAX_TURNS=10) ----------------------------------------
-MODELS = ["base", "smoke-SFT", "GRPO #1", "improved-SFT", "v3-SFT", "v4-SFT", "v5-SFT"]
+MODELS = ["base", "smoke-SFT", "GRPO #1", "improved-SFT", "v3-SFT", "v4-SFT", "v5-SFT", "GRPO #2"]
 M = {
     "base":         dict(reward=0.386, support=0.58, asks=2.19, one_ask=0.73, no_commit=0.085, hi_reward=0.151, hi_support=0.00),
     "smoke-SFT":    dict(reward=0.168, support=0.60, asks=4.48, one_ask=0.44, no_commit=0.304, hi_reward=-0.428, hi_support=0.14),
@@ -35,13 +35,14 @@ M = {
     "v3-SFT":       dict(reward=0.318, support=0.967, asks=2.78, one_ask=0.539, no_commit=0.196, hi_reward=0.195, hi_support=1.00),
     "v4-SFT":       dict(reward=0.372, support=0.883, asks=1.53, one_ask=0.796, no_commit=0.029, hi_reward=0.197, hi_support=1.00),
     "v5-SFT":       dict(reward=0.411, support=0.95, asks=1.20, one_ask=0.918, no_commit=0.011, hi_reward=0.069, hi_support=1.00),
+    "GRPO #2":      dict(reward=0.431, support=0.967, asks=1.31, one_ask=0.874, no_commit=0.004, hi_reward=0.032, hi_support=1.00),
 }
 BEST_FIXED, ORACLE = 0.749, 0.854
 RECS = {"base": "probe_base_t10", "smoke-SFT": "probe_sft_t10", "GRPO #1": "probe_grpo_t10",
         "improved-SFT": "probe_sft_v2_t10", "v3-SFT": "probe_sft_v3_t10", "v4-SFT": "probe_sft_v4_t10",
-        "v5-SFT": "probe_sft_v5_t10"}
+        "v5-SFT": "probe_sft_v5_t10", "GRPO #2": "probe_grpo2_t10"}
 COL = {"base": "#7f7f7f", "smoke-SFT": "#1f77b4", "GRPO #1": "#d62728", "improved-SFT": "#2ca02c",
-       "v3-SFT": "#9467bd", "v4-SFT": "#8c564b", "v5-SFT": "#e377c2"}
+       "v3-SFT": "#9467bd", "v4-SFT": "#8c564b", "v5-SFT": "#e377c2", "GRPO #2": "#17becf"}
 saved = []
 
 
@@ -165,9 +166,10 @@ def plot5():
         "v3-SFT":        [1, 0, 0, 0, 0, 0],   # gathering+safety fixed; only MILD non-termination (no-commit 0.196)
         "v4-SFT":        [0, 2, 0, 0, 0, 2],   # validity+termination+safety fixed; reverted to 1-ask under-gathering
         "v5-SFT":        [0, 2, 0, 0, 0, 2],   # best reward/validity but deepest 1-ask (greedy 1.00) under-gather
+        "GRPO #2":       [0, 2, 1, 0, 0, 2],   # from v3 + KL anchor: slowed but didn't stop 1-ask collapse; high-risk reward regressed
         "target":        [0, 0, 0, 0, 0, 0],
     }
-    rows = ["base", "smoke-SFT", "GRPO #1", "improved-SFT", "v3-SFT", "v4-SFT", "v5-SFT", "target"]
+    rows = ["base", "smoke-SFT", "GRPO #1", "improved-SFT", "v3-SFT", "v4-SFT", "v5-SFT", "GRPO #2", "target"]
     data = np.array([sev[r] for r in rows], dtype=float)
     fig, ax = plt.subplots(figsize=(9, 4.5))
     im = ax.imshow(data, cmap="YlOrRd", vmin=0, vmax=2, aspect="auto")
@@ -226,9 +228,10 @@ def plot7():
         "v3-SFT":               [1, 1, 0, 0, 1, 1, 1, 1, 1],
         "v4-SFT":               [1, 1, 1, 1, 0, 1, 1, 1, 1],
         "v5-SFT":               [1, 1, 1, 1, 0, 1, 1, 1, 1],
+        "GRPO #2":              [1, 1, 1, 1, 0, 1, 1, 1, 0],
         "clean target":         [1, 1, 1, 1, 1, 1, 1, 1, 1],
     }
-    rows = ["Gate 1 (widened env)", "base", "smoke-SFT", "GRPO #1", "improved-SFT", "v3-SFT", "v4-SFT", "v5-SFT", "clean target"]
+    rows = ["Gate 1 (widened env)", "base", "smoke-SFT", "GRPO #1", "improved-SFT", "v3-SFT", "v4-SFT", "v5-SFT", "GRPO #2", "clean target"]
     data = np.array([grid[r] for r in rows], dtype=float)
     fig, ax = plt.subplots(figsize=(11, 4.6))
     cmap = matplotlib.colors.ListedColormap(["#d62728", "#2ca02c"])

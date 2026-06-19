@@ -1,0 +1,47 @@
+{
+  "tag": "grpo2_s40",
+  "env": "tasks.rx_triage.env",
+  "model": "checkpoints/sft_rx_v3_merged",
+  "adapter": "checkpoints/grpo_rx_v3/checkpoint-40",
+  "max_turns": 10,
+  "hidden": {
+    "support_at_k": 0.9667,
+    "mean_reward": 0.4374,
+    "reward_std_overall": 0.5017,
+    "parse_validity": 0.9977,
+    "mean_asks": 1.383,
+    "ask_hist": {
+      "0": 0.0,
+      "1": 0.863,
+      "2": 0.036,
+      "3+": 0.101
+    },
+    "oracle_grade_ask_hist": {
+      "0": 0.0,
+      "1": 0.9,
+      "2": 0.031,
+      "3+": 0.069
+    },
+    "oracle_grade_blind_rate": 0.0,
+    "zero_ask_commit_rate": 0.0,
+    "ask_dist": {
+      "renal_decline": 723,
+      "adherence_poor": 91,
+      "bp_low": 28,
+      "egfr_severe": 16,
+      "acute_symptoms": 29,
+      "sodium_low": 59,
+      "gi_bleed_risk": 46,
+      "nsaid_use": 3,
+      "lft_abnormal": 1
+    },
+    "commit_dist": {
+      "dose_adjust": 333,
+      "continue": 245,
+      "escalate": 137,
+      "bridge": 1
+    },
+    "n_cases": 60,
+    "k": 12
+  }
+}
