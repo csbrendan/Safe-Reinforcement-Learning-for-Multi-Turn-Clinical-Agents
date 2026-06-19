@@ -54,7 +54,11 @@ controlled < 0.4; over-gathering = mean asks ≫ oracle (~ask-all); under-gather
   (risk-graded: high 3.4 / benign 2.4), 1-ask 0.90→**0.539** (passes guard), high-risk reward −0.08→**+0.195**
   (best of all), high-risk support 1.0 — BUT no-commit 0.01→**0.196** and parse 0.998→**0.9499** (≥0.95 FAIL),
   so reward fell to 0.318. The ~5% per-turn invalid rate compounds over longer trajectories into ~20% no-commit.
-- **The SFT oscillates on the termination↔gathering axis** (smoke → improved → v3); no stage is yet all-green
-  (fig 7). **v4 must hold both** (reliable commit AND adaptive gathering, reward toward 0.749) before any GRPO #2.
-- **Caveat:** these are provisional internal plots for intuition/debugging, not paper evidence. v4 rows are
-  *targets*, not measured results.
+- **v4-SFT (now measured) confirmed the oscillation:** with 2× training, v4 fixed validity+termination (parse
+  0.9499→**0.9896**, no-commit 0.196→**0.029**) and kept positive high-risk reward (+0.197) — but reverted to
+  1-ask under-gathering (mean asks 2.78→**1.53**, 1-ask 0.539→**0.796**, Gate-2 FAIL).
+- **The SFT oscillates on the termination↔gathering axis** (smoke → v2 → v3 → v4); **no stage is yet all-green**
+  (fig 7). More training fixes validity/termination but collapses gathering into the 1-ask basin; less training
+  gathers but degrades validity — evidence that oracle-depth adaptive gathering is hard to *instill by SFT*.
+- **Caveat:** these are provisional internal plots for intuition/debugging, not paper evidence. The "target"/
+  "clean target" rows are goals, not measured results.

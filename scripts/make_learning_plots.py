@@ -26,19 +26,20 @@ G1 = {  # policy: (value, mean_asks)
 INTENDED = {"oracle", "best-fixed"}   # the policies we WANT; the rest are priced-out shortcuts
 
 # ---- learned/base policies (committed Gate-2 @ MAX_TURNS=10) ----------------------------------------
-MODELS = ["base", "smoke-SFT", "GRPO #1", "improved-SFT", "v3-SFT"]
+MODELS = ["base", "smoke-SFT", "GRPO #1", "improved-SFT", "v3-SFT", "v4-SFT"]
 M = {
     "base":         dict(reward=0.386, support=0.58, asks=2.19, one_ask=0.73, no_commit=0.085, hi_reward=0.151, hi_support=0.00),
     "smoke-SFT":    dict(reward=0.168, support=0.60, asks=4.48, one_ask=0.44, no_commit=0.304, hi_reward=-0.428, hi_support=0.14),
     "GRPO #1":      dict(reward=0.261, support=0.85, asks=1.10, one_ask=0.98, no_commit=0.004, hi_reward=-0.770, hi_support=0.43),
     "improved-SFT": dict(reward=0.409, support=0.93, asks=1.33, one_ask=0.90, no_commit=0.010, hi_reward=-0.080, hi_support=1.00),
     "v3-SFT":       dict(reward=0.318, support=0.967, asks=2.78, one_ask=0.539, no_commit=0.196, hi_reward=0.195, hi_support=1.00),
+    "v4-SFT":       dict(reward=0.372, support=0.883, asks=1.53, one_ask=0.796, no_commit=0.029, hi_reward=0.197, hi_support=1.00),
 }
 BEST_FIXED, ORACLE = 0.749, 0.854
 RECS = {"base": "probe_base_t10", "smoke-SFT": "probe_sft_t10", "GRPO #1": "probe_grpo_t10",
-        "improved-SFT": "probe_sft_v2_t10", "v3-SFT": "probe_sft_v3_t10"}
+        "improved-SFT": "probe_sft_v2_t10", "v3-SFT": "probe_sft_v3_t10", "v4-SFT": "probe_sft_v4_t10"}
 COL = {"base": "#7f7f7f", "smoke-SFT": "#1f77b4", "GRPO #1": "#d62728", "improved-SFT": "#2ca02c",
-       "v3-SFT": "#9467bd"}
+       "v3-SFT": "#9467bd", "v4-SFT": "#8c564b"}
 saved = []
 
 
@@ -151,7 +152,7 @@ def plot4():
 
 # ============================================================ 5. Failure-mode heatmap (severity 0/1/2)
 def plot5():
-    rows = ["base", "smoke-SFT", "GRPO #1", "improved-SFT", "v3-SFT", "v4 (target)"]
+    rows = ["base", "smoke-SFT", "GRPO #1", "improved-SFT", "v3-SFT", "v4-SFT", "target"]
     cols = ["non-termination", "1-ask shortcut", "high-risk\nregression", "benign\nover-escalation",
             "over-gathering", "under-gathering"]
     # severity 0=controlled, 1=mild, 2=severe; derived from committed metrics (thresholds in docs)
@@ -160,8 +161,9 @@ def plot5():
         "smoke-SFT":     [2, 0, 2, 0, 2, 0],   # severe non-termination + over-gathering, poor high-risk reward
         "GRPO #1":       [0, 2, 2, 0, 0, 2],   # severe 1-ask collapse + high-risk reward regress + under-gather
         "improved-SFT":  [0, 2, 1, 1, 0, 2],   # termination fixed; 1-ask severe; under-gather severe; high-risk reward mild-neg
-        "v3-SFT":        [1, 0, 0, 0, 0, 0],   # gathering+safety fixed; only MILD non-termination (no-commit 0.196) remains
-        "v4 (target)":   [0, 0, 0, 0, 0, 0],
+        "v3-SFT":        [1, 0, 0, 0, 0, 0],   # gathering+safety fixed; only MILD non-termination (no-commit 0.196)
+        "v4-SFT":        [0, 2, 0, 0, 0, 2],   # validity+termination+safety fixed; reverted to 1-ask under-gathering
+        "target":        [0, 0, 0, 0, 0, 0],
     }
     data = np.array([sev[r] for r in rows], dtype=float)
     fig, ax = plt.subplots(figsize=(9, 4.5))
@@ -182,34 +184,34 @@ def plot5():
 
 # ============================================================ 6. Curriculum progression (small multiples + v3 band)
 def plot6():
-    stages = ["smoke-SFT", "improved-SFT", "v3-SFT"]
+    stages = ["smoke-SFT", "improved-SFT", "v3-SFT", "v4-SFT"]
     specs = [("no_commit", "no-commit rate", (0, 0.35), (0.0, 0.05), "near 0"),
              ("one_ask", "1-ask rate", (0, 1.0), (0.0, 0.6), "< 0.6 guard"),
              ("asks", "mean asks", (0, 6.5), (2.8, 4.0), "~2.8-4 (risk-graded)"),
              ("hi_support", "high-risk support", (0, 1.1), (0.8, 1.0), "preserved"),
              ("reward", "reward", (0, 0.9), (0.65, 0.749), "-> best-fixed")]
     fig, axes = plt.subplots(1, 5, figsize=(15, 3.6))
-    xs = [0, 1, 2]
+    xs = [0, 1, 2, 3]
     for ax, (key, title, ylim, band, lbl) in zip(axes, specs):
         ys = [M[s][key] for s in stages]
         ax.plot(xs, ys, "-o", color="#333", zorder=3)
         for x, y in zip(xs, ys):
-            ax.annotate(f"{y:.2f}", (x, y), textcoords="offset points", xytext=(0, 6), fontsize=8, ha="center")
-        ax.axhspan(band[0], band[1], color="#2ca02c", alpha=0.18, label=f"v4 target: {lbl}")
-        ax.set_xticks([0, 1, 2, 3]); ax.set_xticklabels(["smoke", "improved", "v3", "v4"], fontsize=8)
-        ax.set_xlim(-0.3, 3.3); ax.set_ylim(*ylim); ax.set_title(title, fontsize=10)
-        ax.scatter([3], [sum(band) / 2], marker="*", s=160, color="#2ca02c", zorder=4)
+            ax.annotate(f"{y:.2f}", (x, y), textcoords="offset points", xytext=(0, 6), fontsize=7.5, ha="center")
+        ax.axhspan(band[0], band[1], color="#2ca02c", alpha=0.18, label=f"target: {lbl}")
+        ax.set_xticks([0, 1, 2, 3, 4]); ax.set_xticklabels(["smoke", "v2", "v3", "v4", "tgt"], fontsize=8)
+        ax.set_xlim(-0.3, 4.3); ax.set_ylim(*ylim); ax.set_title(title, fontsize=10)
+        ax.scatter([4], [sum(band) / 2], marker="*", s=150, color="#2ca02c", zorder=4)
         ax.grid(alpha=0.25)
-    fig.suptitle("Curriculum: smoke (asks, won't commit) → improved (commits, under-gathers) → v3 (gathers+safe, commit slips) → v4 target", fontsize=10.5)
+    fig.suptitle("Curriculum oscillation: smoke (asks/won't-commit) → v2 (commits/under-gathers) → v3 (gathers/commit-slips) → v4 (commits+valid/under-gathers)", fontsize=9.8)
     _save(fig, "06_curriculum_progression.png",
-          "The oscillation. smoke-SFT asked but wouldn't commit; improved-SFT committed but collapsed to ~1 ask; "
-          "v3-SFT restored adaptive gathering (2.78 asks, high-risk reward +0.195) but commit reliability slipped "
-          "(no-commit 0.196, reward 0.318). Green bands/star = v4 TARGET: hold BOTH gather and commit toward 0.749.")
+          "The oscillation on the termination↔gathering axis. No SFT point yet holds BOTH: v3 (2 epochs) gathered "
+          "(2.78 asks) but parse/no-commit slipped; v4 (3 epochs) fixed validity+termination (parse 0.99, "
+          "no-commit 0.03) but reverted to 1-ask under-gathering (1.53). Green band/star = the still-unmet target.")
 
 
 # ============================================================ 7. Gate / safety status matrix (heatmap)
 def plot7():
-    rows = ["Gate 1 (widened env)", "base", "smoke-SFT", "GRPO #1", "improved-SFT", "v3-SFT", "v4-SFT (target)"]
+    rows = ["Gate 1 (widened env)", "base", "smoke-SFT", "GRPO #1", "improved-SFT", "v3-SFT", "v4-SFT", "clean target"]
     cols = ["BC-gap\npasses", "latent\nsupport", "parse\nvalid", "no-commit\ncontrolled", "1-ask\ncontrolled",
             "high-risk\nsupport", "high-risk\nreward ok", "benign\nover-esc ok", "no exploit\nverdict"]
     N = np.nan
@@ -220,7 +222,8 @@ def plot7():
         "GRPO #1":              [1, 1, 1, 1, 0, 1, 0, 1, 0],
         "improved-SFT":         [1, 1, 1, 1, 0, 1, 1, 1, 0],
         "v3-SFT":               [1, 1, 0, 0, 1, 1, 1, 1, 1],
-        "v4-SFT (target)":      [1, 1, 1, 1, 1, 1, 1, 1, 1],
+        "v4-SFT":               [1, 1, 1, 1, 0, 1, 1, 1, 1],
+        "clean target":         [1, 1, 1, 1, 1, 1, 1, 1, 1],
     }
     data = np.array([grid[r] for r in rows], dtype=float)
     fig, ax = plt.subplots(figsize=(11, 4.6))
@@ -237,10 +240,10 @@ def plot7():
                     color="white" if (not np.isnan(v)) else "#888")
     ax.set_title("Gate / safety status by stage  (✓ pass·controlled   ✗ fail   — n/a)")
     _save(fig, "07_gate_status_matrix.png",
-          "One-glance status. Gate 1 (BC-gap) and Gate 2 (latent support) both pass. Every learned stage trips at "
-          "least one check: base/GRPO#1/improved-SFT fail '1-ask controlled'; v3-SFT fixes 1-ask + high-risk but "
-          "fails 'parse valid' & 'no-commit controlled'. No stage is yet all-green; v4-SFT (target) is the bar to "
-          "clear before any GRPO #2.")
+          "One-glance status. Gate 1 (BC-gap) and Gate 2 (latent support) both pass. Every learned stage trips ≥1 "
+          "check: v3-SFT alone passes '1-ask controlled' but fails parse + no-commit; v4-SFT fixes those but "
+          "reverts to failing '1-ask controlled'. The validity↔gathering tradeoff means no SFT stage is yet "
+          "all-green ('clean target', bottom) — the bar to clear before any GRPO #2.")
 
 
 if __name__ == "__main__":

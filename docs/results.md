@@ -9,7 +9,7 @@ y = RL − SFT held-out value, only where latent support was confirmed.
 
 | task | model | reward | BC-gap (deep) | latent support@k | RL − SFT (held-out) | verdict |
 |---|---|---|---|---|---|---|
-| rx_triage | medgemma-4b (text) | smoke 0.168 / GRPO 0.261 / v2 0.409 / v3 0.318 | +0.105 | base 0.58 / smoke 0.60 / GRPO 0.85 / v2 0.93 / v3 0.97 | +0.093 GRPO (1-ask collapse) | GRPO#1 Exploit; v2 under-gathers; **v3 gathers+safe (hi-rew +0.195) but termination slips (Gate-2 FAIL parse) → v4 next** |
+| rx_triage | medgemma-4b (text) | v2 0.409 / v3 0.318 / v4 0.372 | +0.105 | base 0.58 / v2 0.93 / v3 0.97 / v4 0.88 | +0.093 GRPO (1-ask collapse) | GRPO#1 Exploit; **SFT oscillates validity↔gathering (v3 gathers/parse-fail; v4 valid+commits/under-gathers) — no clean baseline yet, no GRPO** |
 | diagnostics | — | — | — | — | — | (pending) |
 | longterm_care | — | — | — | — | — | (pending) |
 
@@ -88,6 +88,16 @@ ask-hist), the bounded GRPO config + training trajectory (KL, frac_reward_zero_s
   termination↔gathering axis (smoke→v2→v3); no stage is yet all-green. **Next: v4** (hold both gather AND commit:
   no-commit≈0, parse≈1.0, asks ~2.8–4 risk-graded, reward→0.749). **No GRPO proposed/launched** — v3 did not pass
   cleanly.
+- **Curriculum v4 SFT Gate 2:** full report
+  [docs/eval_runs/sft_v4_gate2_rx_triage.md](eval_runs/sft_v4_gate2_rx_triage.md). v4 (v3 mix + 2× training)
+  **fixed v3's validity+termination** (parse 0.9499→**0.9896**, no-commit 0.196→**0.029**) and kept positive
+  high-risk reward (+0.197) + risk-grading — **but the extra training reverted gathering to 1-ask** (mean asks
+  2.78→**1.53**, 1-ask 0.539→**0.796** → Gate-2 FAIL, the only failing check). **Finding:** an SFT oscillation —
+  more training fixes validity/termination but collapses gathering into the 1-ask basin; less training gathers
+  but degrades validity. No (mix, epochs) point hits gather≈2.8 AND parse≈0.99 AND no-commit≈0 together — direct
+  evidence that oracle-depth adaptive gathering is hard to *instill by demonstration* (the demonstrability
+  difficulty). **No GRPO.** Next decision: (a) v5 = v4 data @ 2 epochs (sweet-spot search), or (b) treat v3/v4 as
+  the baseline frontier and run a guard-instrumented bounded GRPO. Awaiting direction.
 
 ### diagnostics / longterm_care
 - pending env build.
