@@ -1,0 +1,89 @@
+ANALYTIC BASELINES (rx_triage widened, hidden, cost 0.03):
+  oracle=+0.854  best_fixed=+0.749  ask_all=+0.747  no_ask=+0.601  1ask=+0.608  blind_escalate=+0.376
+
+============================================================================================
+[base] cond=hidden  parse_validity=0.9938  (k=12, rollouts=720)
+============================================================================================
+  subset     supp@k   reward   rstd  asks          ask_hist(0/1/2/3+)                 og_ask_hist
+  overall     0.583   +0.386  0.519  2.19         0.00/0.73/0.08/0.19         0.00/0.90/0.07/0.03
+  high        0.000   +0.151  0.403  3.04         0.00/0.51/0.18/0.31         0.00/0.00/0.00/0.00
+  moderate    0.500   +0.160  0.488  2.25         0.00/0.72/0.08/0.19         0.00/0.82/0.15/0.04
+  benign      0.870   +0.752  0.353  1.85         0.00/0.80/0.04/0.16         0.00/0.94/0.03/0.03
+  relevant    0.405   +0.158  0.473  2.40         0.00/0.68/0.10/0.22         0.00/0.82/0.15/0.04
+
+  no_commit (decision=None) = 0.085   [high=0.167 moderate=0.094 benign=0.047]
+  shortcut/blind:  no_ask_commit=0.0  1ask=0.729  blind_escalate=0.0  blind_hold=0.0  benign_overesc=0.181
+  high-risk support=0.0  og_blind_rate(overall)=0.0
+
+============================================================================================
+[smokeSFT] cond=hidden  parse_validity=0.9852  (k=12, rollouts=720)
+============================================================================================
+  subset     supp@k   reward   rstd  asks          ask_hist(0/1/2/3+)                 og_ask_hist
+  overall     0.600   +0.168  0.544  4.48         0.00/0.44/0.01/0.55         0.00/0.85/0.02/0.13
+  high        0.143   -0.428  0.519  4.68         0.00/0.46/0.01/0.52         0.00/0.00/0.00/1.00
+  moderate    0.433   -0.060  0.304  5.12         0.00/0.37/0.00/0.63         0.00/0.79/0.00/0.21
+  benign      0.957   +0.647  0.405  3.60         0.00/0.53/0.01/0.46         0.00/0.86/0.02/0.11
+  relevant    0.378   -0.130  0.383  5.03         0.00/0.39/0.00/0.61         0.00/0.73/0.00/0.27
+
+  no_commit (decision=None) = 0.304   [high=0.429 moderate=0.35 benign=0.207]
+  shortcut/blind:  no_ask_commit=0.0  1ask=0.442  blind_escalate=0.0  blind_hold=0.0  benign_overesc=0.022
+  high-risk support=0.143  og_blind_rate(overall)=0.0
+
+============================================================================================
+[grpo1] cond=hidden  parse_validity=1.0  (k=12, rollouts=720)
+============================================================================================
+  subset     supp@k   reward   rstd  asks          ask_hist(0/1/2/3+)                 og_ask_hist
+  overall     0.850   +0.261  0.610  1.10         0.00/0.98/0.00/0.02         0.00/1.00/0.00/0.00
+  high        0.429   -0.770  0.443  1.11         0.00/0.99/0.00/0.01         0.00/1.00/0.00/0.00
+  moderate    0.867   +0.130  0.426  1.09         0.00/0.98/0.00/0.02         0.00/1.00/0.00/0.00
+  benign      0.957   +0.747  0.305  1.12         0.00/0.98/0.00/0.02         0.00/1.00/0.00/0.00
+  relevant    0.784   -0.041  0.555  1.09         0.00/0.98/0.00/0.02         0.00/1.00/0.00/0.00
+
+  no_commit (decision=None) = 0.004   [high=0.012 moderate=0.003 benign=0.004]
+  shortcut/blind:  no_ask_commit=0.0  1ask=0.982  blind_escalate=0.0  blind_hold=0.0  benign_overesc=0.029
+  high-risk support=0.429  og_blind_rate(overall)=0.0
+
+============================================================================================
+[improvedSFT] cond=hidden  parse_validity=0.9982  (k=12, rollouts=720)
+============================================================================================
+  subset     supp@k   reward   rstd  asks          ask_hist(0/1/2/3+)                 og_ask_hist
+  overall     0.933   +0.409  0.465  1.33         0.00/0.90/0.01/0.09         0.00/0.92/0.02/0.07
+  high        1.000   -0.080  0.673  1.35         0.00/0.86/0.05/0.10         0.00/0.58/0.15/0.27
+  moderate    1.000   +0.498  0.446  1.35         0.00/0.91/0.00/0.09         0.00/0.96/0.01/0.03
+  benign      0.826   +0.443  0.289  1.31         0.00/0.91/0.00/0.09         0.00/0.91/0.00/0.09
+  relevant    1.000   +0.389  0.546  1.35         0.00/0.90/0.01/0.09         0.00/0.92/0.02/0.06
+
+  no_commit (decision=None) = 0.01   [high=0.012 moderate=0.006 benign=0.014]
+  shortcut/blind:  no_ask_commit=0.0  1ask=0.9  blind_escalate=0.0  blind_hold=0.0  benign_overesc=0.13
+  high-risk support=1.0  og_blind_rate(overall)=0.0
+
+============================================================================================
+[sft_v3] cond=hidden  parse_validity=0.9499  (k=12, rollouts=720)
+============================================================================================
+  subset     supp@k   reward   rstd  asks          ask_hist(0/1/2/3+)                 og_ask_hist
+  overall     0.967   +0.318  0.509  2.78         0.00/0.54/0.05/0.41         0.00/0.74/0.08/0.18
+  high        1.000   +0.195  0.705  3.37         0.00/0.32/0.08/0.59         0.00/0.35/0.12/0.53
+  moderate    1.000   +0.172  0.455  2.91         0.00/0.52/0.04/0.44         0.00/0.78/0.06/0.15
+  benign      0.913   +0.546  0.411  2.43         0.00/0.63/0.05/0.33         0.00/0.82/0.07/0.11
+  relevant    1.000   +0.176  0.512  3.00         0.00/0.48/0.05/0.47         0.00/0.65/0.08/0.27
+
+  no_commit (decision=None) = 0.196   [high=0.167 moderate=0.228 benign=0.163]
+  shortcut/blind:  no_ask_commit=0.0  1ask=0.539  blind_escalate=0.0  blind_hold=0.0  benign_overesc=0.101
+  high-risk support=1.0  og_blind_rate(overall)=0.0
+
+============================================================================================
+GATE 2 CHECKS — target run: [sft_v3]
+============================================================================================
+  [FAIL] parse_validity near 1.0 (>=0.95)
+  [PASS] non-trivial support@12 (>=0.15)
+  [PASS] reward diversity for RL (overall std >=0.08)
+  [PASS] no collapse to no-ask-commit (<0.6)
+  [PASS] no collapse to 1-ask shortcut (<0.6)
+  [PASS] no collapse to ask-all (mean_asks < rel-union ~7)
+  [PASS] no collapse to blind-escalate (<0.3)
+  [PASS] oracle-grade incl. selective asks (og 0-ask frac <0.85)
+  [PASS] high-risk support nonzero
+  [PASS] benign over-escalation controlled (<0.4)
+  => GATE 2 FAILS for [sft_v3]
+
+  base->sft deltas (hidden, overall): support 0.583->0.967  reward +0.386->+0.318  no_commit 0.085->0.196  mean_asks 2.19->2.78  high_supp 0.000->1.000  parse 0.9938->0.9499

@@ -1,0 +1,78 @@
+{
+  "tag": "sft_v3",
+  "env": "tasks.rx_triage.env",
+  "model": "checkpoints/medgemma4b_text",
+  "adapter": "checkpoints/sft_rx_v3/final",
+  "max_turns": 10,
+  "hidden": {
+    "support_at_k": 0.9667,
+    "mean_reward": 0.3179,
+    "reward_std_overall": 0.5086,
+    "parse_validity": 0.9499,
+    "mean_asks": 2.779,
+    "ask_hist": {
+      "0": 0.0,
+      "1": 0.539,
+      "2": 0.049,
+      "3+": 0.412
+    },
+    "oracle_grade_ask_hist": {
+      "0": 0.0,
+      "1": 0.74,
+      "2": 0.077,
+      "3+": 0.183
+    },
+    "oracle_grade_blind_rate": 0.0,
+    "zero_ask_commit_rate": 0.0,
+    "ask_dist": {
+      "renal_decline": 766,
+      "nsaid_use": 11,
+      "lft_abnormal": 26,
+      "adherence_poor": 287,
+      "acute_symptoms": 196,
+      "sodium_low": 246,
+      "gi_bleed_risk": 238,
+      "bp_low": 114,
+      "egfr_severe": 81,
+      "volume_dehydrated": 28,
+      "a1c_high": 6,
+      "potassium_high": 2
+    },
+    "commit_dist": {
+      "dose_adjust": 198,
+      "escalate": 103,
+      "continue": 278
+    },
+    "n_cases": 60,
+    "k": 12
+  },
+  "anchor": {
+    "support_at_k": 0.9667,
+    "mean_reward": 0.6096,
+    "reward_std_overall": 0.4937,
+    "parse_validity": 1.0,
+    "mean_asks": 0.0,
+    "ask_hist": {
+      "0": 1.0,
+      "1": 0.0,
+      "2": 0.0,
+      "3+": 0.0
+    },
+    "oracle_grade_ask_hist": {
+      "0": 1.0,
+      "1": 0.0,
+      "2": 0.0,
+      "3+": 0.0
+    },
+    "oracle_grade_blind_rate": 1.0,
+    "zero_ask_commit_rate": 1.0,
+    "ask_dist": {},
+    "commit_dist": {
+      "continue": 256,
+      "dose_adjust": 339,
+      "escalate": 125
+    },
+    "n_cases": 60,
+    "k": 12
+  }
+}

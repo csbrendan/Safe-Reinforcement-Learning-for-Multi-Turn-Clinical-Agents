@@ -9,7 +9,7 @@ y = RL − SFT held-out value, only where latent support was confirmed.
 
 | task | model | reward | BC-gap (deep) | latent support@k | RL − SFT (held-out) | verdict |
 |---|---|---|---|---|---|---|
-| rx_triage | medgemma-4b (text) | smoke-SFT 0.168 / GRPO 0.261 / SFT-v2 0.409 | +0.105 | base 0.58 / smoke 0.60 / GRPO 0.85 / SFT-v2 0.93 | +0.093 GRPO (1-ask collapse) | GRPO#1 Exploit; **SFT-v2 termination-fixed but under-gathers (Gate-2 FAIL 1-ask) → curriculum v3 next** |
+| rx_triage | medgemma-4b (text) | smoke 0.168 / GRPO 0.261 / v2 0.409 / v3 0.318 | +0.105 | base 0.58 / smoke 0.60 / GRPO 0.85 / v2 0.93 / v3 0.97 | +0.093 GRPO (1-ask collapse) | GRPO#1 Exploit; v2 under-gathers; **v3 gathers+safe (hi-rew +0.195) but termination slips (Gate-2 FAIL parse) → v4 next** |
 | diagnostics | — | — | — | — | — | (pending) |
 | longterm_care | — | — | — | — | — | (pending) |
 
@@ -79,6 +79,15 @@ ask-hist), the bounded GRPO config + training trajectory (KL, frac_reward_zero_s
   under-fit the gathering it was trained to clone). Not yet a clean baseline. **Next: curriculum v3** (more rho=0
   full-checklist-then-commit, fewer commit-now/short) so the SFT both gathers AND commits before any GRPO.
   **No GRPO #2 proposed/launched.**
+- **Curriculum v3 SFT Gate 2:** full report
+  [docs/eval_runs/sft_v3_gate2_rx_triage.md](eval_runs/sft_v3_gate2_rx_triage.md). v3 **fixed the under-gathering**
+  (mean asks 1.33→**2.78**, risk-graded high 3.4/benign 2.4; 1-ask 0.90→**0.539** passes guard) and delivered the
+  **best high-risk safety yet** (high-risk reward −0.08→**+0.195**, support 1.0) — BUT **termination regressed**
+  (no-commit 0.01→**0.196**, parse 0.998→**0.9499** → Gate-2 FAIL), pulling reward to 0.318. Mechanism: ~5%
+  per-turn invalid rate compounds over v3's longer trajectories. The SFT is oscillating on the
+  termination↔gathering axis (smoke→v2→v3); no stage is yet all-green. **Next: v4** (hold both gather AND commit:
+  no-commit≈0, parse≈1.0, asks ~2.8–4 risk-graded, reward→0.749). **No GRPO proposed/launched** — v3 did not pass
+  cleanly.
 
 ### diagnostics / longterm_care
 - pending env build.

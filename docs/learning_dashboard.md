@@ -50,8 +50,11 @@ controlled < 0.4; over-gathering = mean asks ≫ oracle (~ask-all); under-gather
 - **Improved-SFT is better than smoke-SFT but not a clean baseline:** termination fixed (no-commit 0.010, parse
   0.998), reward up to 0.409, high-risk reward −0.08 and high-risk support 1.0 — **yet it still under-gathers**
   (mean asks 1.33, 1-ask 0.90 → fails the anti-shortcut guard; reward 0.409 ≪ best-fixed 0.749) (figs 4–6).
-- **Curriculum v3 is justified before any GRPO #2:** the goal is a baseline that both *gathers* (asks ~4–6,
-  high-risk preserved) AND *commits* (no-commit ≈ 0), landing reward toward best-fixed 0.749 (figs 6–7). A
-  bounded GRPO is only worth proposing once that baseline passes Gate 2 cleanly.
-- **Caveat:** these are provisional internal plots for intuition/debugging, not paper evidence. v3 rows are
+- **v3-SFT (now measured) fixed gathering + safety but slipped on termination:** mean asks 1.33→**2.78**
+  (risk-graded: high 3.4 / benign 2.4), 1-ask 0.90→**0.539** (passes guard), high-risk reward −0.08→**+0.195**
+  (best of all), high-risk support 1.0 — BUT no-commit 0.01→**0.196** and parse 0.998→**0.9499** (≥0.95 FAIL),
+  so reward fell to 0.318. The ~5% per-turn invalid rate compounds over longer trajectories into ~20% no-commit.
+- **The SFT oscillates on the termination↔gathering axis** (smoke → improved → v3); no stage is yet all-green
+  (fig 7). **v4 must hold both** (reliable commit AND adaptive gathering, reward toward 0.749) before any GRPO #2.
+- **Caveat:** these are provisional internal plots for intuition/debugging, not paper evidence. v4 rows are
   *targets*, not measured results.
