@@ -31,8 +31,12 @@ All model numbers are the canonical MAX_TURNS=10 / deterministic-ordering Gate-2
    but not commit; improved learned to commit but under-gathers; v3 must teach both.*
 7. **[Gate / safety status matrix](../results/figs/learning_dashboard/07_gate_status_matrix.png)** — ✓/✗/—
    grid over BC-gap, latent support, parse, no-commit, 1-ask, high-risk support, high-risk reward, benign
-   over-escalation, exploit verdict. *Lesson: both gates pass; every learned stage trips ≥1 check; v3 is the
-   all-green target before any GRPO #2.*
+   over-escalation, exploit verdict. *Lesson: both gates pass; every learned stage trips ≥1 check; no SFT stage
+   is yet all-green.*
+8. **[Temperature diagnostic](../results/figs/learning_dashboard/08_temperature_diagnostic.png)** — mean-asks &
+   high-risk reward vs decoding temperature for v3/v4/v5. *Lesson: at greedy (temp 0) v4/v5 commit after exactly
+   1 ask — under-gathering is the LEARNED policy, not a temp-1.0 sampling artifact; v3 gathers at all temps.
+   Eval temperature is neither the cause nor the fix.*
 
 Severity/status thresholds used (documented for reproducibility): 1-ask controlled = one_ask < 0.6; no-commit
 controlled < 0.05; high-risk support present > 0; high-risk reward acceptable ≳ −0.1; benign over-escalation
@@ -57,8 +61,13 @@ controlled < 0.4; over-gathering = mean asks ≫ oracle (~ask-all); under-gather
 - **v4-SFT (now measured) confirmed the oscillation:** with 2× training, v4 fixed validity+termination (parse
   0.9499→**0.9896**, no-commit 0.196→**0.029**) and kept positive high-risk reward (+0.197) — but reverted to
   1-ask under-gathering (mean asks 2.78→**1.53**, 1-ask 0.539→**0.796**, Gate-2 FAIL).
-- **The SFT oscillates on the termination↔gathering axis** (smoke → v2 → v3 → v4); **no stage is yet all-green**
-  (fig 7). More training fixes validity/termination but collapses gathering into the 1-ask basin; less training
-  gathers but degrades validity — evidence that oracle-depth adaptive gathering is hard to *instill by SFT*.
-- **Caveat:** these are provisional internal plots for intuition/debugging, not paper evidence. The "target"/
-  "clean target" rows are goals, not measured results.
+- **The SFT gather mode is unstable** (smoke → v2 → v3 → v4 → v5): only **v3** learned to gather (2.78 asks);
+  **v2/v4/v5 all collapsed to ~1.2–1.5 asks** despite 68–70% full-checklist demos (v5, the interpolation,
+  gathered LEAST). **No stage is all-green** (fig 7).
+- **Temperature diagnostic (fig 8) settles the cause:** the under-gathering is a **learned greedy policy** (v4/v5
+  commit after exactly 1 ask at temp 0), not a sampling artifact — so it's neither caused nor fixable by eval
+  temperature. This is direct evidence that **demonstrations under-specify / can't reliably instill** the optimal
+  adaptive-gathering policy — the project's premise. → the next move is a **guarded GRPO from v3** (the only
+  gatherer), the experiment the thesis is actually about.
+- **Caveat:** these are provisional internal plots for intuition/debugging, not paper evidence. The "target" rows
+  are goals, not measured results.

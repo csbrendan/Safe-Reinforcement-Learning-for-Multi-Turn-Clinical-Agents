@@ -98,6 +98,15 @@ ask-hist), the bounded GRPO config + training trajectory (KL, frac_reward_zero_s
   evidence that oracle-depth adaptive gathering is hard to *instill by demonstration* (the demonstrability
   difficulty). **No GRPO.** Next decision: (a) v5 = v4 data @ 2 epochs (sweet-spot search), or (b) treat v3/v4 as
   the baseline frontier and run a guard-instrumented bounded GRPO. Awaiting direction.
+- **v5 SFT + temperature diagnostic:** full report
+  [docs/eval_runs/sft_v5_and_temp_diagnostic_rx_triage.md](eval_runs/sft_v5_and_temp_diagnostic_rx_triage.md).
+  v5 (v4 data @ 2 ep) **FAILS** (1-ask 0.918, gathered *least* of all — refutes the interpolation idea). The
+  **temperature diagnostic is decisive**: v4/v5 commit after exactly 1 ask at **greedy** (temp 0) — under-gathering
+  is a **learned policy, not a sampling artifact** (higher temp *adds* gathering); v3 gathers at all temps. SFT
+  frontier: only **v3** learned to gather (greedy 2.23, risk-graded); v2/v4/v5 collapsed to greedy 1-ask —
+  **adaptive gathering is unstable/rare under SFT**, direct evidence that demonstrations under-specify the optimal
+  policy. **Decision: SFT search capped; proceed to a guarded GRPO #2 from v3** (KL-anchored β=0.02; ask-collapse
+  + high-risk-reward guards) — **proposed, NOT launched**, awaiting review.
 
 ### diagnostics / longterm_care
 - pending env build.

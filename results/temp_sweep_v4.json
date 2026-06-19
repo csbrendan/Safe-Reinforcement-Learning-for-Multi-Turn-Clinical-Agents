@@ -1,0 +1,41 @@
+{
+  "tag": "v4",
+  "model": "checkpoints/medgemma4b_text",
+  "adapter": "checkpoints/sft_rx_v4/final",
+  "max_turns": 10,
+  "by_temp": {
+    "0.0": {
+      "mean_asks": 1,
+      "one_ask": 1.0,
+      "no_commit": 0.0,
+      "reward": 0.311,
+      "support": 0.425,
+      "high_reward": -0.24,
+      "high_support": 0.2,
+      "parse": 1.0,
+      "n_roll": 40
+    },
+    "0.5": {
+      "mean_asks": 1.44,
+      "one_ask": 0.844,
+      "no_commit": 0.013,
+      "reward": 0.354,
+      "support": 0.75,
+      "high_reward": 0.315,
+      "high_support": 1.0,
+      "parse": 0.995,
+      "n_roll": 320
+    },
+    "1.0": {
+      "mean_asks": 1.49,
+      "one_ask": 0.809,
+      "no_commit": 0.041,
+      "reward": 0.351,
+      "support": 0.825,
+      "high_reward": 0.383,
+      "high_support": 1.0,
+      "parse": 0.984,
+      "n_roll": 320
+    }
+  }
+}
