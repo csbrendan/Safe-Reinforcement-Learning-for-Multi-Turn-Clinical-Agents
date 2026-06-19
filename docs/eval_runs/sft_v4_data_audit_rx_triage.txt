@@ -1,0 +1,10 @@
+[gen_data:curriculum_v4] 800 trajectories -> data/rx_triage_sft_v4.jsonl
+  commit-rate: 1.000 (target 1.0)   no-hidden-leak (assistant=action-only): True
+  ask-count dist (0..7+): 0:84, 1:21, 2:38, 3:60, 4:306, 5:15, 6:276, 7:0
+  traj-length dist (assistant turns): 1:84, 2:21, 3:38, 4:60, 5:306, 6:15, 7:276
+  commit-position (asks before commit): 0-ask 10% | 1-ask 3% | 2-4 ask 50% | 5+ ask 36%
+  valid item-name rate (ask turns): 1.0000 (3232 ask turns, 0 invalid)
+  risk distribution: {'moderate': 426, 'high': 114, 'none': 260}
+  high/moderate cases with 3+ asks: 445/540 (82% of hi+mod)
+  family mix: {'ACEi_ARB': 404, 'NSAID': 396}
+  checklists: ACEi_ARB=('renal_decline', 'bp_low', 'adherence_poor', 'egfr_severe'); NSAID=('renal_decline', 'nsaid_use', 'adherence_poor', 'acute_symptoms', 'sodium_low', 'gi_bleed_risk')
