@@ -15,9 +15,11 @@ import argparse, json, statistics as stx
 from collections import Counter
 from pathlib import Path
 
-# Analytic baselines for rx_triage (Gate 1, widened env, cost 0.03) — overall hidden-condition values.
+# Analytic baselines (overall hidden-condition values) — recomputed per --env in main(); these are the
+# rx_triage defaults. Defensive/escalation action names default to rx_triage and are overridden per --env.
 ANALYTIC = {"oracle": 0.854, "best_fixed": 0.749, "ask_all": 0.747, "no_ask": 0.601,
             "1ask": 0.608, "blind_escalate": 0.376}
+HOLD, ESC = "hold_for_labs", "escalate"
 SUBSETS = [("overall", None), ("high", "high"), ("moderate", "moderate"),
            ("benign", "none"), ("relevant", "relevant")]
 
@@ -57,8 +59,8 @@ def metrics(recs):
         no_commit=round(sum(1 for r in recs if r["decision"] is None) / max(len(recs), 1), 3),
         no_ask_commit=round(sum(1 for r in committed if r["n_asks"] == 0) / max(len(recs), 1), 3),
         one_ask=round(sum(1 for r in recs if r["n_asks"] == 1) / max(len(recs), 1), 3),
-        blind_escalate=round(sum(1 for r in recs if r["n_asks"] == 0 and r["decision"] == "escalate") / max(len(recs), 1), 3),
-        blind_hold=round(sum(1 for r in recs if r["n_asks"] == 0 and r["decision"] == "hold_for_labs") / max(len(recs), 1), 3),
+        blind_escalate=round(sum(1 for r in recs if r["n_asks"] == 0 and r["decision"] == ESC) / max(len(recs), 1), 3),
+        blind_hold=round(sum(1 for r in recs if r["n_asks"] == 0 and r["decision"] == HOLD) / max(len(recs), 1), 3),
     )
 
 
@@ -66,7 +68,7 @@ def benign_overesc(recs):
     b = _sub(recs, "none")
     if not b:
         return float("nan")
-    return round(sum(1 for r in b if r["decision"] in ("escalate", "hold_for_labs")) / len(b), 3)
+    return round(sum(1 for r in b if r["decision"] in (ESC, HOLD)) / len(b), 3)
 
 
 def load_run(spec, cond):
@@ -124,9 +126,18 @@ def main():
     ap.add_argument("--run", action="append", required=True, help="tag=path/to/probe.json (repeatable)")
     ap.add_argument("--cond", default="hidden")
     ap.add_argument("--k", type=int, default=12)
+    ap.add_argument("--env", default="tasks.rx_triage.env", help="task env (for analytic baselines + action names)")
     args = ap.parse_args()
 
-    print("ANALYTIC BASELINES (rx_triage widened, hidden, cost 0.03):")
+    global ANALYTIC, HOLD, ESC
+    import importlib
+    env = importlib.import_module(args.env)
+    HOLD = getattr(env, "ACT_HOLD", "hold_for_labs"); ESC = getattr(env, "ACT_ESCALATE", "escalate")
+    from framework.gates import bc_gap
+    R, _, _, _, _ = bc_gap.run(env, env.ASK_COST)
+    ANALYTIC = {"oracle": R["oracle"]["all"], "best_fixed": R["best_fixed"]["all"], "ask_all": R["ask_all"]["all"],
+                "no_ask": R["no_ask"]["all"], "1ask": R["1ask"]["all"], "blind_escalate": R["blind_escalate"]["all"]}
+    print(f"ANALYTIC BASELINES ({args.env}, hidden, cost {env.ASK_COST}):")
     print("  " + "  ".join(f"{k}={v:+.3f}" for k, v in ANALYTIC.items()))
 
     runs = {}
