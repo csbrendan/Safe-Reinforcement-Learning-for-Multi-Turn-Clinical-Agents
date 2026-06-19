@@ -282,8 +282,35 @@ def plot8():
           "gathers at every temp (greedy 2.23). So eval temperature is neither the cause nor the fix.")
 
 
+# ============================================================ 9. Diagnostics (Task 2) base vs SFT
+def plot9():
+    DX = {"dx base": dict(reward=0.261, support=0.667, asks=2.58, one_ask=0.64, no_commit=0.185, hi_reward=0.193),
+          "dx SFT-v3": dict(reward=0.123, support=0.417, asks=8.03, one_ask=0.108, no_commit=0.707, hi_reward=-0.062)}
+    DX_ORACLE, DX_BESTFIXED, DX_ORACLE_ASKS = 0.842, 0.724, 2.9
+    names = list(DX); cols = {"dx base": "#7f7f7f", "dx SFT-v3": "#bcbd22"}
+    specs = [("reward", "mean reward", (0, 0.9), [DX_BESTFIXED, DX_ORACLE]),
+             ("support", "support@12", (0, 1.05), None),
+             ("asks", "mean asks", (0, 9), [DX_ORACLE_ASKS, 6.5]),
+             ("no_commit", "no-commit rate", (0, 0.8), [0.05]),
+             ("one_ask", "1-ask rate", (0, 1.05), [0.6]),
+             ("hi_reward", "high-risk reward", (-0.2, 0.4), [0.0])]
+    fig, axes = plt.subplots(2, 3, figsize=(11, 6))
+    for ax, (key, title, ylim, refs) in zip(axes.flatten(), specs):
+        ax.bar(names, [DX[m][key] for m in names], color=[cols[m] for m in names], edgecolor="black", linewidth=0.4)
+        ax.axhline(0, c="black", lw=0.6)
+        for r in (refs or []):
+            ax.axhline(r, ls="--", c="purple", lw=1, alpha=0.6)
+        ax.set_title(title, fontsize=10); ax.set_ylim(*ylim); ax.tick_params(axis="x", labelsize=8)
+    fig.suptitle("Task 2 (diagnostics): base vs v3-curriculum SFT — SFT OVER-gathers (8 asks) + fails to commit (71%), support drops below base", fontsize=10.5)
+    _save(fig, "09_diagnostics_base_vs_sft.png",
+          "Replication, opposite direction: the same curriculum that under-gathered on rx_triage makes the "
+          "diagnostics SFT OVER-order tests (mean 8.0) and fail to commit (no-commit 0.71), so support FALLS below "
+          "the base (0.67->0.42) and high-risk reward regresses (+0.19->-0.06). Gates pass; clean adaptive gathering "
+          "is again not instilled by SFT. Purple dashes = oracle/best-fixed/oracle-asks/guards.")
+
+
 if __name__ == "__main__":
-    plot1(); plot2(); plot3(); plot4(); plot5(); plot6(); plot7(); plot8()
+    plot1(); plot2(); plot3(); plot4(); plot5(); plot6(); plot7(); plot8(); plot9()
     print("Saved learning-dashboard figures:")
     for p in saved:
         print("  " + p)

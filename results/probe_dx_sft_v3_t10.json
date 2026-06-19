@@ -1,0 +1,82 @@
+{
+  "tag": "dx_sft_v3",
+  "env": "tasks.diagnostics.env",
+  "model": "checkpoints/medgemma4b_text",
+  "adapter": "checkpoints/dx_sft_v3/final",
+  "max_turns": 10,
+  "hidden": {
+    "support_at_k": 0.4167,
+    "mean_reward": 0.1232,
+    "reward_std_overall": 0.3289,
+    "parse_validity": 0.9988,
+    "mean_asks": 8.025,
+    "ask_hist": {
+      "0": 0.0,
+      "1": 0.108,
+      "2": 0.039,
+      "3+": 0.853
+    },
+    "oracle_grade_ask_hist": {
+      "0": 0.0,
+      "1": 0.519,
+      "2": 0.215,
+      "3+": 0.266
+    },
+    "oracle_grade_blind_rate": 0.0,
+    "zero_ask_commit_rate": 0.0,
+    "ask_dist": {
+      "troponin_high": 392,
+      "ecg_ischemia": 364,
+      "hypotension": 364,
+      "dyspnea_severe": 372,
+      "radiation_arm": 364,
+      "pleuritic_pain": 341,
+      "prior_cad": 327,
+      "abd_rigidity": 2465,
+      "lactate_high": 286,
+      "guarding": 51,
+      "rebound_tender": 294,
+      "fever_high": 86,
+      "wbc_high": 65,
+      "ct_free_air": 7
+    },
+    "commit_dist": {
+      "symptomatic_tx": 131,
+      "discharge": 50,
+      "admit": 16,
+      "emergent_tx": 14
+    },
+    "n_cases": 60,
+    "k": 12
+  },
+  "anchor": {
+    "support_at_k": 0.9833,
+    "mean_reward": 0.435,
+    "reward_std_overall": 0.5437,
+    "parse_validity": 1.0,
+    "mean_asks": 0.0,
+    "ask_hist": {
+      "0": 1.0,
+      "1": 0.0,
+      "2": 0.0,
+      "3+": 0.0
+    },
+    "oracle_grade_ask_hist": {
+      "0": 1.0,
+      "1": 0.0,
+      "2": 0.0,
+      "3+": 0.0
+    },
+    "oracle_grade_blind_rate": 1.0,
+    "zero_ask_commit_rate": 1.0,
+    "ask_dist": {},
+    "commit_dist": {
+      "symptomatic_tx": 449,
+      "discharge": 223,
+      "emergent_tx": 34,
+      "admit": 14
+    },
+    "n_cases": 60,
+    "k": 12
+  }
+}

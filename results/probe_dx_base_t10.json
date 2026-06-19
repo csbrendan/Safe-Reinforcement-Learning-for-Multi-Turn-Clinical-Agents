@@ -1,0 +1,103 @@
+{
+  "tag": "dx_base",
+  "env": "tasks.diagnostics.env",
+  "model": "checkpoints/medgemma4b_text",
+  "adapter": null,
+  "max_turns": 10,
+  "hidden": {
+    "support_at_k": 0.6667,
+    "mean_reward": 0.2606,
+    "reward_std_overall": 0.4175,
+    "parse_validity": 0.9537,
+    "mean_asks": 2.581,
+    "ask_hist": {
+      "0": 0.0,
+      "1": 0.64,
+      "2": 0.101,
+      "3+": 0.258
+    },
+    "oracle_grade_ask_hist": {
+      "0": 0.0,
+      "1": 0.828,
+      "2": 0.101,
+      "3+": 0.071
+    },
+    "oracle_grade_blind_rate": 0.0,
+    "zero_ask_commit_rate": 0.0,
+    "ask_dist": {
+      "troponin_high": 368,
+      "ecg_ischemia": 179,
+      "hypotension": 48,
+      "dyspnea_severe": 118,
+      "radiation_arm": 103,
+      "abd_rigidity": 463,
+      "rebound_tender": 158,
+      "guarding": 77,
+      "ct_free_air": 43,
+      "prior_cad": 79,
+      "lactate_high": 70,
+      "fever_high": 53,
+      "pleuritic_pain": 25,
+      "wbc_high": 74
+    },
+    "commit_dist": {
+      "admit": 230,
+      "discharge": 184,
+      "emergent_tx": 16,
+      "observe": 56,
+      "discharge|symptomatic_tx": 23,
+      "discharge|symptomatic_tx|observe|admit|emergent_tx": 28,
+      "symptomatic_tx": 45,
+      "symptomatic_tx|discharge": 1,
+      "admit|emergent_tx": 4
+    },
+    "n_cases": 60,
+    "k": 12
+  },
+  "anchor": {
+    "support_at_k": 0.3,
+    "mean_reward": 0.5258,
+    "reward_std_overall": 0.3428,
+    "parse_validity": 0.9677,
+    "mean_asks": 0.983,
+    "ask_hist": {
+      "0": 0.679,
+      "1": 0.182,
+      "2": 0.043,
+      "3+": 0.096
+    },
+    "oracle_grade_ask_hist": {
+      "0": 0.859,
+      "1": 0.141,
+      "2": 0.0,
+      "3+": 0.0
+    },
+    "oracle_grade_blind_rate": 0.859,
+    "zero_ask_commit_rate": 0.65,
+    "ask_dist": {
+      "troponin_high": 75,
+      "ecg_ischemia": 83,
+      "hypotension": 16,
+      "dyspnea_severe": 32,
+      "radiation_arm": 79,
+      "abd_rigidity": 134,
+      "prior_cad": 14,
+      "rebound_tender": 39,
+      "lactate_high": 79,
+      "fever_high": 59,
+      "ct_free_air": 28,
+      "pleuritic_pain": 8,
+      "wbc_high": 54,
+      "guarding": 8
+    },
+    "commit_dist": {
+      "emergent_tx": 209,
+      "admit": 340,
+      "symptomatic_tx": 53,
+      "discharge": 29,
+      "observe": 9
+    },
+    "n_cases": 60,
+    "k": 12
+  }
+}
