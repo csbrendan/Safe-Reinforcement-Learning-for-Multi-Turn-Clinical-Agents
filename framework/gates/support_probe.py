@@ -20,14 +20,15 @@ MAX_TURNS = 10  # dialogue-horizon cap; override via --max-turns. Modest headroo
                 # checklist (<=6 asks) can still commit, without making ask-all (priced out by ask-cost) free.
 
 
-def run_condition(llm, tok, lreq, env, cases, k, SamplingParams):
+def run_condition(llm, tok, lreq, env, cases, k, SamplingParams, temp=1.0):
     st = []
     for c in cases:
         for _ in range(k):
             st.append({"case": c, "msgs": [{"role": "system", "content": env.SYS},
                                             {"role": "user", "content": env.user_msg(c)}],
                        "asks": [], "decision": None, "done": False, "turns": 0, "valid": 0})
-    sp = SamplingParams(temperature=1.0, top_p=0.95, max_tokens=200, n=1)
+    sp = (SamplingParams(temperature=0.0, max_tokens=200, n=1) if temp == 0.0
+          else SamplingParams(temperature=temp, top_p=0.95, max_tokens=200, n=1))
     for _t in range(MAX_TURNS):
         active = [i for i, s in enumerate(st) if not s["done"]]
         if not active:
