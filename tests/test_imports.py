@@ -41,10 +41,26 @@ def test_rx_triage_gate1_sanity():
 
 
 def test_scaffold_envs_conform_names():
-    """Diagnostics / longterm_care are stubs but must still expose the interface names (raising NotImplementedError)."""
-    from framework.envs import base
+    """longterm_care is still a stub but must import; diagnostics is now a full env (checked separately)."""
     for name in ("tasks.diagnostics.env", "tasks.longterm_care.env"):
         importlib.import_module(name)  # import must not raise
+
+
+def test_diagnostics_env_conformance():
+    from framework.envs import base
+    env = importlib.import_module("tasks.diagnostics.env")
+    missing = base.check_env(env)
+    assert not missing, f"diagnostics env missing interface members: {missing}"
+
+
+def test_diagnostics_gate1_sanity():
+    """Task 2 (diagnostics) must clear Gate 1 with rx_triage-like geometry: oracle highest, BC-gap >= ~0.10."""
+    from framework.gates import bc_gap
+    env = importlib.import_module("tasks.diagnostics.env")
+    R, gap, per_fam, BEST, checks = bc_gap.run(env, env.ASK_COST)
+    assert R["oracle"]["all"] >= max(R[p]["all"] for p in R if p != "oracle") - 1e-9, "oracle not highest"
+    assert checks["best_fixed below oracle by >= ~0.10"], f"BC-gap below bar: {gap:+.3f}"
+    assert all(checks.values()), f"Gate-1 checks failing: {[k for k, v in checks.items() if not v]}"
 
 
 if __name__ == "__main__":
@@ -53,4 +69,6 @@ if __name__ == "__main__":
     test_rx_triage_env_conformance()
     test_rx_triage_gate1_sanity()
     test_scaffold_envs_conform_names()
+    test_diagnostics_env_conformance()
+    test_diagnostics_gate1_sanity()
     print("all smoke tests passed")

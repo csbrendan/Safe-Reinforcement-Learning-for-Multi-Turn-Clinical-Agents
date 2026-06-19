@@ -17,7 +17,7 @@ y = RL − SFT held-out value, only where latent support was confirmed.
 | task | model | reward | BC-gap (deep) | latent support@k | RL − SFT (held-out) | verdict |
 |---|---|---|---|---|---|---|
 | rx_triage | medgemma-4b (text) | v3 0.318 / GRPO2 0.431 | +0.105 | base 0.58 / v3 0.97 / GRPO2 0.97 | GRPO2: asks 2.78→1.31, hi-rew 0.195→0.032 | **GRPO#1 & #2 EXPLOIT (1-ask collapse); SFT can't stably gather. Gates necessary, NOT sufficient under this reward** |
-| diagnostics | — | — | — | — | — | (pending) |
+| diagnostics | medgemma-4b (text) | — | **+0.117** | — | — | **Gate 1 PASS** (emergent ~12%); Gate 2/SFT/GRPO pending |
 | longterm_care | — | — | — | — | — | (pending) |
 
 ## Per-task detail (template)

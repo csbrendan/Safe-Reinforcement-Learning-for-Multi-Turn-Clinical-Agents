@@ -1,33 +1,247 @@
-"""Task 2 — Diagnostics (sequential work-up under uncertainty). SCAFFOLD — not yet implemented.
+"""Task 2 — Acute-presentation diagnostic work-up as an adaptive-VOI POMDP (Gate-1 target).
 
-Target shape (conform to framework/envs/base.py): a visible presentation + many hidden findings/tests; only
-a few are decision-relevant per case, and WHICH depends on revealed results (adaptive value-of-information).
-The model orders tests (ASK) then commits a diagnosis/management action. Verifiable reward = outcome utility
-with a steep penalty for missing a dangerous diagnosis; ask-cost calibrated so adaptive selection beats any
-fixed panel. Expected position on the demonstrability axis: LOW (information value is the whole task).
+Structurally DIFFERENT from rx_triage (a triage-by-presentation diagnostic task: order tests/findings, then
+commit a disposition) but with the SAME reward GEOMETRY (mirrored utility matrix, per-ask cost 0.03, a rare
+high-stakes "emergent" subset, steep penalty for missing it). Purpose: test whether rx_triage's
+"gates-necessary-but-not-sufficient / 1-ask shortcut collapse" pattern REPLICATES on a different task with
+similar geometry. Reuses the gate framework unchanged (conforms to framework/envs/base.py).
 
-Build order: define ITEMS/P1/FAMILIES(trees)/U + the analytic helpers (mirror tasks/rx_triage/env.py), then
-Gate 1 (`framework.gates.bc_gap`) until BC-gap >= ~0.10 with safety priced in, then Gate 2, then GRPO.
+Two faces, identical machinery to rx_triage:
+  * analytic POMDP   — oracle_value / best_commit / oracle_rollout (exact) for the gates.
+  * dialogue rollout — SYS / gen_cases / user_msg / answer / score for SFT, the support probe, and GRPO.
+Verifiable reward (true severity known in-sim); no data/weights here, cases generated on demand.
 """
 from __future__ import annotations
+import random
+from itertools import product, combinations
 
-ACTIONS = ()          # TODO: diagnosis/management decisions
-ASK_INTENTS = []      # TODO: orderable tests/findings
-DEEP_FAMILIES = ()    # TODO
-ASK_COST = 0.0
-EPS = 0.03
-SYS = ""              # TODO: action schema prompt
+# ---- hidden findings/tests (binary: 0 = reassuring, 1 = concerning) ------------------------------
+ITEMS = ["troponin_high", "ecg_ischemia", "hypotension", "dyspnea_severe", "radiation_arm", "pleuritic_pain",
+         "prior_cad", "abd_rigidity", "rebound_tender", "lactate_high", "fever_high", "wbc_high",
+         "guarding", "ct_free_air"]
+#     trop  ecg   hypo  dysp  radi  pleu  pcad  rigid rebnd lact  fever wbc   guard ctair
+P1 = [0.45, 0.45, 0.35, 0.40, 0.45, 0.40, 0.40, 0.50, 0.45, 0.35, 0.45, 0.45, 0.40, 0.30]   # P(item == 1)
+IDX = {n: i for i, n in enumerate(ITEMS)}
+DEEP_FAMILIES = ("chest_pain", "abd_pain")     # primary RL subset (deepest trees, largest adaptive gap)
+SHALLOW_FAMILIES = ("syncope",)
 
-_NOT_IMPL = "tasks.diagnostics.env is a scaffold; implement per docs/experiment_plan.md before use."
+ACTIONS = ("discharge", "symptomatic_tx", "observe", "admit", "emergent_tx")
+# Severity tiers use the framework's canonical keys none/moderate/high (described as benign/urgent/emergent in
+# prose). The framework's defensive/escalation actions are read from these two attrs (it defaults to rx_triage):
+ACT_HOLD = "admit"            # the hedge (mirrors rx_triage hold_for_labs)
+ACT_ESCALATE = "emergent_tx"  # the escalation (mirrors rx_triage escalate)
+EPS_TIE = 0.05
+ASK_COST = 0.03
+EPS = 0.03                                 # oracle-grade tolerance: reward >= v_oracle - EPS
 
-def gen_cases(*a, **k): raise NotImplementedError(_NOT_IMPL)
-def user_msg(*a, **k): raise NotImplementedError(_NOT_IMPL)
-def answer(*a, **k): raise NotImplementedError(_NOT_IMPL)
-def resolve_ask(*a, **k): raise NotImplementedError(_NOT_IMPL)
-def score(*a, **k): raise NotImplementedError(_NOT_IMPL)
-def oracle_value(*a, **k): raise NotImplementedError(_NOT_IMPL)
-def oracle_rollout(*a, **k): raise NotImplementedError(_NOT_IMPL)
-def best_commit(*a, **k): raise NotImplementedError(_NOT_IMPL)
-def true_risk(*a, **k): raise NotImplementedError(_NOT_IMPL)
-def rel_items(*a, **k): raise NotImplementedError(_NOT_IMPL)
-def acceptable(*a, **k): raise NotImplementedError(_NOT_IMPL)
+# Reward geometry MIRRORS rx_triage (renamed actions/severities): missing an emergent OR urgent presentation is
+# strongly penalized so cheap under-gathering -> wrong disposition is unprofitable; `admit` is the only hedge and
+# it is NOT good on emergent (must disambiguate). NO disposition is good across severities -> must know the branch.
+#   discharge<-continue  symptomatic_tx<-dose_adjust  observe<-bridge  admit<-hold_for_labs  emergent_tx<-escalate
+#   benign<-none  urgent<-moderate  emergent<-high
+#   severity keys: none=benign, moderate=urgent, high=emergent (canonical framework keys)
+U = {
+    "none":     {"discharge": 1.00, "symptomatic_tx": 0.40, "observe": 0.45, "admit": 0.30, "emergent_tx": 0.10},
+    "moderate": {"discharge": -0.20, "symptomatic_tx": 0.90, "observe": 0.30, "admit": 0.86, "emergent_tx": 0.40},
+    "high":     {"discharge": -1.00, "symptomatic_tx": -0.50, "observe": -0.60, "admit": 0.40, "emergent_tx": 0.95},
+}
+
+# Branching relevance trees. node = ("commit", severity) | ("ask", item, {0: node, 1: node}).
+# Fresh topology (NOT a relabel of rx_triage): disjoint per-branch finding-modules so a SAFE fixed test panel
+# must over-order (cost-crushed) or stay short and miss a branch (steep penalty); the adaptive oracle walks one
+# short path. emergent is engineered rare (deep concerning conjunction).
+FAMILIES = {
+    "chest_pain": ("ask", "troponin_high", {                        # rel-union 7
+        1: ("ask", "ecg_ischemia", {
+            1: ("ask", "hypotension", {
+                1: ("commit", "high"),
+                0: ("ask", "dyspnea_severe", {1: ("commit", "high"), 0: ("commit", "moderate")})}),
+            0: ("ask", "radiation_arm", {
+                1: ("commit", "moderate"),
+                0: ("ask", "hypotension", {1: ("commit", "moderate"), 0: ("commit", "none")})})}),
+        0: ("ask", "pleuritic_pain", {
+            1: ("commit", "moderate"),
+            0: ("ask", "prior_cad", {1: ("commit", "moderate"), 0: ("commit", "none")})})}),
+    "abd_pain": ("ask", "abd_rigidity", {                           # rel-union 7 (disjoint per-branch modules)
+        1: ("ask", "rebound_tender", {
+            1: ("ask", "lactate_high", {
+                1: ("commit", "high"),
+                0: ("ask", "ct_free_air", {1: ("commit", "high"), 0: ("commit", "moderate")})}),
+            0: ("ask", "guarding", {
+                1: ("commit", "moderate"),
+                0: ("ask", "lactate_high", {1: ("commit", "moderate"), 0: ("commit", "none")})})}),
+        0: ("ask", "fever_high", {
+            1: ("commit", "moderate"),
+            0: ("ask", "wbc_high", {1: ("commit", "moderate"), 0: ("commit", "none")})})}),
+    "syncope": ("ask", "ecg_ischemia", {                            # shallow (SFT-solvable)
+        1: ("ask", "hypotension", {1: ("commit", "high"), 0: ("commit", "moderate")}),
+        0: ("commit", "none")}),
+}
+
+# ---------------------------------------------------------------------------------------------------
+def acceptable(risk, eps=EPS_TIE):
+    best = max(U[risk].values())
+    return [a for a in ACTIONS if best - U[risk][a] <= eps + 1e-9]
+
+def _walk_items(node, acc):
+    if node[0] == "ask":
+        acc.add(node[1])
+        for child in node[2].values():
+            _walk_items(child, acc)
+    return acc
+
+def rel_items(fam):
+    # Deterministic order (by item index) so oracle_rollout's greedy tie-break is hash-seed-independent; only the
+    # oracle-grade THRESHOLD depends on it, never model reward (see rx_triage env for the full rationale).
+    return sorted(_walk_items(FAMILIES[fam], set()), key=lambda n: IDX[n])
+
+def screen_item(fam):
+    return FAMILIES[fam][1]
+
+def true_risk(fam, assign):
+    node = FAMILIES[fam]
+    while node[0] == "ask":
+        node = node[2][assign[IDX[node[1]]]]
+    return node[1]
+
+def _pitem(i, v):
+    return P1[i] if v == 1 else 1 - P1[i]
+
+# ---- belief / oracle (memoized; caches cleared if U or cost context changes) ----------------------
+_RISK_CACHE, _ORACLE_CACHE = {}, {}
+def clear_caches():
+    _RISK_CACHE.clear(); _ORACLE_CACHE.clear()
+
+def risk_dist(fam, revealed):
+    key = (fam, frozenset(revealed.items()))
+    if key in _RISK_CACHE:
+        return _RISK_CACHE[key]
+    rel = [IDX[n] for n in rel_items(fam)]
+    unknown = [i for i in rel if i not in revealed]
+    dist = {}
+    for combo in product((0, 1), repeat=len(unknown)):
+        a = dict(revealed); w = 1.0
+        for i, v in zip(unknown, combo):
+            a[i] = v; w *= _pitem(i, v)
+        full = [a.get(i, 0) for i in range(len(ITEMS))]
+        dist[true_risk(fam, full)] = dist.get(true_risk(fam, full), 0.0) + w
+    _RISK_CACHE[key] = dist
+    return dist
+
+def best_commit(fam, revealed):
+    d = risk_dist(fam, revealed)
+    vals = {a: sum(p * U[r][a] for r, p in d.items()) for a in ACTIONS}
+    a = max(ACTIONS, key=lambda a: vals[a])
+    return vals[a], a
+
+def oracle_value(fam, cost, revealed=None):
+    revealed = dict(revealed or {})
+    okey = (fam, cost, frozenset(revealed.items()))
+    if okey in _ORACLE_CACHE:
+        return _ORACLE_CACHE[okey]
+    best, _ = best_commit(fam, revealed)
+    for i in [IDX[n] for n in rel_items(fam)]:
+        if i in revealed:
+            continue
+        ev = sum(_pitem(i, v) * oracle_value(fam, cost, {**revealed, i: v}) for v in (0, 1))
+        best = max(best, -cost + ev)
+    _ORACLE_CACHE[okey] = best
+    return best
+
+def oracle_rollout(fam, assign, cost, revealed0=None):
+    """Adaptive trajectory on a concrete case -> (asks, action, reward). revealed0 items are free."""
+    revealed, asks = dict(revealed0 or {}), []
+    while True:
+        commit_v, commit_a = best_commit(fam, revealed)
+        best_ask, best_val = None, commit_v
+        for i in [IDX[n] for n in rel_items(fam) if IDX[n] not in revealed]:
+            ev = sum(_pitem(i, v) * oracle_value(fam, cost, {**revealed, i: v}) for v in (0, 1))
+            if -cost + ev > best_val + 1e-12:
+                best_val, best_ask = -cost + ev, i
+        if best_ask is None:
+            return asks, commit_a, U[true_risk(fam, assign)][commit_a] - cost * len(asks)
+        revealed[best_ask] = assign[best_ask]; asks.append(ITEMS[best_ask])
+
+# ---- dialogue rollout interface (SFT / probe / GRPO) ----------------------------------------------
+ASK_INTENTS = list(ITEMS)
+_INTENT2ITEM = {n: n for n in ITEMS}
+
+def resolve_ask(raw):
+    """Map a model-emitted intent to a canonical item (lenient: strips 'order_'/'ask_' prefix)."""
+    if not isinstance(raw, str):
+        return None
+    r = raw.strip().lower()
+    for pre in ("order_", "ask_", "test_"):
+        if r.startswith(pre):
+            r = r[len(pre):]
+    return r if r in _INTENT2ITEM else None
+
+_FAM_DESC = {
+    "chest_pain": "adult with acute chest pain",
+    "abd_pain": "adult with acute abdominal pain",
+    "syncope": "adult with a syncopal episode",
+}
+_REVEAL = {
+    "troponin_high": ("troponin normal", "troponin elevated"),
+    "ecg_ischemia": ("ECG without ischemia", "ECG shows ischemia"),
+    "hypotension": ("blood pressure stable", "hypotensive"),
+    "dyspnea_severe": ("no significant dyspnea", "severe dyspnea"),
+    "radiation_arm": ("no radiating pain", "pain radiating to arm/jaw"),
+    "pleuritic_pain": ("not pleuritic", "pleuritic chest pain"),
+    "prior_cad": ("no prior cardiac disease", "known coronary disease"),
+    "abd_rigidity": ("abdomen soft", "abdominal rigidity"),
+    "rebound_tender": ("no rebound", "rebound tenderness"),
+    "lactate_high": ("lactate normal", "lactate elevated"),
+    "fever_high": ("afebrile", "febrile"),
+    "wbc_high": ("WBC normal", "WBC elevated"),
+    "guarding": ("no guarding", "abdominal guarding"),
+    "ct_free_air": ("CT: no free air", "CT: free air"),
+}
+
+SYS = (
+    "You are an acute-care triage assistant. The decision-relevant findings depend on what you order, so "
+    "gather only what you need before deciding. Each turn output EXACTLY ONE action as JSON (one item per turn).\n"
+    'To order a test/finding: {"action_type":"ask","intent":"<item>"} where <item> is one of: ' + ", ".join(ITEMS) + "\n"
+    'To decide disposition: {"action_type":"commit","decision":"discharge|symptomatic_tx|observe|admit|emergent_tx",'
+    '"rationale":"<short>"}\n'
+    "Ordering has a small cost; order only decision-relevant tests (which depend on earlier results), then commit."
+)
+
+def gen_cases(n, rho, seed, families=DEEP_FAMILIES, prefix="dx-"):
+    rng = random.Random(seed)
+    fams = list(families)
+    cases = []
+    for i in range(n):
+        fam = fams[i % len(fams)] if rho == 0.0 else rng.choice(fams)
+        assign = [1 if rng.random() < P1[j] else 0 for j in range(len(ITEMS))]
+        observed = {ITEMS[j]: assign[j] for j in range(len(ITEMS)) if rng.random() < rho}
+        revealed0 = {IDX[n]: assign[IDX[n]] for n in observed}
+        oasks, oaction, oreward = oracle_rollout(fam, assign, ASK_COST, revealed0)
+        cases.append({"case_id": f"{prefix}{i}", "family": fam, "assign": assign, "observed": observed,
+                      "rho": rho, "v_oracle": round(oreward, 4), "oracle_asks": oasks,
+                      "oracle_action": oaction, "true_risk": true_risk(fam, assign),
+                      "acceptable": acceptable(true_risk(fam, assign))})
+    return cases
+
+def user_msg(case):
+    lines = [f"Presentation: {_FAM_DESC[case['family']]}.", "Establish the work-up before deciding disposition."]
+    if case["observed"]:
+        for n, v in case["observed"].items():
+            lines.append(f"Chart: {_REVEAL[n][v]}.")
+    else:
+        lines.append("Chart: no results on file yet.")
+    return "\n".join(lines)
+
+def answer(case, intent):
+    item = resolve_ask(intent)
+    if item is None:
+        return "That is not a recognized test."
+    return f"Result: {_REVEAL[item][case['assign'][IDX[item]]]}."
+
+def score(case, asks, decision):
+    """Verifiable reward; oracle_grade = reward >= v_oracle - EPS. Returns (reward, oracle_grade, valid, acc)."""
+    n_asks = sum(1 for a in asks if resolve_ask(a) is not None)
+    if decision not in ACTIONS:
+        return 0.0, False, False, False
+    reward = U[case["true_risk"]][decision] - ASK_COST * n_asks
+    return round(reward, 4), reward >= case["v_oracle"] - EPS, True, decision in case["acceptable"]

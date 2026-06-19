@@ -19,6 +19,9 @@ from itertools import combinations, product
 def run(env, cost, eps=None):
     S = env; EPS = env.EPS if eps is None else eps
     DEEP = list(S.DEEP_FAMILIES)
+    # Defensive/escalation action names — read from env (defaults = rx_triage) so the SAME gate logic applies
+    # to any task without re-tuning. Severity tiers stay the canonical keys "none"/"moderate"/"high".
+    HOLD = getattr(S, "ACT_HOLD", "hold_for_labs"); ESC = getattr(S, "ACT_ESCALATE", "escalate")
 
     def cases(fam):
         rel = [S.IDX[n] for n in S.rel_items(fam)]; out = []
@@ -51,8 +54,8 @@ def run(env, cost, eps=None):
         rel = [S.IDX[n] for n in S.rel_items(fam)]
         if policy == "oracle":
             asks, act, _ = S.oracle_rollout(fam, a, cost); return len(asks), act
-        if policy == "blind_hold":     return 0, "hold_for_labs"
-        if policy == "blind_escalate": return 0, "escalate"
+        if policy == "blind_hold":     return 0, HOLD
+        if policy == "blind_escalate": return 0, ESC
         sub = {"ask_all": rel, "no_ask": [], "best_fixed": list(BEST[fam]), "1ask": list(BEST1[fam])}[policy]
         return len(sub), S.best_commit(fam, {i: a[i] for i in sub})[1]
 
@@ -73,7 +76,7 @@ def run(env, cost, eps=None):
         for fam, a, w in ALLC:
             if S.true_risk(fam, a) != "none": continue
             _, act = behavior(policy, fam, a); den += w
-            if act in ("hold_for_labs", "escalate"): num += w
+            if act in (HOLD, ESC): num += w
         return num / den if den else float("nan")
 
     POL = ["oracle", "best_fixed", "ask_all", "no_ask", "1ask", "blind_hold", "blind_escalate"]
