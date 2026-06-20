@@ -22,7 +22,7 @@ from peft import LoraConfig
 from trl import GRPOConfig, GRPOTrainer
 from framework.parsing import parse_action
 
-MAX_DIALOG_TURNS = 10  # keep in sync with support_probe --max-turns so GRPO and the Gate-2 probe share a horizon
+MAX_DIALOG_TURNS = 10  # default; override with --max-turns to match the Gate-2 probe horizon for the task
 CASES: dict = {}
 _CID = re.compile(r"\[case ([\w\-]+)\]")
 
@@ -90,6 +90,7 @@ def reward_echo(completions, traj_reward=None, **kw):
 
 
 def main():
+    global MAX_DIALOG_TURNS
     ap = argparse.ArgumentParser()
     ap.add_argument("--env", default="tasks.rx_triage.env")
     ap.add_argument("--base", required=True)
@@ -102,8 +103,10 @@ def main():
     ap.add_argument("--beta", type=float, default=0.0)
     ap.add_argument("--rollout-temp", type=float, default=1.25)
     ap.add_argument("--save-steps", type=int, default=40)
+    ap.add_argument("--max-turns", type=int, default=MAX_DIALOG_TURNS, help="dialogue horizon (match the probe)")
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
+    MAX_DIALOG_TURNS = args.max_turns
     env = importlib.import_module(args.env)
     torch.manual_seed(args.seed); torch.cuda.manual_seed_all(args.seed)
     t0 = time.time()
