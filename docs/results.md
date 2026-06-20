@@ -8,7 +8,12 @@ repo; see [lessons_learned.md](lessons_learned.md) for conceptual carry-over.
 > support 0.58) both PASS, but neither SFT (v2–v5) nor two bounded GRPO runs realize adaptive gathering — both
 > collapse to a 1-ask shortcut under the ask-cost. **Gates are necessary but not sufficient**; reward geometry
 > (concentrated vs diffuse gathering benefit) is the third factor. Visual dashboard:
-> [learning_dashboard.md](learning_dashboard.md). Next: replicate the pattern on Task 2 (diagnostics).
+> [learning_dashboard.md](learning_dashboard.md).
+>
+> **REPLICATED on Task 2 (diagnostics):** Gate 1 (+0.117) + Gate 2 (0.667) pass, yet guarded GRPO is again
+> **EXPLOIT** — raises reward via termination + ask-trimming + a defensive `admit`-hedge that collapses high-risk
+> support 0.40→0.00. Two-task result: **BC-gap + latent support necessary but not sufficient**; reward geometry is
+> the third factor. Full report: [diagnostics_grpo.md](eval_runs/diagnostics_grpo.md).
 
 ## Headline (to be filled): RL gain vs demonstrability
 Plot: `results/figs/rl_gain_vs_bcgap.png` — one point per (task, reward/scale setting): x = BC-gap,
@@ -17,7 +22,7 @@ y = RL − SFT held-out value, only where latent support was confirmed.
 | task | model | reward | BC-gap (deep) | latent support@k | RL − SFT (held-out) | verdict |
 |---|---|---|---|---|---|---|
 | rx_triage | medgemma-4b (text) | v3 0.318 / GRPO2 0.431 | +0.105 | base 0.58 / v3 0.97 / GRPO2 0.97 | GRPO2: asks 2.78→1.31, hi-rew 0.195→0.032 | **GRPO#1 & #2 EXPLOIT (1-ask collapse); SFT can't stably gather. Gates necessary, NOT sufficient under this reward** |
-| diagnostics | medgemma-4b (text) | base 0.261 / SFT-v3 0.123 | +0.117 | base 0.667 / SFT-v3 0.417 | (GRPO pending) | Gate 1+2 PASS; **SFT-v3 OVER-gathers (8 asks) + 71% no-commit, support<base** — degeneracy replicates (opposite direction) |
+| diagnostics | medgemma-4b (text) | base 0.261 / GRPO 0.426 | +0.117 | base 0.667 / GRPO 0.73 | GRPO: asks 2.58→1.62, hi-supp 0.40→0.00 | **GRPO EXPLOIT (defensive admit-hedge; high-risk support→0). Necessary-but-not-sufficient REPLICATES** |
 | longterm_care | — | — | — | — | — | (pending) |
 
 ## Per-task detail (template)

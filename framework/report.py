@@ -61,6 +61,9 @@ def main():
     # policy did NOT collapse to a 1-ask shortcut, and that high-risk *reward/action quality* did not regress.
     ASK_COLLAPSE = ro["one_ask"] >= 0.85 or ro["asks"] <= 1.3
     HR_REWARD_REG = bool(sh and rh and rh["value"] < sh["value"] - 0.05)
+    # A defensive hedge can RAISE high-risk reward (commit the safe hedge) while DESTROYING high-risk oracle-grade
+    # support (never gathers enough to identify/treat the true emergency). Guard high-risk SUPPORT collapse too.
+    HR_SUPP_COLLAPSE = bool(sh and rh and sh["support"] - rh["support"] > 0.15)
     reward_up, support_up = d_rew > 0.02, d_supp > 0.03
     termination_fix = d_nocommit < -0.05
     print("\n## 2. VERDICT")
@@ -70,10 +73,12 @@ def main():
           f"(supp_reg={hr_supp_reg}); high-risk reward {sh['value'] if sh else '-'}->{rh['value'] if rh else '-'} "
           f"(reward_reg={HR_REWARD_REG}); {args.label} one_ask={ro['one_ask']} mean_asks={ro['asks']} "
           f"(ask_collapse={ASK_COLLAPSE})")
-    if ASK_COLLAPSE or HR_REWARD_REG:
+    if ASK_COLLAPSE or HR_REWARD_REG or HR_SUPP_COLLAPSE:
         why = []
         if ASK_COLLAPSE: why.append(f"asks collapsed to a 1-ask shortcut (one_ask={ro['one_ask']}, mean={ro['asks']})")
         if HR_REWARD_REG: why.append(f"high-risk reward regressed ({sh['value']}->{rh['value']})")
+        if HR_SUPP_COLLAPSE: why.append(f"high-risk oracle-grade support collapsed ({sh['support']}->{rh['support']}) "
+                                       "— a defensive hedge raised high-risk reward while losing the ability to treat true emergencies")
         v = ("EXPLOIT / shortcut under-gathering: " + "; ".join(why) + ". A rise in support@k here is a "
              "k-fold sampling artifact over a degenerate policy, NOT adaptive gathering -> do NOT credit as "
              "thesis-positive; revisit the SFT baseline / reward (ask-cost vs wrong-high-risk penalty).")

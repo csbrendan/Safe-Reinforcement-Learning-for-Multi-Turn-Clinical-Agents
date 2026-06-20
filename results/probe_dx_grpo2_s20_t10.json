@@ -1,0 +1,57 @@
+{
+  "tag": "dx_grpo2_s20",
+  "env": "tasks.diagnostics.env",
+  "model": "checkpoints/medgemma4b_text",
+  "adapter": "checkpoints/dx_grpo_base/checkpoint-20",
+  "max_turns": 10,
+  "hidden": {
+    "support_at_k": 0.6833,
+    "mean_reward": 0.3744,
+    "reward_std_overall": 0.448,
+    "parse_validity": 0.9671,
+    "mean_asks": 1.461,
+    "ask_hist": {
+      "0": 0.0,
+      "1": 0.825,
+      "2": 0.089,
+      "3+": 0.086
+    },
+    "oracle_grade_ask_hist": {
+      "0": 0.0,
+      "1": 0.909,
+      "2": 0.076,
+      "3+": 0.015
+    },
+    "oracle_grade_blind_rate": 0.0,
+    "zero_ask_commit_rate": 0.0,
+    "ask_dist": {
+      "troponin_high": 361,
+      "ecg_ischemia": 109,
+      "abd_rigidity": 380,
+      "rebound_tender": 19,
+      "guarding": 11,
+      "lactate_high": 10,
+      "hypotension": 22,
+      "dyspnea_severe": 61,
+      "radiation_arm": 30,
+      "wbc_high": 15,
+      "prior_cad": 12,
+      "ct_free_air": 7,
+      "fever_high": 12,
+      "pleuritic_pain": 3
+    },
+    "commit_dist": {
+      "admit": 324,
+      "discharge": 236,
+      "admit|emergent_tx": 1,
+      "symptomatic_tx": 64,
+      "discharge|symptomatic_tx|observe|admit|emergent_tx": 13,
+      "observe": 24,
+      "emergent_tx": 5,
+      "discharge|symptomatic_tx": 10,
+      "admit|symptomatic_tx|observe|emergent_tx": 1
+    },
+    "n_cases": 60,
+    "k": 12
+  }
+}

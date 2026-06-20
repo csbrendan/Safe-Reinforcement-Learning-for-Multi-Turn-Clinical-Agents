@@ -284,14 +284,15 @@ def plot8():
 
 # ============================================================ 9. Diagnostics (Task 2) base vs SFT
 def plot9():
-    DX = {"dx base": dict(reward=0.261, support=0.667, asks=2.58, one_ask=0.64, no_commit=0.185, hi_reward=0.193),
-          "dx SFT-v3": dict(reward=0.123, support=0.417, asks=8.03, one_ask=0.108, no_commit=0.707, hi_reward=-0.062)}
+    DX = {"dx base": dict(reward=0.261, support=0.667, asks=2.58, one_ask=0.64, no_commit=0.185, hi_reward=0.193, hi_support=0.40),
+          "dx SFT-v3": dict(reward=0.123, support=0.417, asks=8.03, one_ask=0.108, no_commit=0.707, hi_reward=-0.062, hi_support=0.40),
+          "dx GRPO": dict(reward=0.426, support=0.73, asks=1.62, one_ask=0.793, no_commit=0.064, hi_reward=0.338, hi_support=0.00)}
     DX_ORACLE, DX_BESTFIXED, DX_ORACLE_ASKS = 0.842, 0.724, 2.9
-    names = list(DX); cols = {"dx base": "#7f7f7f", "dx SFT-v3": "#bcbd22"}
+    names = list(DX); cols = {"dx base": "#7f7f7f", "dx SFT-v3": "#bcbd22", "dx GRPO": "#17becf"}
     specs = [("reward", "mean reward", (0, 0.9), [DX_BESTFIXED, DX_ORACLE]),
              ("support", "support@12", (0, 1.05), None),
              ("asks", "mean asks", (0, 9), [DX_ORACLE_ASKS, 6.5]),
-             ("no_commit", "no-commit rate", (0, 0.8), [0.05]),
+             ("hi_support", "HIGH-RISK support", (0, 0.55), None),
              ("one_ask", "1-ask rate", (0, 1.05), [0.6]),
              ("hi_reward", "high-risk reward", (-0.2, 0.4), [0.0])]
     fig, axes = plt.subplots(2, 3, figsize=(11, 6))
@@ -301,12 +302,12 @@ def plot9():
         for r in (refs or []):
             ax.axhline(r, ls="--", c="purple", lw=1, alpha=0.6)
         ax.set_title(title, fontsize=10); ax.set_ylim(*ylim); ax.tick_params(axis="x", labelsize=8)
-    fig.suptitle("Task 2 (diagnostics): base vs v3-curriculum SFT — SFT OVER-gathers (8 asks) + fails to commit (71%), support drops below base", fontsize=10.5)
+    fig.suptitle("Task 2 (diagnostics): base / SFT-v3 / GRPO — GRPO raises reward but high-risk SUPPORT collapses 0.40->0.00 (defensive hedge)", fontsize=9.8)
     _save(fig, "09_diagnostics_base_vs_sft.png",
-          "Replication, opposite direction: the same curriculum that under-gathered on rx_triage makes the "
-          "diagnostics SFT OVER-order tests (mean 8.0) and fail to commit (no-commit 0.71), so support FALLS below "
-          "the base (0.67->0.42) and high-risk reward regresses (+0.19->-0.06). Gates pass; clean adaptive gathering "
-          "is again not instilled by SFT. Purple dashes = oracle/best-fixed/oracle-asks/guards.")
+          "Replication of necessary-but-not-sufficient. SFT-v3 OVER-gathers (8 asks) + 71% no-commit (support<base). "
+          "GRPO-from-base raises aggregate AND high-risk reward but by trimming asks toward 1 and blind-hedging "
+          "'admit' on emergents: HIGH-RISK SUPPORT collapses 0.40->0.00 (it stops treating true emergencies). Gates "
+          "pass; bounded RL exploits rather than learning adaptive gathering -- same conclusion as rx_triage.")
 
 
 if __name__ == "__main__":
