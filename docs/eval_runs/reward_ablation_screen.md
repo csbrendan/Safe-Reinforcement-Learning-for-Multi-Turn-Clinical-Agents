@@ -48,3 +48,18 @@ gathering past the hedge, and a 1-ask escalate is wrong on the false-positive sc
 `tasks/diagnostics/env_rv.py` (variant selector) committed for reproducibility. No GRPO run — no variant cleared
 Gate 1, so none qualifies yet. Recommend co-designing the deep-high-risk + capped-hedge variant next (env work
 + Gate-1 tuning), then Gate 2 + one bounded GRPO. Awaiting go on that scope.
+
+## Co-designed variant `deephedge` — Gate 1 PASSES (BC-gap +0.161)
+After the screen, co-designed a structural variant (`DX_VARIANT=deephedge` in `tasks/diagnostics/env_rv.py`):
+- **Emergent = a 4-finding conjunction**, and each confirming finding is **reused across non-emergent branches**
+  so no single finding is diagnostic → a 1-ask "escalate on a positive finding" strategy is wrong (1-ask scores
+  **−0.53** on true emergents ≪ oracle 0.83) → under-gathering is genuinely penalized on the high subset.
+- **Capped hedge:** `admit` stays positive/safe-ish but is capped well below the correct disposition on BOTH
+  moderate (0.86→0.45) and emergent (0.40→0.20) — so blind-hedging is clearly suboptimal and gathering to the
+  right action is rewarded on both subsets, *yet* 1-ask still hedges (Gate 1's under-gather penalty holds).
+- **Disjoint moderate findings** (4 extra items: renal_impair/anticoag_use/copd/…) make a fixed checklist
+  over-order → BC-gap restored.
+
+Gate 1: **PASS** — oracle 0.823 (≈3.9 asks) vs best-fixed 0.645 → **BC-gap +0.161** (chest +0.167, abd +0.155);
+emergent ≈6.9%; all 10 checks pass (incl. high under-gather penalized, no_ask < best_fixed, oracle selective).
+rx_triage + base-diagnostics Gate 1 unaffected; deterministic across PYTHONHASHSEED. Next: Gate 2 base probe.

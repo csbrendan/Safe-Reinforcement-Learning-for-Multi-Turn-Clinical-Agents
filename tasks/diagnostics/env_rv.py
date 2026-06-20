@@ -18,11 +18,14 @@ from itertools import product, combinations
 # ---- hidden findings/tests (binary: 0 = reassuring, 1 = concerning) ------------------------------
 ITEMS = ["troponin_high", "ecg_ischemia", "hypotension", "dyspnea_severe", "radiation_arm", "pleuritic_pain",
          "prior_cad", "abd_rigidity", "rebound_tender", "lactate_high", "fever_high", "wbc_high",
-         "guarding", "ct_free_air"]
+         "guarding", "ct_free_air",
+         # extra moderate/benign-gate findings (used by the deephedge trees to add disjoint decision points,
+         # forcing a fixed checklist to over-order -> bigger BC-gap; harmless/unused in the other variants).
+         "renal_impair", "age_high", "anticoag_use", "copd"]
 import os as _os
 DX_VARIANT = _os.environ.get("DX_VARIANT", "base")   # base | lowcost | antihedge | ah_lc | highprev
-#     trop  ecg   hypo  dysp  radi  pleu  pcad  rigid rebnd lact  fever wbc   guard ctair
-P1 = [0.45, 0.45, 0.35, 0.40, 0.45, 0.40, 0.40, 0.50, 0.45, 0.35, 0.45, 0.45, 0.40, 0.30]   # P(item == 1)
+#     trop  ecg   hypo  dysp  radi  pleu  pcad  rigid rebnd lact  fever wbc   guard ctair  renal age   antic copd
+P1 = [0.45, 0.45, 0.35, 0.40, 0.45, 0.40, 0.40, 0.50, 0.45, 0.35, 0.45, 0.45, 0.40, 0.30, 0.45, 0.45, 0.40, 0.40]
 IDX = {n: i for i, n in enumerate(ITEMS)}
 # highprev: raise prevalence of the emergent-gating findings so the rare high-stakes subset is DENSER ->
 # gathering's benefit is less diffuse (pays off on more cases). Reward function itself is unchanged.
@@ -30,6 +33,12 @@ if DX_VARIANT == "highprev":
     for _n, _p in dict(troponin_high=0.62, ecg_ischemia=0.62, hypotension=0.55,
                        abd_rigidity=0.66, rebound_tender=0.62, lactate_high=0.55).items():
         P1[IDX[_n]] = _p
+if DX_VARIANT == "deephedge":
+    # emergent is a 4-finding conjunction (see trees below); raise those findings' prevalence so emergent stays
+    # ~10% (not vanishing) and the high-subset BC-gap contribution is meaningful.
+    for _n in ("troponin_high", "ecg_ischemia", "hypotension", "dyspnea_severe",
+               "abd_rigidity", "rebound_tender", "lactate_high", "ct_free_air"):
+        P1[IDX[_n]] = 0.52
 DEEP_FAMILIES = ("chest_pain", "abd_pain")     # primary RL subset (deepest trees, largest adaptive gap)
 SHALLOW_FAMILIES = ("syncope",)
 
@@ -42,7 +51,12 @@ EPS_TIE = 0.05
 # lowcost / ah_lc: halve the per-ask penalty so gathering is cheaper relative to its (diffuse) benefit.
 ASK_COST = 0.015 if DX_VARIANT in ("lowcost", "ah_lc") else 0.03
 EPS = 0.03                                 # oracle-grade tolerance: reward >= v_oracle - EPS
-_AH = DX_VARIANT in ("antihedge", "ah_lc")  # antihedge: kill the cheap admit hedge on emergent
+_AH = DX_VARIANT in ("antihedge", "ah_lc")  # antihedge: admit-on-emergent goes negative (breaks Gate 1; see screen)
+# deephedge (the co-designed capped-hedge variant): keep admit POSITIVE & safe-ish everywhere (never catastrophic)
+# but CAP it well below the correct disposition on both moderate and emergent, so blind-hedging is clearly
+# suboptimal and gathering to the right action is rewarded on BOTH subsets -- yet 1-ask still hedges (scores low
+# on true emergents), so Gate 1's under-gather penalty holds. emergent stays a multi-finding confirmation.
+_CAP = DX_VARIANT == "deephedge"
 
 # Reward geometry MIRRORS rx_triage (renamed actions/severities): missing an emergent OR urgent presentation is
 # strongly penalized so cheap under-gathering -> wrong disposition is unprofitable; `admit` is the only hedge and
@@ -52,12 +66,10 @@ _AH = DX_VARIANT in ("antihedge", "ah_lc")  # antihedge: kill the cheap admit he
 #   severity keys: none=benign, moderate=urgent, high=emergent (canonical framework keys)
 U = {
     "none":     {"discharge": 1.00, "symptomatic_tx": 0.40, "observe": 0.45, "admit": 0.30, "emergent_tx": 0.10},
-    "moderate": {"discharge": -0.20, "symptomatic_tx": 0.90, "observe": 0.30, "admit": 0.86, "emergent_tx": 0.40},
-    # antihedge: admit on a true emergent drops 0.40 -> -0.30, so blind-hedging no longer pays; the ONLY way to
-    # earn high reward on emergent is to gather enough to commit emergent_tx (0.95). Makes gathering's benefit
-    # on the safety-critical subset large and non-maskable (less diffuse).
+    "moderate": {"discharge": -0.20, "symptomatic_tx": 0.90, "observe": 0.30,
+                 "admit": (0.45 if _CAP else 0.86), "emergent_tx": 0.40},
     "high":     {"discharge": -1.00, "symptomatic_tx": -0.50, "observe": -0.60,
-                 "admit": (-0.30 if _AH else 0.40), "emergent_tx": 0.95},
+                 "admit": (-0.30 if _AH else 0.20 if _CAP else 0.40), "emergent_tx": 0.95},
 }
 
 # Branching relevance trees. node = ("commit", severity) | ("ask", item, {0: node, 1: node}).
@@ -91,6 +103,49 @@ FAMILIES = {
         1: ("ask", "hypotension", {1: ("commit", "high"), 0: ("commit", "moderate")}),
         0: ("commit", "none")}),
 }
+
+if _CAP:
+    # deephedge trees: emergent is a 3-finding CONJUNCTION, and each confirming finding is REUSED across
+    # non-emergent branches so NO single finding confirms emergent (P(emergent | one finding) stays low). Then a
+    # 1-ask "escalate on a positive finding" strategy is wrong (over-treats), so under-gathering is penalized on
+    # the high subset (Gate 1 holds) — yet the full path yields the large emergent reward (gathering is required).
+    # Emergent conjunction findings (troponin/ecg/hypotension, rigidity/rebound/lactate) are REUSED across branches
+    # so none is individually diagnostic; the moderate/benign splits use DISJOINT per-branch findings (radiation,
+    # dyspnea, pleuritic, prior_cad / fever, wbc, guarding) so a fixed checklist must over-order them (BC-gap)
+    # while the oracle walks one short path.
+    FAMILIES = {
+        "chest_pain": ("ask", "troponin_high", {        # emergent = troponin & ecg & hypotension & dyspnea (4, reused)
+            1: ("ask", "ecg_ischemia", {
+                1: ("ask", "hypotension", {
+                    1: ("ask", "dyspnea_severe", {1: ("commit", "high"),
+                        0: ("ask", "radiation_arm", {1: ("commit", "moderate"), 0: ("commit", "none")})}),
+                    0: ("ask", "dyspnea_severe", {1: ("commit", "moderate"),
+                        0: ("commit", "none")})}),
+                0: ("ask", "hypotension", {
+                    1: ("ask", "prior_cad", {1: ("commit", "moderate"), 0: ("commit", "none")}),
+                    0: ("ask", "anticoag_use", {1: ("commit", "moderate"), 0: ("commit", "none")})})}),
+            0: ("ask", "ecg_ischemia", {
+                1: ("ask", "hypotension", {1: ("commit", "moderate"),
+                    0: ("ask", "renal_impair", {1: ("commit", "moderate"), 0: ("commit", "none")})}),
+                0: ("ask", "pleuritic_pain", {1: ("commit", "moderate"),
+                    0: ("ask", "copd", {1: ("commit", "moderate"), 0: ("commit", "none")})})})}),
+        "abd_pain": ("ask", "abd_rigidity", {           # emergent = rigidity & rebound & lactate & ct_free_air (4, reused)
+            1: ("ask", "rebound_tender", {
+                1: ("ask", "lactate_high", {
+                    1: ("ask", "ct_free_air", {1: ("commit", "high"),
+                        0: ("ask", "fever_high", {1: ("commit", "moderate"), 0: ("commit", "none")})}),
+                    0: ("ask", "ct_free_air", {1: ("commit", "moderate"),
+                        0: ("commit", "none")})}),
+                0: ("ask", "lactate_high", {
+                    1: ("ask", "wbc_high", {1: ("commit", "moderate"), 0: ("commit", "none")}),
+                    0: ("ask", "renal_impair", {1: ("commit", "moderate"), 0: ("commit", "none")})})}),
+            0: ("ask", "rebound_tender", {
+                1: ("ask", "lactate_high", {1: ("commit", "moderate"),
+                    0: ("ask", "guarding", {1: ("commit", "moderate"), 0: ("commit", "none")})}),
+                0: ("ask", "fever_high", {1: ("commit", "moderate"),
+                    0: ("ask", "copd", {1: ("commit", "moderate"), 0: ("commit", "none")})})})}),
+        "syncope": FAMILIES["syncope"],
+    }
 
 # ---------------------------------------------------------------------------------------------------
 def acceptable(risk, eps=EPS_TIE):
@@ -210,6 +265,10 @@ _REVEAL = {
     "wbc_high": ("WBC normal", "WBC elevated"),
     "guarding": ("no guarding", "abdominal guarding"),
     "ct_free_air": ("CT: no free air", "CT: free air"),
+    "renal_impair": ("renal function normal", "renal impairment"),
+    "age_high": ("younger patient", "older patient"),
+    "anticoag_use": ("no anticoagulation", "on anticoagulation"),
+    "copd": ("no COPD", "COPD history"),
 }
 
 SYS = (
