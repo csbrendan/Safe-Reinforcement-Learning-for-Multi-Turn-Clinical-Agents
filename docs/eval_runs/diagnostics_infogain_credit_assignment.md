@@ -20,6 +20,9 @@ treatment = `--infogain-coef 0.2` (`checkpoints/dh_grpo_infogain`). Each ~7h wal
 from evaluation). Verdict via `framework.report` (guards: ask-collapse, high-risk reward regression, high-risk
 support collapse).
 
+**Figure:** `results/figs/infogain_diagnostics_base_vs_ctrl_vs_ig.png` (gen: `scripts/plot_infogain_diagnostics.py`)
+— base vs GRPO-control(coef0) vs info-gain(coef0.2), held-out hidden, by risk subset (value / support@12 / asks).
+
 ## Held-out `hidden` (gathering test)
 
 | ckpt | overall val | high-risk val | high-risk supp | moderate supp | mean_asks | 3+ asks | verdict |
