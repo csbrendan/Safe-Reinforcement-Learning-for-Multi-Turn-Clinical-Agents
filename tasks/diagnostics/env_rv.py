@@ -318,3 +318,53 @@ def score(case, asks, decision):
         return 0.0, False, False, False
     reward = U[case["true_risk"]][decision] - ASK_COST * n_asks
     return round(reward, 4), reward >= case["v_oracle"] - EPS, True, decision in case["acceptable"]
+
+
+# ---- DREAM-inspired decoupled explore/exploit helpers (training + composed eval only) -----------
+# These do NOT touch score()/U()/the analytic gates. They build the two mode-tokened prompts:
+#   * explore mode: ask-only (no commit), used to gather findings;
+#   * commit mode: present ONLY the explore-gathered findings, then commit in one turn.
+# The commit-mode prompt is constructed from the supplied `asks` list ALONE -- it never reads
+# true_risk / v_oracle / unrevealed items, so privileged severity (mu) cannot leak. assert_no_leak()
+# is a hard guard the rollout/probe call before generating a commit.
+MODE_EXPLORE = "[MODE: explore] Order tests to gather decision-relevant findings. Do NOT commit yet."
+MODE_COMMIT = "[MODE: commit] Based ONLY on the findings below, output exactly one commit action now."
+
+
+def explore_user_msg(case):
+    """Explore-phase user turn: the normal presentation + the explore mode token (ask-only)."""
+    return user_msg(case) + "\n" + MODE_EXPLORE
+
+
+def commit_user_msg(case, asks):
+    """Commit-phase user turn: re-present ONLY the explore-gathered findings, then the commit mode token.
+    Reads case['assign'] for the gathered items only (the values the explore phase already saw)."""
+    lines = [f"Presentation: {_FAM_DESC[case['family']]}."]
+    seen = []
+    for a in asks:
+        it = resolve_ask(a)
+        if it is None or it in seen:
+            continue
+        seen.append(it)
+        lines.append(f"Finding: {_REVEAL[it][case['assign'][IDX[it]]]}.")
+    if not seen:
+        lines.append("Finding: none gathered.")
+    lines.append(MODE_COMMIT)
+    return "\n".join(lines)
+
+
+def assert_no_leak(case, asks, commit_text):
+    """Hard guard: the commit-phase context must expose ONLY explore-gathered findings -- never the hidden
+    severity (mu), v_oracle, or any unrevealed item's result. Raises AssertionError on leak/tamper.
+    Primary guarantee is structural: commit_text must equal the canonical gathered-only prompt (which is built
+    from `asks` alone, so it cannot contain mu / v_oracle / unrevealed findings). A reveal-string scan over the
+    UNREVEALED items is kept as a redundant catch."""
+    canonical = commit_user_msg(case, asks)
+    assert commit_text.strip() == canonical.strip(), "LEAK/tamper: commit prompt deviates from gathered-only canonical"
+    gathered = {resolve_ask(a) for a in asks} - {None}
+    for it in ITEMS:                       # redundant: no unrevealed item's result may appear
+        if it in gathered:
+            continue
+        for val_str in _REVEAL[it]:
+            assert val_str not in commit_text, f"LEAK: unrevealed item '{it}' result in commit prompt"
+    return True

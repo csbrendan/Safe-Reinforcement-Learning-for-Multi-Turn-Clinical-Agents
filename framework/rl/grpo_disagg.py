@@ -114,6 +114,99 @@ def make_rollout(tok, env, rollout_temp, infogain_coef=0.0):
     return rollout_func
 
 
+def _gen_turn(client, tok, msgs_list, rollout_temp):
+    out = client.chat(msgs_list, n=1, temperature=rollout_temp, max_tokens=128, logprobs=0)
+    return tok.batch_decode(out["completion_ids"], skip_special_tokens=True)
+
+
+def make_dream_rollout(tok, env, rollout_temp):
+    """DREAM-inspired decoupled explore/exploit (single network, mode token). Both phases are generated EVERY
+    step (for full logging); the gradient update alternates by step parity -- explore steps train the ask tokens
+    on the recoverability reward (traj_infogain over env.risk_dist), exploit steps train the commit token on the
+    pure env.score of a commit made over ONLY the explore-gathered findings. Decoupling: the two rewards never
+    share a trajectory and are advantage-normalised within their own phase's step. env.score / U / gates untouched.
+    """
+    state = {"step": 0}
+
+    def rollout_func(prompts, trainer):
+        client = trainer.vllm_generation.vllm_client
+        cids, cases = [], []
+        for p in prompts:
+            mc = _CID.search(p[-1]["content"]); cid = mc.group(1) if mc else None
+            cids.append(cid); cases.append(CASES.get(cid))
+
+        # ---- EXPLORE phase: ask-only dialogue (a commit/invalid ends exploration, no commit credit) ----
+        exp = [{"msgs": ([{"role": "system", "content": env.SYS},
+                          {"role": "user", "content": f"[case {cid}]\n" + env.explore_user_msg(case)}]
+                         if case is not None else None),
+                "asks": [], "done": case is None, "nt": 0, "vt": 0, "case": case}
+               for cid, case in zip(cids, cases)]
+        for _turn in range(MAX_DIALOG_TURNS):
+            active = [i for i, s in enumerate(exp) if not s["done"]]
+            if not active:
+                break
+            texts = _gen_turn(client, tok, [exp[i]["msgs"] for i in active], rollout_temp)
+            for i, txt in zip(active, texts):
+                s = exp[i]; s["msgs"].append({"role": "assistant", "content": txt}); s["nt"] += 1
+                kind, val = parse_action(txt)
+                canon = env.resolve_ask(val) if kind == "ask" else None
+                if kind == "ask" and canon:
+                    s["vt"] += 1; s["asks"].append(canon)
+                    s["msgs"].append({"role": "user", "content": env.answer(s["case"], canon)})
+                else:
+                    s["done"] = True   # ask-only phase: anything else terminates explore
+
+        # ---- COMMIT phase: one commit turn over ONLY explore-gathered findings (leak-guarded) ----
+        com = []
+        for cid, s in zip(cids, exp):
+            case = s["case"]
+            if case is None:
+                com.append({"msgs": None, "dec": None, "case": None, "asks": []}); continue
+            cu = env.commit_user_msg(case, s["asks"])
+            env.assert_no_leak(case, s["asks"], cu)   # hard guard: commit context exposes only gathered findings
+            com.append({"msgs": [{"role": "system", "content": env.SYS},
+                                 {"role": "user", "content": f"[case {cid}]\n" + cu}],
+                        "dec": None, "case": case, "asks": s["asks"]})
+        active = [i for i, c in enumerate(com) if c["case"] is not None]
+        if active:
+            texts = _gen_turn(client, tok, [com[i]["msgs"] for i in active], rollout_temp)
+            for i, txt in zip(active, texts):
+                c = com[i]; c["msgs"].append({"role": "assistant", "content": txt})
+                kind, val = parse_action(txt)
+                if kind == "commit":
+                    c["dec"] = val[0] if isinstance(val, tuple) else val
+
+        explore_r = [traj_infogain(env, s["case"], s["asks"]) if s["case"] is not None else 0.0 for s in exp]
+        exploit_r = [env.score(c["case"], c["asks"], c["dec"])[0] if c["case"] is not None else 0.0 for c in com]
+
+        phase = "explore" if state["step"] % 2 == 0 else "exploit"
+        state["step"] += 1
+        prompt_ids, completion_ids, logprobs, env_mask, rewards = [], [], [], [], []
+        for idx, (s, c) in enumerate(zip(exp, com)):
+            if phase == "explore":
+                msgs, rew = s["msgs"], explore_r[idx]
+            else:
+                msgs, rew = (c["msgs"] if (c["case"] is not None and len(c["msgs"]) >= 3) else None), exploit_r[idx]
+            if msgs is None:                       # degenerate (no case / no commit produced): empty no-op sample
+                msgs = [{"role": "system", "content": env.SYS}, {"role": "user", "content": f"[case {cids[idx]}]"},
+                        {"role": "assistant", "content": ""}]
+                rew = 0.0
+            pid = _ids(tok, msgs[:2], True); full = _ids(tok, msgs, False); comp = full[len(pid):]
+            prompt_ids.append(pid); completion_ids.append(comp); logprobs.append([0.0] * len(comp))
+            env_mask.append(_env_mask(tok, msgs, len(pid), len(comp)))
+            rewards.append(rew)
+        nt = sum(s["nt"] for s in exp) or 1
+        print(f"[dream-diag] phase={phase} "
+              f"mean_explore_reward={stx.mean(explore_r):.3f} mean_exploit_reward={stx.mean(exploit_r):.3f} "
+              f"mean_total_reward={stx.mean([a + b for a, b in zip(explore_r, exploit_r)]):.3f} "
+              f"mean_asks={stx.mean(len(s['asks']) for s in exp):.2f} "
+              f"committed={sum(1 for c in com if c['dec'] is not None) / max(len(com), 1):.3f} "
+              f"parse_validity={sum(s['vt'] for s in exp) / nt:.3f}", flush=True)
+        return {"prompt_ids": prompt_ids, "completion_ids": completion_ids,
+                "logprobs": logprobs, "env_mask": env_mask, "traj_reward": rewards}
+    return rollout_func
+
+
 def reward_echo(completions, traj_reward=None, **kw):
     return traj_reward if traj_reward is not None else [0.0] * len(completions)
 
@@ -135,6 +228,8 @@ def main():
     ap.add_argument("--max-turns", type=int, default=MAX_DIALOG_TURNS, help="dialogue horizon (match the probe)")
     ap.add_argument("--infogain-coef", type=float, default=0.0,
                     help="lambda for DREAM-inspired info-gain shaping (0 = baseline; shaping is RL-only, not in env.score/gates)")
+    ap.add_argument("--dream", action="store_true",
+                    help="DREAM-inspired decoupled explore/exploit (single net, mode token); overrides --infogain-coef")
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
     MAX_DIALOG_TURNS = args.max_turns
@@ -148,7 +243,8 @@ def main():
                                         {"role": "user", "content": f"[case {c['case_id']}]\n" + env.user_msg(c)}]}
                             for c in cases])
     print(f"[grpo] env={args.env} {len(ds)} cases init={Path(args.base).name} "
-          f"lr={args.lr} beta={args.beta} temp={args.rollout_temp} steps={args.max_steps} infogain={args.infogain_coef}", flush=True)
+          f"lr={args.lr} beta={args.beta} temp={args.rollout_temp} steps={args.max_steps} "
+          f"{'dream=ON' if args.dream else f'infogain={args.infogain_coef}'}", flush=True)
     tok = AutoTokenizer.from_pretrained(args.base)
     model = AutoModelForCausalLM.from_pretrained(args.base, dtype=torch.bfloat16)
     model.generation_config.eos_token_id = [1, 106]
@@ -161,9 +257,10 @@ def main():
         save_strategy="steps", save_steps=args.save_steps, save_total_limit=4,
         use_vllm=True, vllm_mode="server", vllm_server_host=args.server_host, vllm_server_port=args.server_port,
         vllm_importance_sampling_correction=False)
+    rollout = (make_dream_rollout(tok, env, args.rollout_temp) if args.dream
+               else make_rollout(tok, env, args.rollout_temp, args.infogain_coef))
     trainer = GRPOTrainer(model=model, reward_funcs=[reward_echo], args=cfg, train_dataset=ds,
-                          processing_class=tok, peft_config=lora,
-                          rollout_func=make_rollout(tok, env, args.rollout_temp, args.infogain_coef))
+                          processing_class=tok, peft_config=lora, rollout_func=rollout)
     print("[grpo] trainer built; train()", flush=True)
     trainer.train()
     trainer.save_model(str(Path(args.out) / "final"))
