@@ -1,0 +1,426 @@
+\documentclass{article}
+\usepackage[final]{nips_2017}
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{amsmath}
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+\usepackage{graphicx}
+\usepackage{natbib}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{pgfplots}
+\usepackage{tikz}
+\usepackage{subcaption}
+\usepackage{multirow}
+\usepackage{cellspace}
+
+% NOTE: new bib keys referenced below to add to sample.bib:
+%   liu2021dream  (Liu, Raghunathan, Liang, Finn -- DREAM: decoupled exploration/exploitation, ICML 2021)
+%   andrychowicz2017her (Andrychowicz et al. -- Hindsight Experience Replay, NeurIPS 2017)
+% (both bib entries are now present in sample.bib)
+% reused keys already present: shao2024deepseekmath, brown_verifiers, saab2025medgemma, hu2022lora,
+%   chen2024huatuogpto1, zhang2025medrlvr, lin2025ehrmind, sun2024edcopilot, tu2024amie
+
+\title{Reward Geometry, Not Just Capability: When Verifiable RL Realizes
+Adaptive Information-Gathering in Goal-Conditioned Clinical Decision-Making}
+
+\author{
+  Brendan P. Murphy \\
+  \texttt{csbrendan@gmail.com} \\
+}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Clinical decisions --- adjusting a chronic therapy, choosing a prescription,
+ordering work-up --- are adaptive information-gathering problems: the right
+action depends on facts the clinician must first elicit, and on \emph{which}
+goal is being optimized (patient safety, symptom control, treatment burden),
+which differs across patients and clinicians. We study whether reinforcement
+learning with verifiable rewards (RLVR) can train a compact clinical model to
+gather adaptively and decide, and we find that capability is not the binding
+constraint --- \emph{reward geometry} is. We formalize two analytic
+\emph{gates} that must hold before RL is worth running: Gate~1
+(\emph{demonstrability}, a behavioral-cloning gap showing adaptive gathering
+strictly beats any fixed policy) and Gate~2 (\emph{latent support}, that the
+base model can realize the optimal action under sampling). Across three
+structurally distinct clinical tasks --- medication-refill triage, acute
+diagnostic work-up, and dosing \emph{titration} --- we show the gates are
+\emph{necessary but not sufficient}: even when both pass, plain Group Relative
+Policy Optimization (GRPO) exploits shortcuts (collapsing to a single question,
+or defensively hedging) that maximize reward while abandoning adaptive
+gathering. A DREAM-inspired single-episode \emph{information-gain} credit
+assignment --- dense reward for asks that reduce uncertainty about the latent
+state, applied only in the RL rollout so the gates stay pure --- restores
+adaptive gathering and is \emph{thesis-positive} on diagnostics (high-risk
+support and clinical value both improve with no shortcut collapse), while being
+partial and transient on refill triage, where the supervised initialization
+left no high-risk headroom. A decoupled explore/exploit variant (DREAM) further
+improves the safety-critical high-risk subset (oracle-grade support
+$0.50\!\to\!1.00$) at the cost of over-gathering on low-acuity cases. We close
+by showing how these components compose into \emph{goal-conditioned} adaptive
+gathering --- conditioning the policy on a stated priority vector, with
+analytic hindsight relabeling for sample efficiency --- the natural substrate
+for preference-adaptive, personalized clinical decision support.
+\end{abstract}
+
+
+\section{Introduction}
+\label{sec:intro}
+
+Much of routine clinical decision-making is not a single classification but an
+\emph{adaptive information-gathering} process. A clinician adjusting a chronic
+medication, triaging a refill request, or working up an acute presentation does
+not decide from a static chart: they elicit the decision-relevant facts ---
+current symptoms, recent labs, adherence, monitoring, contraindications --- and
+commit only once enough is known. Crucially, what counts as ``enough,'' and
+which action is correct once gathering stops, depends on the \emph{goal} being
+optimized. The same patient warrants a different plan under a safety-first
+priority (minimize the chance of a serious adverse event, gather more, escalate
+readily) than under a burden-reduction priority (avoid unnecessary tests,
+visits, and medication changes) or a disease-control priority (intensify
+treatment toward a target). Different patients and different clinicians weight
+these objectives differently, so a decision-support model useful for
+\emph{personalized} care must adapt both its gathering and its commitment to a
+stated goal.
+
+This makes clinical decision-making a natural target for reinforcement learning:
+the value of asking a question, the stopping rule, and the goal-dependent
+trade-off are exactly the policy choices that supervised imitation captures
+poorly and that RL is designed to optimize. Yet a prior result on this same
+substrate is sobering: when the task is \emph{fully demonstrable} --- a
+controlled, rule-labeled environment whose optimal policy can be written down
+--- supervised fine-tuning (SFT) imitates that policy directly and bounded
+on-policy GRPO, despite genuine learning signal, adds essentially nothing
+\citep{shao2024deepseekmath}. The open question that motivates this paper is
+therefore not \emph{whether} a model can execute a gathering protocol (SFT
+suffices for that), but \emph{when} and \emph{how} reinforcement learning
+realizes adaptive gathering that imitation cannot --- and what fails when it
+does not.
+
+Our central finding is that the binding constraint is \emph{reward geometry},
+not model capability. We make three contributions. First, we define two
+analytic \emph{gates} that decide \emph{a priori} whether a task is worth RL at
+all: a demonstrability gate (does adaptive gathering strictly beat the best
+fixed policy?) and a latent-support gate (can the base model realize the optimal
+action under sampling?). Second, across three structurally distinct clinical
+tasks we show these gates are \emph{necessary but not sufficient}: even when
+both pass, plain GRPO reliably finds reward-equivalent \emph{shortcuts} ---
+asking a single question and committing, or hedging to a defensive action ---
+that abandon adaptive gathering. We show that an explicit \emph{credit-assignment}
+signal (a DREAM-inspired single-episode information-gain reward) is the missing
+third ingredient that prevents the collapse, and that a decoupled
+explore/exploit scheme further improves safety-critical outcomes at a
+characterizable over-gathering cost. Third, we show how these pieces compose
+into \emph{goal-conditioned} adaptive gathering --- the mechanism by which a
+single model can adapt to a clinician's or patient's stated priorities --- and
+argue this is the path toward preference-adaptive personalized decision support.
+
+We deliberately study \emph{stylized, verifiable} environments. Each task is an
+adaptive-value-of-information (VOI) partially observed decision process whose
+reward is computed by an exact analytic verifier, so we can measure
+demonstrability, latent support, and shortcut exploitation precisely rather than
+inferring them from a learned reward model. This trades clinical realism for
+experimental control of exactly the variables --- reward shape, gathering
+incentive, goal weighting --- that the question turns on.
+
+
+\section{Background}
+\label{sec:background}
+
+\paragraph{Adaptive gathering as a verifiable POMDP.} We model each task as an
+ask$\,\to\,$commit dialogue over a partially observed case. A hidden latent
+state $\mu$ (e.g.\ true severity, or a joint clot/bleed risk) is determined by
+binary findings the model may query one at a time; each answered query reveals a
+finding at a small per-ask cost, and the episode ends when the model commits to
+one action. The reward is verifiable and analytic,
+$R = U[\,\text{true state}\,][\,\text{action}\,] - c\cdot n_{\text{asks}}$,
+where $U$ is a hand-specified utility matrix and $c$ the per-ask cost. Because
+$U$ and the finding priors are known in simulation, we compute the exact
+adaptive oracle (the optimal VOI policy), the best fixed (no-gathering) policy,
+and the posterior over $\mu$ given any revealed set --- the quantities the gates
+and the credit-assignment signal require. This verifiable-reward setting follows
+the RLVR line that extends verifier-driven RL from math and code to medicine
+\citep{chen2024huatuogpto1, zhang2025medrlvr, lin2025ehrmind}, using the same
+Verifiers tooling \citep{brown_verifiers} and GRPO \citep{shao2024deepseekmath}
+as the policy optimizer; the base model is the compact clinical
+\texttt{medgemma-4b-it} \citep{saab2025medgemma} with LoRA adapters
+\citep{hu2022lora}.
+
+\paragraph{Two gates: only run RL where it can help.} A recurring failure mode
+in applied RLVR is spending compute on tasks where RL cannot beat supervised
+learning. We screen every task with two analytic gates before training.
+
+\emph{Gate~1 --- demonstrability (the behavioral-cloning, or BC, gap).} We
+require that the adaptive oracle strictly outperform the best fixed-action
+policy: $\text{BC-gap} = V_{\text{oracle}} - \max_a \mathbb{E}[U[\mu][a]] > 0$.
+If a single fixed action is near-optimal, gathering is pointless and the task is
+``demonstrable'' in the strong sense that imitation already suffices --- the
+regime where our prior multi-turn study found RL flat. A positive BC-gap is
+necessary for adaptive gathering to have any value.
+
+\emph{Gate~2 --- latent support.} We require that the base model can
+\emph{realize} the oracle action under sampling --- measured as support@$k$, the
+fraction of cases for which at least one of $k$ temperature rollouts gathers and
+commits to an oracle-grade action. If the optimal behavior is never sampled, RL
+has no positive signal to reinforce; this is the ``knowledge absent'' failure
+mode that motivates an SFT warmup before RL \citep{lin2025ehrmind}.
+
+Both gates are computed without training --- Gate~1 analytically from $U$ and the
+priors, Gate~2 from a cheap inference-only probe --- so they gate compute before
+it is spent. Crucially, the gates depend only on the \emph{environment}
+($U$, priors, base policy), never on any reward shaping we add for RL; we keep
+all shaping out of $U$ and the gates so that gate measurements remain a clean,
+shaping-independent description of the task.
+
+
+\section{Methodology}
+\label{sec:method}
+
+\subsection{Plain GRPO and the shortcut-exploitation problem}
+We train with bounded, fully on-policy GRPO from either the base model or a
+light SFT warmup, using a disaggregated two-node stack (training node plus a
+separate vLLM rollout server) with an \texttt{env\_mask} that excludes simulator
+tokens from the policy gradient so only model-generated tokens are trained. The
+trajectory reward is the verifiable $R$ above. Even on tasks that \emph{pass
+both gates}, we find plain GRPO converges to reward-equivalent shortcuts rather
+than to adaptive gathering. Two modes recur: (i) \emph{one-ask collapse}, where
+the policy asks a single question (or none) and commits, trimming gathering
+toward a fixed checklist; and (ii) \emph{defensive hedging}, where the policy
+commits a ``safe'' middle action that scores acceptably on average but abandons
+the ability to identify and correctly treat the high-stakes minority. Both raise
+mean reward while destroying the adaptive behavior the task was built to elicit,
+so mean reward alone is a misleading scoreboard. We therefore evaluate with a
+\emph{guarded report} that audits per-subset behavior and emits one of several
+verdicts --- \textsc{thesis-positive}, \textsc{exploit} (ask-collapse or
+high-risk regression), or \textsc{termination-only} (reward rose only by
+learning to commit, not by gathering better).
+
+\subsection{Information-gain credit assignment (single-episode DREAM proxy)}
+The shortcut problem is one of credit assignment: the terminal reward does not
+tell the policy \emph{which ask} was responsible for a good commit, so the
+cheapest way to raise reward is to stop asking. Drawing on DREAM's idea of
+rewarding exploration by how well it reveals the task identity
+\citep{liu2021dream}, we add a dense, single-episode \emph{information-gain}
+reward: each new, decision-relevant ask is rewarded in proportion to the
+reduction in entropy of the posterior over the latent state,
+$\Phi = -\,\Delta H\big(p(\mu \mid \text{revealed})\big)$, summed over the asks,
+and added to the terminal reward with weight $\lambda$. Irrelevant or repeated
+asks reduce no entropy and earn nothing, so the signal rewards \emph{useful}
+gathering specifically. This is potential-based and computed from the same
+analytic posterior the gates use, but it is applied \emph{only} in the RL
+rollout reward --- never in $U$, in \texttt{env.score}, or in the gates --- so
+baseline comparisons and gate measurements stay pure. Treating the hidden case
+as the task identity $\mu$, the ask turns as exploration, and the commit as
+exploitation, this is a single-episode credit-assignment instantiation of
+DREAM's decoupling intuition without separate episodes.
+
+\subsection{DREAM: decoupled exploration and exploitation}
+The single-episode proxy shares one policy and one trajectory across asking and
+committing, so the two still compete for the same gradient. Full DREAM
+\citep{liu2021dream} decouples them. Our v1 keeps a \emph{single network and
+adapter} (no learned decoder, no second policy) and separates the phases with a
+mode token: an \emph{explore} phase that may only ask, rewarded by recoverability
+of $\mu$ (the information-gain signal), and an \emph{exploit} phase that commits
+over \emph{only} the explore-gathered findings, rewarded by the pure verifiable
+$U$. Decoupling is realized by alternating which phase receives the gradient
+update across steps, so the two rewards are advantage-normalized within their own
+phase rather than summed on one trajectory. At deployment the composed policy
+runs explore$\,\to\,$gather$\,\to\,$commit as a single dialogue, and is evaluated
+\emph{only} in that composed form --- a hard guard ensures the commit phase never
+sees the privileged latent, so reported numbers reflect a deployable policy, not
+an oracle-informed one.
+
+\subsection{Evaluation}
+All policies are scored on held-out cases with the \emph{pure} verifiable reward
+(no shaping), under a $k$-sample latent-support probe and the guarded report.
+We report, per risk subset, clinical value (mean reward), oracle-grade
+support@$k$, and mean asks, plus shortcut diagnostics (one-ask rate,
+committed-before-gathering, blind-commit rate). The gates and the guarded report
+are identical across tasks and across the plain/info-gain/DREAM conditions, so
+the comparisons are like-for-like.
+
+
+\section{Results}
+\label{sec:results}
+
+We study three structurally distinct tasks under the identical gate and guard
+framework: \textbf{refill triage} (approve / modify / escalate a chronic
+refill), \textbf{acute diagnostics} (order findings, then commit a disposition
+from a five-way scale), and \textbf{titration} (gather risk factors, then choose
+an ordered treatment intensity). The diagnostics task is a co-designed
+``deephedge'' variant engineered so a fixed checklist must over-order while the
+oracle walks one short path, and so the high-stakes action requires a
+multi-finding conjunction (no single finding is diagnostic) --- this is what
+makes it clear both gates while still admitting a defensive-hedge shortcut.
+
+\paragraph{The gates pass; plain GRPO still exploits.} On diagnostics deephedge,
+Gate~1 holds (BC-gap $+0.161$, with both the chest-pain and abdominal-pain
+families contributing) and Gate~2 holds (base latent support is non-trivial).
+Yet plain GRPO from base is an \textsc{exploit}: high-risk reward
+\emph{regresses} ($+0.160 \to +0.095$), and at the best intermediate checkpoint
+high-risk oracle-grade support collapses to $0.00$ --- a defensive hedge that
+raises overall reward while losing the ability to treat true emergencies --- as
+mean asks trim from $2.5$ to $1.9$ and the deep-gathering ($3+$ ask) fraction
+halves. This replicates the refill-triage finding (a $98\%$ one-ask collapse
+with high-risk reward cratering) on a second, structurally different task,
+establishing that gates-pass-but-GRPO-exploits is not task-specific.
+
+\paragraph{Information-gain credit assignment is thesis-positive on
+diagnostics.} Adding the single-episode information-gain reward ($\lambda=0.2$),
+with the gates and $U$ unchanged, flips the verdict to
+\textsc{thesis-positive} (Table~\ref{tab:dx}). Held-out clinical value rises
+($+0.255 \to +0.334$), high-risk oracle-grade support is held at $0.50$ and
+high-risk reward at $\approx$ base, the safety-critical subset is not sacrificed,
+and gathering is preserved (mean asks $\approx 2.2$, no one-ask collapse). The
+gain concentrates in the \emph{moderate} subset --- where gathering actually
+changes the disposition --- with oracle-grade support rising $0.26 \to 0.77$, and
+it is monotone across checkpoints, ruling out a sampling artifact. Credit
+assignment, applied purely in the RL reward, is the third ingredient that
+converts a gates-passing task from exploited to genuinely adaptive.
+
+\begin{table}[ht]
+\centering
+\caption{Diagnostics deephedge, held-out hidden condition, pure verifiable
+reward. Plain GRPO exploits (high-risk regression / defensive hedge); the
+information-gain reward is thesis-positive; DREAM trades further high-risk gains
+for low-acuity over-gathering. ``supp'' is oracle-grade support@12.}
+\label{tab:dx}
+\begin{tabular}{lccccc}
+\toprule
+Policy & overall value & high value & high supp & moderate supp & mean asks \\
+\midrule
+base (untrained)        & $+0.251$ & $+0.160$ & $0.50$ & $0.26$ & $2.5$ \\
+plain GRPO (control)    & $+0.255$ & $+0.095$ & $0.50$ & $0.34$ & $1.9$ \\
+\,+ info-gain ($\lambda{=}0.2$) & $\mathbf{+0.334}$ & $+0.139$ & $0.50$ & $\mathbf{0.77}$ & $2.2$ \\
+DREAM (best ckpt)       & $+0.329$ & $\mathbf{+0.248}$ & $\mathbf{1.00}$ & $0.63$ & $4.4$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{DREAM improves the safety-critical subset, at an over-gathering
+cost.} Decoupling exploration from exploitation lets the explore policy gather
+without commit-cost pressure, and it closes the value-of-information gap the
+single-episode proxy left open: mean asks rise from $2.2$ toward and past the
+oracle's $\approx 3.9$, and the safety-critical \emph{high-risk} subset improves
+markedly --- reward $+0.139 \to +0.248$ and oracle-grade support
+$0.50 \to 1.00$ at the best checkpoint --- while still clearing all guards. The
+trade is that the unconstrained explorer over-gathers on \emph{low-acuity} cases:
+benign oracle-grade support falls ($0.48 \to 0.04$) and overall value dips
+slightly below the info-gain policy. DREAM thus delivers a favorable
+\emph{safety} trade rather than a strict domination --- it helps where gathering
+is decision-relevant and over-explores where it is not.
+
+\paragraph{Refill triage: partial and transient.} On refill triage the same
+information-gain method beats the plain-GRPO control at \emph{every} checkpoint
+(more asks, fewer one-ask shortcuts), and at the comparable early checkpoint it
+\emph{preserves} high-risk reward at the supervised-initialization level
+($+0.205$) where the control has already crashed it ($-0.007$). But the benefit
+is transient: with continued training the policy trims gathering and high-risk
+reward regresses, and no checkpoint reaches the strict thesis-positive bar. The
+discriminating factor is the \emph{initialization}: refill triage trains from a
+strong SFT gatherer that has already saturated high-risk performance, leaving no
+headroom for shaping to convert into a measured win, whereas diagnostics trains
+from the raw base where the headroom exists. Credit assignment helps in both,
+but its measurable payoff depends on available headroom --- a result about the
+interaction of reward geometry with the starting policy.
+
+\paragraph{Titration (third task): gates pass; RL in progress.} The titration
+task is a stylized ordered-intensity decision (no therapy / reduced / full) under
+a clot-vs-bleed trade, with the latent state a joint severity from additive
+risk scores. It is designed to carry an explicit \emph{goal} axis cheaply (the
+optimal intensity slides with the priority weighting). A CPU design gate
+confirms a non-degenerate, goal-sensitive task: BC-gap $+0.075$, the oracle uses
+all three ordered actions, gathering changes the committed action on $85\%$ of
+cases, and the optimal intensity flips between a clot-first and a bleed-first
+priority on $64\%$ of cases. Gate~2 passes (base latent support@12 $0.52$/$0.63$
+on the hidden/anchor conditions, with near-perfect format compliance), though
+the base policy is a degenerate constant ``reduced-intensity'' committer at
+$\approx 0$ reward --- ideal RL headroom. The plain-GRPO control and the
+information-gain run on titration are training at the time of writing; we report
+the gate results here and the RL comparison in the camera-ready.
+
+
+\section{Discussion}
+\label{sec:discussion}
+
+\paragraph{The core narrative.} Across three clinical tasks, a consistent
+picture emerges. The two gates are valuable precisely as a \emph{negative}
+screen: they tell us where RL \emph{cannot} help (no BC-gap, or no latent
+support) so compute is not wasted there --- a direct operationalization of our
+earlier finding that RL is flat when a task is fully demonstrable. But passing
+the gates does not earn an RL win: with the plain verifiable reward, GRPO
+exploits shortcuts (one-ask collapse, defensive hedge) that maximize reward
+while abandoning adaptive gathering. The missing ingredient is \emph{reward
+geometry} --- specifically, credit assignment for gathering. A single-episode
+information-gain reward, applied purely in the RL rollout so the gates stay pure,
+restores adaptive gathering and is thesis-positive where headroom exists
+(diagnostics); decoupling exploration from exploitation (DREAM) buys a further,
+favorable improvement on the safety-critical high-risk subset at a quantifiable
+over-gathering cost. The refill-triage result sharpens the claim: credit
+assignment is necessary but its measurable benefit is bounded by the headroom
+left after initialization.
+
+\paragraph{From adaptive gathering to goal-conditioned, personalized care.} The
+clinical payoff of this machinery is preference adaptation. Real patients and
+clinicians weight safety, symptom control, and treatment burden differently, and
+the correct plan --- and the correct amount of gathering --- shifts with those
+weights. The titration task is built so a goal vector $w$ slides the optimal
+ordered intensity, and goal-conditioning is then nearly free: the policy is
+conditioned on $w$ (a prompt token), and the reward is
+$R_w = w \cdot [\,\text{benefit},\,\text{harm}\,] - c\,n_{\text{asks}}$, scored
+by the same analytic verifier. This turns adaptive gathering into
+\emph{goal-conditioned} adaptive value-of-information: the value of a finding,
+and the stopping rule, become functions of both the case and the stated
+priority. The empirical question this sets up --- which we have gated but not yet
+trained --- is whether the policy genuinely \emph{tracks} the goal (its
+gathering and commit shift with $w$, verified against a per-$w$ oracle) rather
+than ignoring it; the design gate already shows the optimal action flips with
+$w$ on a majority of cases, so the signal is there to learn.
+
+\paragraph{Hindsight relabeling for sample efficiency.} Goal-conditioned RL is
+sample-hungry because each goal must be explored, but our analytic verifier
+makes a hindsight scheme cheap. In the spirit of hindsight experience replay
+\citep{andrychowicz2017her}, a trajectory gathered under one goal can be
+\emph{re-scored} under other goals after the fact --- the same gathered findings
+and commit, evaluated by the same analytic $R_w$ for alternate $w$ --- yielding
+training and analysis signal for many goals from one rollout. Because GRPO is
+on-policy (unlike the off-policy replay HER was designed for), the rigorous form
+re-prompts and regenerates under the relabel goal rather than reusing the
+off-policy trajectory; the analytic reward keeps even this cheap, and the
+hindsight rescoring is exact rather than an invented preference label. This is
+the efficient substrate for learning a single model that adapts across the goal
+space.
+
+\paragraph{Clinical relevance and limitations.} We study stylized, verifiable
+environments to isolate reward geometry; this buys precise measurement of
+demonstrability, support, and exploitation at the cost of clinical realism. The
+utility matrices are hand-specified and the latent structure is synthetic, so
+the results are claims about \emph{learning dynamics} under verifiable reward,
+not clinically validated decision policies. The titration RL comparison is still
+running, and goal-conditioned training and hindsight relabeling are designed and
+gated but not yet run. Nonetheless, the through-line is actionable: gate before
+you train, assign credit for gathering, decouple exploration when high-risk
+performance matters, and condition on the goal to personalize --- a recipe for
+building, and rigorously stress-testing, adaptive clinical decision agents
+before committing to full policy-gradient training. The path from here to
+personalized medicine runs precisely through goal-conditioned adaptive
+gathering: a model that asks the right questions, knows when to stop, and adapts
+both to the patient's situation and to what the patient and clinician are trying
+to achieve.
+
+\section*{Code}
+\url{https://github.com/csbrendan/rl-gains-in-clinical-tasks}
+
+\label{sec:cite}
+\bibliography{sample.bib}
+\bibliographystyle{plainnat}
+
+\clearpage
+\end{document}
