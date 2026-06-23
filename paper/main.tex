@@ -275,7 +275,7 @@ establishing that gates-pass-but-GRPO-exploits is not task-specific.
 \paragraph{Information-gain credit assignment is thesis-positive on
 diagnostics.} Adding the single-episode information-gain reward ($\lambda=0.2$),
 with the gates and $U$ unchanged, flips the verdict to
-\textsc{thesis-positive} (Table~\ref{tab:dx}). Held-out clinical value rises
+\textsc{thesis-positive} (Table~\ref{tab:dx}, Figure~\ref{fig:dx4arm}). Held-out clinical value rises
 ($+0.255 \to +0.334$), high-risk oracle-grade support is held at $0.50$ and
 high-risk reward at $\approx$ base, the safety-critical subset is not sacrificed,
 and gathering is preserved (mean asks $\approx 2.2$, no one-ask collapse). The
@@ -304,18 +304,44 @@ DREAM (best ckpt)       & $+0.329$ & $\mathbf{+0.248}$ & $\mathbf{1.00}$ & $0.63
 \end{tabular}
 \end{table}
 
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.95\linewidth]{figs/dream_diagnostics_4arm.png}
+\caption{Diagnostics deephedge, held-out hidden condition, pure verifiable
+reward, by risk subset (left: clinical value; middle: oracle-grade support@12;
+right: mean asks). Plain GRPO (control) matches base overall while regressing
+high-risk; information-gain lifts the \emph{moderate} subset (support
+$0.26\!\to\!0.77$) and preserves gathering; DREAM drives high-risk support to
+$1.00$ but its mean asks exceed the oracle value-of-information ($\approx 3.9$),
+the over-gathering that collapses benign support.}
+\label{fig:dx4arm}
+\end{figure}
+
 \paragraph{DREAM improves the safety-critical subset, at an over-gathering
 cost.} Decoupling exploration from exploitation lets the explore policy gather
 without commit-cost pressure, and it closes the value-of-information gap the
 single-episode proxy left open: mean asks rise from $2.2$ toward and past the
 oracle's $\approx 3.9$, and the safety-critical \emph{high-risk} subset improves
 markedly --- reward $+0.139 \to +0.248$ and oracle-grade support
-$0.50 \to 1.00$ at the best checkpoint --- while still clearing all guards. The
+$0.50 \to 1.00$ at the best checkpoint --- while still clearing all guards
+(Figure~\ref{fig:dxtraj}). The
 trade is that the unconstrained explorer over-gathers on \emph{low-acuity} cases:
 benign oracle-grade support falls ($0.48 \to 0.04$) and overall value dips
 slightly below the info-gain policy. DREAM thus delivers a favorable
 \emph{safety} trade rather than a strict domination --- it helps where gathering
 is decision-relevant and over-explores where it is not.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.95\linewidth]{figs/dream_diagnostics_trajectory.png}
+\caption{DREAM checkpoint trajectory on diagnostics (held-out hidden, pure
+verifiable reward). High-risk reward and oracle-grade support peak at
+checkpoint-40 (reward $+0.248$, support $1.00$), above the single-episode
+information-gain reference (dashed), while mean asks stay above the oracle
+value-of-information ($\approx 3.9$) at every checkpoint --- the persistent
+over-gathering that is the flip side of unconstrained exploration.}
+\label{fig:dxtraj}
+\end{figure}
 
 \paragraph{Refill triage: partial and transient.} On refill triage the same
 information-gain method beats the plain-GRPO control at \emph{every} checkpoint
@@ -329,7 +355,8 @@ strong SFT gatherer that has already saturated high-risk performance, leaving no
 headroom for shaping to convert into a measured win, whereas diagnostics trains
 from the raw base where the headroom exists. Credit assignment helps in both,
 but its measurable payoff depends on available headroom --- a result about the
-interaction of reward geometry with the starting policy.
+interaction of reward geometry with the starting policy (Addendum
+Figures~\ref{fig:rx4arm}--\ref{fig:rxtraj}).
 
 \paragraph{Titration (third task): gates pass; RL in progress.} The titration
 task is a stylized ordered-intensity decision (no therapy / reduced / full) under
@@ -414,6 +441,43 @@ personalized medicine runs precisely through goal-conditioned adaptive
 gathering: a model that asks the right questions, knows when to stop, and adapts
 both to the patient's situation and to what the patient and clinician are trying
 to achieve.
+
+\appendix
+\section{Addendum: additional figures}
+\label{sec:addendum}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.95\linewidth]{figs/infogain_rx_base_sft_ctrl_ig.png}
+\caption{Refill triage, held-out hidden condition, pure verifiable reward, by
+risk subset: base / SFT-v3 / GRPO-control / GRPO-info-gain (final checkpoints).
+At the endpoint both GRPO arms erode high-risk relative to the SFT
+initialization; the information-gain advantage over the control is clearest
+mid-training (Figure~\ref{fig:rxtraj}).}
+\label{fig:rx4arm}
+\end{figure}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.95\linewidth]{figs/infogain_rx_checkpoint_trajectory.png}
+\caption{Refill triage checkpoint trajectory, GRPO-control vs.\ GRPO-info-gain
+(held-out hidden, pure verifiable reward). Information-gain holds high-risk
+reward at the SFT level at step-20 ($+0.205$) while the control has already
+crashed it ($-0.007$), and keeps more asks / fewer one-ask shortcuts at every
+step --- but the high-risk benefit erodes by the final checkpoint, the
+transient-and-headroom-bounded result discussed in the text.}
+\label{fig:rxtraj}
+\end{figure}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.9\linewidth]{figs/infogain_diagnostics_base_vs_ctrl_vs_ig.png}
+\caption{Diagnostics deephedge, three-arm view (base / GRPO-control /
+GRPO-info-gain), held-out hidden, support@12 --- the thesis-positive
+information-gain result of Table~\ref{tab:dx} without the DREAM arm, for
+reference.}
+\label{fig:dx3arm}
+\end{figure}
 
 \section*{Code}
 \url{https://github.com/csbrendan/rl-gains-in-clinical-tasks}
