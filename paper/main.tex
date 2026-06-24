@@ -364,10 +364,13 @@ information-gain method beats the plain-GRPO control at \emph{every} checkpoint
 ($+0.205$) where the control has already crashed it ($-0.007$). But the benefit
 is transient: with continued training the policy trims gathering and high-risk
 reward regresses, and no checkpoint reaches the strict thesis-positive bar. The
-discriminating factor is the \emph{initialization}: refill triage trains from a
-strong SFT gatherer that has already saturated high-risk performance, leaving no
-headroom for shaping to convert into a measured win, whereas diagnostics trains
-from the raw base where the headroom exists. Credit assignment helps in both,
+discriminating factor is the \emph{initialization}: refill triage is the one task
+here whose RL starts not from base but from a \emph{light} SFT warmup (the
+protocol-teaching gatherer of the prior multi-turn study, not a heavy
+task-specific SFT), and that warmup --- though small --- already saturates
+high-risk performance, leaving no headroom for shaping to convert into a measured
+win; diagnostics and titration instead train from the raw base, where the
+headroom exists. Credit assignment helps in both,
 but its measurable payoff depends on available headroom --- a result about the
 interaction of reward geometry with the starting policy (Addendum
 Figures~\ref{fig:rx4arm}--\ref{fig:rxtraj}).
