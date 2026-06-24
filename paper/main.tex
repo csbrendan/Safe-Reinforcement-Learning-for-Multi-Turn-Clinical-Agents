@@ -358,7 +358,8 @@ but its measurable payoff depends on available headroom --- a result about the
 interaction of reward geometry with the starting policy (Addendum
 Figures~\ref{fig:rx4arm}--\ref{fig:rxtraj}).
 
-\paragraph{Titration (third task): gates pass; RL in progress.} The titration
+\paragraph{Titration (third task): gates pass; credit-assignment must be
+scale-matched.} The titration
 task is a stylized ordered-intensity decision (no therapy / reduced / full) under
 a clot-vs-bleed trade, with the latent state a joint severity from additive
 risk scores. It is designed to carry an explicit \emph{goal} axis cheaply (the
@@ -369,9 +370,49 @@ cases, and the optimal intensity flips between a clot-first and a bleed-first
 priority on $64\%$ of cases. Gate~2 passes (base latent support@12 $0.52$/$0.63$
 on the hidden/anchor conditions, with near-perfect format compliance), though
 the base policy is a degenerate constant ``reduced-intensity'' committer at
-$\approx 0$ reward --- ideal RL headroom. The plain-GRPO control and the
-information-gain run on titration are training at the time of writing; we report
-the gate results here and the RL comparison in the camera-ready.
+$\approx 0$ reward --- ideal RL headroom.
+
+The RL comparison (Table~\ref{tab:ti}) shows the two reward shapes failing in
+\emph{opposite} directions, bracketing the optimum. Plain GRPO is an
+\textsc{exploit}: it collapses to a near-constant single-ask policy (mean asks
+$2.8\!\to\!1.4$, one-ask rate $0.91$). Adding the information-gain reward at the
+\emph{same} coefficient that was thesis-positive on diagnostics ($\lambda=0.2$)
+prevents the collapse (one-ask rate $0.31$) but \emph{over-corrects} into
+over-gathering (mean asks $4.1$, above the oracle's $\approx 2.8$), which on this
+ask-cost-sensitive task lowers overall value below both base and control
+(guarded verdict \textsc{optimization-only} at every checkpoint). The cause is a
+\emph{scale mismatch}: titration's latent posterior spans nine joint states with
+prior entropy $2.03$, so its per-episode information-gain magnitude
+($\approx 0.5\text{--}1.0$) is $3\text{--}5\times$ larger than diagnostics'
+($\approx 0.17\text{--}0.25$); at fixed $\lambda$ the shaping term therefore
+grows to rival the entire clinical reward and dominates the objective. The
+correct remedy is to \emph{normalize} $\lambda$ to the task's information-gain
+scale (equivalently, hold the shaping-to-reward ratio fixed across tasks) rather
+than transfer a raw coefficient; a scale-matched re-run ($\lambda\approx0.03$) is
+the immediate next experiment. This result, far from a counterexample, sharpens
+the paper's thesis: \emph{reward geometry} is the binding factor, and the
+credit-assignment coefficient is itself a geometric quantity that must be
+calibrated to the task, not ported as a constant.
+
+\begin{table}[ht]
+\centering
+\caption{Titration, held-out hidden condition, pure verifiable reward
+(titration-aware subsets). Plain GRPO under-gathers (one-ask collapse);
+information-gain at the diagnostics coefficient $\lambda{=}0.2$ over-gathers
+(asks far above the oracle's $\approx 2.8$), netting negative on this
+ask-cost-sensitive task --- the two failures bracket the optimum and motivate a
+scale-matched $\lambda$.}
+\label{tab:ti}
+\begin{tabular}{lcccc}
+\toprule
+Policy & overall value & overall asks & one-ask rate & high-clot value \\
+\midrule
+base (untrained)          & $-0.022$ & $2.76$ & $0.74$ & $+0.396$ \\
+plain GRPO (control)      & $-0.012$ & $1.40$ & $0.91$ & $+0.627$ \\
+\,+ info-gain ($\lambda{=}0.2$) & $-0.091$ & $4.10$ & $0.31$ & $+0.446$ \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 
 \section{Discussion}
@@ -430,9 +471,10 @@ environments to isolate reward geometry; this buys precise measurement of
 demonstrability, support, and exploitation at the cost of clinical realism. The
 utility matrices are hand-specified and the latent structure is synthetic, so
 the results are claims about \emph{learning dynamics} under verifiable reward,
-not clinically validated decision policies. The titration RL comparison is still
-running, and goal-conditioned training and hindsight relabeling are designed and
-gated but not yet run. Nonetheless, the through-line is actionable: gate before
+not clinically validated decision policies. The titration RL comparison
+identified a scale-matching requirement for the credit-assignment coefficient
+that a $\lambda$-normalized re-run still needs to confirm, and goal-conditioned
+training and hindsight relabeling are designed and gated but not yet run. Nonetheless, the through-line is actionable: gate before
 you train, assign credit for gathering, decouple exploration when high-risk
 performance matters, and condition on the goal to personalize --- a recipe for
 building, and rigorously stress-testing, adaptive clinical decision agents
