@@ -389,44 +389,53 @@ on the hidden/anchor conditions, with near-perfect format compliance), though
 the base policy is a degenerate constant ``reduced-intensity'' committer at
 $\approx 0$ reward --- ideal RL headroom.
 
-The RL comparison (Table~\ref{tab:ti}) shows the two reward shapes failing in
-\emph{opposite} directions, bracketing the optimum. Plain GRPO is an
-\textsc{exploit}: it collapses to a near-constant single-ask policy (mean asks
-$2.8\!\to\!1.4$, one-ask rate $0.91$). Adding the information-gain reward at the
-\emph{same} coefficient that was thesis-positive on diagnostics ($\lambda=0.2$)
-prevents the collapse (one-ask rate $0.31$) but \emph{over-corrects} into
+The RL comparison (Table~\ref{tab:ti}) reveals a \emph{narrow, intermediate}
+sweet spot for the credit-assignment coefficient, with failures on both sides.
+Plain GRPO ($\lambda{=}0$) is an \textsc{exploit}: it collapses to a
+near-constant single-ask policy (mean asks $2.8\!\to\!1.4$, one-ask rate
+$0.91$). At the \emph{same} coefficient that was thesis-positive on diagnostics
+($\lambda{=}0.2$) the information-gain reward \emph{over-corrects} into
 over-gathering (mean asks $4.1$, above the oracle's $\approx 2.8$), which on this
-ask-cost-sensitive task lowers overall value below both base and control
-(guarded verdict \textsc{optimization-only} at every checkpoint). The cause is a
-\emph{scale mismatch}: titration's latent posterior spans nine joint states with
-prior entropy $2.03$, so its per-episode information-gain magnitude
-($\approx 0.5\text{--}1.0$) is $3\text{--}5\times$ larger than diagnostics'
-($\approx 0.17\text{--}0.25$); at fixed $\lambda$ the shaping term therefore
-grows to rival the entire clinical reward and dominates the objective. The
-correct remedy is to \emph{normalize} $\lambda$ to the task's information-gain
-scale (equivalently, hold the shaping-to-reward ratio fixed across tasks) rather
-than transfer a raw coefficient; a scale-matched re-run ($\lambda\approx0.03$) is
-the immediate next experiment. This result, far from a counterexample, sharpens
-the paper's thesis: \emph{reward geometry} is the binding factor, and the
-credit-assignment coefficient is itself a geometric quantity that must be
-calibrated to the task, not ported as a constant.
+ask-cost-sensitive task drives overall value below both base and control
+(\textsc{optimization-only} at every checkpoint). We then re-ran at
+$\lambda{=}0.03$ --- a first estimate based on matching the \emph{absolute}
+per-episode shaping magnitude to diagnostics --- and it \emph{under}-corrected,
+collapsing to one ask exactly like the control (mean asks $1.2$, one-ask rate
+$0.93$, \textsc{exploit}). The three points bracket the optimum
+($\lambda{=}0.03$ and $0$: under; $\lambda{=}0.2$: over).
+
+The correct scaling is \emph{per ask}, not per episode: a useful ask here reduces
+posterior entropy by $\approx 0.33$ nats, and the policy will only gather when the
+shaping it earns offsets the per-ask cost ($0.03$), i.e.\ when
+$\lambda\cdot\Delta H_{\text{ask}}\gtrsim c$, giving $\lambda\approx0.1$. The
+absolute-magnitude estimate ($0.03$) was too weak because it ignored that
+titration's per-ask cost must be cleared on \emph{every} ask. (Titration's
+larger information scale --- nine joint states, prior entropy $2.03$, per-episode
+information-gain $3\text{--}5\times$ diagnostics' --- is why a single transferred
+$\lambda$ cannot serve both tasks.) The $\lambda\approx0.1$ confirmation run is
+pending. Far from a counterexample, this sharpens the paper's thesis: \emph{reward
+geometry} is the binding factor, and the credit-assignment coefficient is itself
+a geometric quantity that must be calibrated to the task (specifically to the
+per-ask information-gain-to-cost ratio), not ported as a constant.
 
 \begin{table}[ht]
 \centering
 \caption{Titration, held-out hidden condition, pure verifiable reward
-(titration-aware subsets). Plain GRPO under-gathers (one-ask collapse);
-information-gain at the diagnostics coefficient $\lambda{=}0.2$ over-gathers
-(asks far above the oracle's $\approx 2.8$), netting negative on this
-ask-cost-sensitive task --- the two failures bracket the optimum and motivate a
-scale-matched $\lambda$.}
+(titration-aware subsets). Three coefficients bracket a narrow intermediate
+optimum: plain GRPO and $\lambda{=}0.03$ \emph{under}-gather (one-ask collapse),
+$\lambda{=}0.2$ \emph{over}-gathers (asks far above the oracle's $\approx 2.8$,
+netting negative). The per-ask analysis predicts $\lambda\approx0.1$ (confirmation
+pending). High-clot value for the collapsed policies is a degenerate-policy
+artifact (cheap one-ask aggressive commit), flagged \textsc{exploit} by the guard.}
 \label{tab:ti}
 \begin{tabular}{lcccc}
 \toprule
 Policy & overall value & overall asks & one-ask rate & high-clot value \\
 \midrule
-base (untrained)          & $-0.022$ & $2.76$ & $0.74$ & $+0.396$ \\
-plain GRPO (control)      & $-0.012$ & $1.40$ & $0.91$ & $+0.627$ \\
-\,+ info-gain ($\lambda{=}0.2$) & $-0.091$ & $4.10$ & $0.31$ & $+0.446$ \\
+base (untrained)            & $-0.022$ & $2.76$ & $0.74$ & $+0.396$ \\
+plain GRPO (control)        & $-0.012$ & $1.40$ & $0.91$ & $+0.627$ \\
+\,+ info-gain ($\lambda{=}0.03$) & $-0.010$ & $1.24$ & $0.93$ & $+0.825$ \\
+\,+ info-gain ($\lambda{=}0.2$)  & $-0.091$ & $4.10$ & $0.31$ & $+0.446$ \\
 \bottomrule
 \end{tabular}
 \end{table}
