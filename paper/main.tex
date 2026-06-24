@@ -55,13 +55,14 @@ diagnostic work-up, and dosing \emph{titration} --- we show the gates are
 \emph{necessary but not sufficient}: even when both pass, plain Group Relative
 Policy Optimization (GRPO) exploits shortcuts (collapsing to a single question,
 or defensively hedging) that maximize reward while abandoning adaptive
-gathering. A DREAM-inspired single-episode \emph{information-gain} credit
-assignment --- dense reward for asks that reduce uncertainty about the latent
-state, applied only in the RL rollout so the gates stay pure --- restores
+gathering. An \emph{information-gain} credit-assignment reward --- dense reward
+for asks that reduce uncertainty about the latent state, applied only in the RL
+rollout so the gates stay pure --- restores
 adaptive gathering and is \emph{thesis-positive} on diagnostics (high-risk
 support and clinical value both improve with no shortcut collapse), while being
 partial and transient on refill triage, where the supervised initialization
-left no high-risk headroom. A decoupled explore/exploit variant (DREAM) further
+left no high-risk headroom. A separate, decoupled explore/exploit variant
+(DREAM-style) further
 improves the safety-critical high-risk subset (oracle-grade support
 $0.50\!\to\!1.00$) at the cost of over-gathering on low-acuity cases. We close
 by showing how these components compose into \emph{goal-conditioned} adaptive
@@ -114,9 +115,9 @@ tasks we show these gates are \emph{necessary but not sufficient}: even when
 both pass, plain GRPO reliably finds reward-equivalent \emph{shortcuts} ---
 asking a single question and committing, or hedging to a defensive action ---
 that abandon adaptive gathering. We show that an explicit \emph{credit-assignment}
-signal (a DREAM-inspired single-episode information-gain reward) is the missing
-third ingredient that prevents the collapse, and that a decoupled
-explore/exploit scheme further improves safety-critical outcomes at a
+signal (an information-gain reward for uncertainty-reducing asks) is the missing
+third ingredient that prevents the collapse, and that a separate, decoupled
+explore/exploit scheme (DREAM-style) further improves safety-critical outcomes at a
 characterizable over-gathering cost. Third, we show how these pieces compose
 into \emph{goal-conditioned} adaptive gathering --- the mechanism by which a
 single model can adapt to a clinician's or patient's stated priorities --- and
@@ -215,29 +216,30 @@ verdicts --- \textsc{thesis-positive}, \textsc{exploit} (ask-collapse or
 high-risk regression), or \textsc{termination-only} (reward rose only by
 learning to commit, not by gathering better).
 
-\subsection{Information-gain credit assignment (single-episode DREAM proxy)}
+\subsection{Information-gain credit assignment}
 The shortcut problem is one of credit assignment: the terminal reward does not
 tell the policy \emph{which ask} was responsible for a good commit, so the
-cheapest way to raise reward is to stop asking. Drawing on DREAM's idea of
-rewarding exploration by how well it reveals the task identity
-\citep{liu2021dream}, we add a dense, single-episode \emph{information-gain}
-reward: each new, decision-relevant ask is rewarded in proportion to the
-reduction in entropy of the posterior over the latent state,
+cheapest way to raise reward is to stop asking. We address it directly with a
+dense \emph{information-gain} reward --- an intrinsic reward for uncertainty
+reduction, in the spirit of potential-based reward shaping
+\citep{ng1999shaping}: each new, decision-relevant ask is rewarded in proportion
+to the reduction in entropy of the posterior over the latent state,
 $\Phi = -\,\Delta H\big(p(\mu \mid \text{revealed})\big)$, summed over the asks,
 and added to the terminal reward with weight $\lambda$. Irrelevant or repeated
 asks reduce no entropy and earn nothing, so the signal rewards \emph{useful}
-gathering specifically. This is potential-based and computed from the same
-analytic posterior the gates use, but it is applied \emph{only} in the RL
-rollout reward --- never in $U$, in \texttt{env.score}, or in the gates --- so
-baseline comparisons and gate measurements stay pure. Treating the hidden case
-as the task identity $\mu$, the ask turns as exploration, and the commit as
-exploitation, this is a single-episode credit-assignment instantiation of
-DREAM's decoupling intuition without separate episodes.
+gathering specifically. The reward is computed from the same analytic posterior
+the gates use, but it is applied \emph{only} in the RL rollout reward --- never
+in $U$, in \texttt{env.score}, or in the gates --- so baseline comparisons and
+gate measurements stay pure. This is ordinary per-ask credit assignment within a
+\emph{single policy and a single episode}: it densifies the gathering signal but
+does \emph{not} separate exploration from exploitation. The decoupled variant in
+the next section does separate them, and that is where the connection to the
+DREAM line of meta-RL \citep{liu2021dream} actually applies.
 
-\subsection{DREAM: decoupled exploration and exploitation}
-The single-episode proxy shares one policy and one trajectory across asking and
-committing, so the two still compete for the same gradient. Full DREAM
-\citep{liu2021dream} decouples them. Our v1 keeps a \emph{single network and
+\subsection{DREAM-style decoupled exploration and exploitation}
+The information-gain reward above shares one policy and one trajectory across
+asking and committing, so the two still compete for the same gradient. The DREAM
+line of meta-RL \citep{liu2021dream} decouples them; we adapt that idea here. Our v1 keeps a \emph{single network and
 adapter} (no learned decoder, no second policy) and separates the phases with a
 mode token: an \emph{explore} phase that may only ask, rewarded by recoverability
 of $\mu$ (the information-gain signal), and an \emph{exploit} phase that commits
@@ -286,7 +288,7 @@ with high-risk reward cratering) on a second, structurally different task,
 establishing that gates-pass-but-GRPO-exploits is not task-specific.
 
 \paragraph{Information-gain credit assignment is thesis-positive on
-diagnostics.} Adding the single-episode information-gain reward ($\lambda=0.2$),
+diagnostics.} Adding the information-gain reward ($\lambda=0.2$),
 with the gates and $U$ unchanged, flips the verdict to
 \textsc{thesis-positive} (Table~\ref{tab:dx}, Figure~\ref{fig:dx4arm}). Held-out clinical value rises
 ($+0.255 \to +0.334$), high-risk oracle-grade support is held at $0.50$ and
@@ -333,7 +335,7 @@ the over-gathering that collapses benign support.}
 \paragraph{DREAM improves the safety-critical subset, at an over-gathering
 cost.} Decoupling exploration from exploitation lets the explore policy gather
 without commit-cost pressure, and it closes the value-of-information gap the
-single-episode proxy left open: mean asks rise from $2.2$ toward and past the
+information-gain reward left open: mean asks rise from $2.2$ toward and past the
 oracle's $\approx 3.9$, and the safety-critical \emph{high-risk} subset improves
 markedly --- reward $+0.139 \to +0.248$ and oracle-grade support
 $0.50 \to 1.00$ at the best checkpoint --- while still clearing all guards
@@ -349,8 +351,7 @@ is decision-relevant and over-explores where it is not.
 \includegraphics[width=0.95\linewidth]{figs/dream_diagnostics_trajectory.png}
 \caption{DREAM checkpoint trajectory on diagnostics (held-out hidden, pure
 verifiable reward). High-risk reward and oracle-grade support peak at
-checkpoint-40 (reward $+0.248$, support $1.00$), above the single-episode
-information-gain reference (dashed), while mean asks stay above the oracle
+checkpoint-40 (reward $+0.248$, support $1.00$), above the information-gain reference (dashed), while mean asks stay above the oracle
 value-of-information ($\approx 3.9$) at every checkpoint --- the persistent
 over-gathering that is the flip side of unconstrained exploration.}
 \label{fig:dxtraj}
@@ -439,8 +440,7 @@ earlier finding that RL is flat when a task is fully demonstrable. But passing
 the gates does not earn an RL win: with the plain verifiable reward, GRPO
 exploits shortcuts (one-ask collapse, defensive hedge) that maximize reward
 while abandoning adaptive gathering. The missing ingredient is \emph{reward
-geometry} --- specifically, credit assignment for gathering. A single-episode
-information-gain reward, applied purely in the RL rollout so the gates stay pure,
+geometry} --- specifically, credit assignment for gathering. An information-gain reward, applied purely in the RL rollout so the gates stay pure,
 restores adaptive gathering and is thesis-positive where headroom exists
 (diagnostics); decoupling exploration from exploitation (DREAM) buys a further,
 favorable improvement on the safety-critical high-risk subset at a quantifiable
