@@ -159,7 +159,8 @@ deterministic patient simulator; the base model is the compact clinical
 
 \paragraph{Two gates: only run RL where it can help.} A recurring failure mode
 in applied RLVR is spending compute on tasks where RL cannot beat supervised
-learning. We screen every task with two analytic gates before training.
+learning. We screen every task with two cheap gates --- one analytic, one
+inference-only --- before committing any policy-gradient compute.
 
 \emph{Gate~1 --- demonstrability (the behavioral-cloning, or BC, gap).} We
 require that the adaptive oracle strictly outperform the best fixed-action
@@ -169,17 +170,25 @@ If a single fixed action is near-optimal, gathering is pointless and the task is
 regime where our prior multi-turn study found RL flat. A positive BC-gap is
 necessary for adaptive gathering to have any value.
 
-\emph{Gate~2 --- latent support.} We require that the base model can
-\emph{realize} the oracle action under sampling --- measured as support@$k$, the
-fraction of cases for which at least one of $k$ temperature rollouts gathers and
-commits to an oracle-grade action. If the optimal behavior is never sampled, RL
-has no positive signal to reinforce; this is the ``knowledge absent'' failure
-mode that motivates an SFT warmup before RL \citep{lin2025ehrmind}.
+\emph{Gate~2 --- latent support.} We require that the \emph{policy that will
+initialize RL} can \emph{realize} the oracle action under sampling --- measured
+as support@$k$, the fraction of cases for which at least one of $k$ temperature
+rollouts gathers and commits to an oracle-grade action. That initialization is
+the base model where it is already strong enough (as for the diagnostics and
+titration tasks here, whose RL runs start from base), or a light SFT warmup where
+the base alone cannot sample the optimal behavior (as for refill triage). If the
+optimal behavior is never sampled even after warmup, RL has no positive signal to
+reinforce; this is the ``knowledge absent'' failure mode that motivates an SFT
+warmup before RL \citep{lin2025ehrmind}.
 
-Both gates are computed without training --- Gate~1 analytically from $U$ and the
-priors, Gate~2 from a cheap inference-only probe --- so they gate compute before
-it is spent. Crucially, the gates depend only on the \emph{environment}
-($U$, priors, base policy), never on any reward shaping we add for RL; we keep
+Neither gate requires an RL-training run --- that is the point of gating
+\emph{before} spending policy-gradient compute, not that the probed model is
+untrained. Gate~1 needs no model at all (it is analytic, from $U$ and the
+priors); Gate~2 is a single forward-pass support probe of the initialization
+policy (base or SFT warmup). So both screen the task before any policy-gradient
+compute is spent. Crucially, the gates depend only on the \emph{environment}
+($U$, priors) and the fixed RL-initialization policy, never on any reward shaping
+we add for RL; we keep
 all shaping out of $U$ and the gates so that gate measurements remain a clean,
 shaping-independent description of the task.
 
