@@ -23,7 +23,7 @@
 %   liu2021dream  (Liu, Raghunathan, Liang, Finn -- DREAM: decoupled exploration/exploitation, ICML 2021)
 %   andrychowicz2017her (Andrychowicz et al. -- Hindsight Experience Replay, NeurIPS 2017)
 % (both bib entries are now present in sample.bib)
-% reused keys already present: shao2024deepseekmath, brown_verifiers, saab2025medgemma, hu2022lora,
+% reused keys already present: shao2024deepseekmath, saab2025medgemma, hu2022lora,
 %   chen2024huatuogpto1, zhang2025medrlvr, lin2025ehrmind, sun2024edcopilot, tu2024amie
 
 \title{Reward Geometry, Not Just Capability: When Verifiable RL Realizes
@@ -147,9 +147,13 @@ adaptive oracle (the optimal VOI policy), the best fixed (no-gathering) policy,
 and the posterior over $\mu$ given any revealed set --- the quantities the gates
 and the credit-assignment signal require. This verifiable-reward setting follows
 the RLVR line that extends verifier-driven RL from math and code to medicine
-\citep{chen2024huatuogpto1, zhang2025medrlvr, lin2025ehrmind}, using the same
-Verifiers tooling \citep{brown_verifiers} and GRPO \citep{shao2024deepseekmath}
-as the policy optimizer; the base model is the compact clinical
+\citep{chen2024huatuogpto1, zhang2025medrlvr, lin2025ehrmind}. Unlike learned- or
+framework-reward setups, our verifier is the environment's \emph{exact analytic
+utility function} itself (no reward model, no external rubric library): the
+reward is computed in closed form from the known $U$ and finding priors. The
+policy optimizer is GRPO \citep{shao2024deepseekmath} as implemented in TRL,
+driven by a custom on-policy multi-turn \texttt{rollout\_func} against a
+deterministic patient simulator; the base model is the compact clinical
 \texttt{medgemma-4b-it} \citep{saab2025medgemma} with LoRA adapters
 \citep{hu2022lora}.
 
