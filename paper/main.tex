@@ -224,21 +224,17 @@ as a single dialogue, evaluated \emph{only} in that composed form --- a hard gua
 ensures the commit phase never sees the privileged latent, so reported numbers
 reflect a deployable policy.
 
-\subsection{A small SFT-vs-RL bridge}
+\subsection{An SFT-vs-RL observation}
 \label{subsec:bridge}
-To connect to the industrially standard SFT$\to$RL pipeline, we ask when RL adds
-value \emph{over} a supervised initialization. We have one existing data point ---
-refill triage, whose RL starts from a light protocol-teaching SFT warmup --- and
-we scope two further comparisons on diagnostics (our cleanest task): (a) a
-\emph{strong}-SFT$\to$RL cell that full-SFTs on oracle trajectories and asks
-whether RL still adds anything on a demonstrable task (the anti-hype cell), and
-(b) a \emph{biased}-SFT$\to$RL cell that SFTs on a distribution under-sampling the
-high-risk cases and asks whether RL \emph{repairs} the safety-critical hole (the
-positive cell). Both reuse the gates, the credit-assignment reward, and the
-guarded report unchanged; an SFT-dose curve establishes that SFT has plateaued
-before RL is applied. The strong-SFT and biased-SFT cells are forthcoming; we
-report the refill-triage point here and the diagnostics cells as the immediate
-extension.
+The industrially standard pipeline is SFT \emph{then} RL, which raises the question
+of when RL adds value \emph{over} a supervised initialization. Our three main tasks
+are designed to isolate reward geometry and so train RL from base (diagnostics,
+titration) or a light warmup (refill triage); a systematic SFT$\times$coverage
+study is out of scope here (Section~\ref{sec:discussion}, future work). We do,
+however, have one informative data point --- refill triage, whose RL initializes
+from a light protocol-teaching SFT warmup --- which we report as evidence that
+\emph{the headroom a supervised initialization leaves modulates RL's payoff}
+(Section~\ref{subsec:bridge-result}).
 
 \subsection{Evaluation}
 All policies are scored on held-out cases with the \emph{pure} verifiable reward
@@ -405,8 +401,8 @@ plain GRPO (control)             & $-0.012$ & $1.40$ & $0.91$ & $+0.627$ & $1.00
 \end{tabular}
 \end{table}
 
-\subsection{Initialization matters: a saturated warmup leaves no headroom (the
-SFT-vs-RL bridge)}
+\subsection{Initialization matters: a saturated warmup leaves no headroom}
+\label{subsec:bridge-result}
 Refill triage is the one task whose RL starts not from base but from a \emph{light}
 SFT warmup (the protocol-teaching gatherer of a prior multi-turn study, not a heavy
 task-specific SFT). There, info-gain beats the plain-GRPO control at every
@@ -417,12 +413,12 @@ no checkpoint reaches the strict thesis-positive bar
 (Addendum Figures~\ref{fig:rx4arm}--\ref{fig:rxtraj}). The reason is that the
 warmup --- though small --- already \emph{saturates} high-risk performance, leaving
 no headroom for shaping to convert into a measured win; diagnostics and titration
-instead train from base, where the headroom exists. This is the first cell of the
-SFT-vs-RL bridge (Section~\ref{subsec:bridge}): \emph{RL's benefit tracks the
-headroom the initialization leaves}. It motivates the two forthcoming diagnostics
-cells --- strong-SFT$\to$RL (does RL add on a saturated, demonstrable task?) and
-biased-SFT$\to$RL (does RL repair an under-sampled high-risk hole?) --- which test
-the practical rule directly.
+instead train from base, where the headroom exists. This single SFT-initialized
+case makes a concrete point that mirrors the titration BC-gap finding from the
+other side: \emph{RL's payoff tracks the headroom left by the initialization}, just
+as it tracks the headroom set by the task's demonstrability. A systematic test of
+this rule --- full-SFT$\to$RL on a demonstrable task, and biased-SFT$\to$RL that
+under-samples high-risk cases --- is the natural next study (Section~\ref{sec:discussion}).
 
 
 \section{Discussion}
@@ -444,7 +440,8 @@ leaves.
 \begin{table}[ht]
 \centering
 \caption{Practical guidance distilled from the experiments. ``Have'' = supported by
-results in this paper; ``forthcoming'' = the two diagnostics SFT$\to$RL cells.}
+results in this paper; ``future'' = predicted by the framework and left to the
+systematic SFT$\times$coverage study.}
 \label{tab:guide}
 \begin{tabular}{p{5.0cm}p{4.6cm}p{2.6cm}}
 \toprule
@@ -455,8 +452,9 @@ Latent-support gate fails (init cannot sample the optimum) & SFT/warm up first &
 Gates pass, naive outcome reward & Expect unsafe shortcuts (1-ask, hedge, high-risk regression) & have (controls) \\
 Gates pass, info-gain credit assignment, tuned coefficient & Safe adaptive gathering; calibrate $\lambda$ per task & have (diagnostics, titration) \\
 High-risk safety is the priority & Decouple explore/exploit; accept some over-gathering & have (DREAM) \\
-Strong SFT on a demonstrable task & RL likely adds little --- do not assume a win & forthcoming + prior work \\
-Biased/incomplete SFT (real data) & RL can repair high-risk / long-tail holes & forthcoming \\
+Task barely clears the demonstrability gate (small BC-gap) & Even calibrated RL yields little value gain & have (titration) \\
+Strong/saturated SFT initialization & RL adds little --- no headroom to capture & have (refill triage) \\
+Biased/incomplete SFT (real data) & RL should repair high-risk / long-tail holes & future (predicted) \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -473,18 +471,23 @@ gates are the practical contributions.
 \paragraph{Limitations.} The environments are stylized, synthetic, and
 rule-labeled with a deterministic simulator at a single 4B model scale, and the RL
 runs are bounded; the contribution is a mechanism and a decision framework, not a
-clinically validated policy. Headline results are reported at a single seed
-(repeat seeds on the diagnostics thesis-positive result are the priority hardening
-step). For diagnostics and titration we characterize RL \emph{from base}; the
-SFT-vs-RL bridge currently rests on one task (refill triage), with the two
-diagnostics cells forthcoming.
+clinically validated policy. Headline results are single-seed; multi-seed
+replication of the diagnostics thesis-positive result would further harden them. For
+diagnostics and titration we characterize RL \emph{from base}, and the
+SFT-vs-RL observation rests on one task (refill triage); a systematic SFT-vs-RL
+study is future work, below.
 
 \paragraph{Future work.} The natural next study is the full
-\emph{coverage}$\,\times\,$\emph{demonstrability} matrix --- including
-\emph{non-demonstrable} task variants (stochastic patient responses, hidden
-confounders, ambiguous stopping) where no static demonstration captures the optimal
-policy and RL should retain value even after strong SFT. Two extensions of the
-present machinery are also gated and designed but out of scope here:
+\emph{coverage}$\,\times\,$\emph{demonstrability} matrix. Within our existing tasks,
+two SFT$\to$RL cells test the practical rule directly: a \emph{strong}-SFT$\to$RL
+cell (full SFT on oracle trajectories on a demonstrable task --- does RL still add
+once SFT has plateaued?) and a \emph{biased}-SFT$\to$RL cell (SFT under-sampling the
+high-risk cases --- does RL repair the safety-critical hole?), each with an SFT-dose
+curve to establish saturation. The larger version adds \emph{non-demonstrable} task
+variants (stochastic patient responses, hidden confounders, ambiguous stopping)
+where no static demonstration captures the optimal policy and RL should retain value
+even after strong SFT. Two further extensions of the present machinery are gated and
+designed:
 \emph{goal-conditioned} adaptive gathering (conditioning the policy on a stated
 safety/burden/control priority, with the optimal action and the amount of gathering
 shifting with the goal) and analytic \emph{hindsight relabeling}
