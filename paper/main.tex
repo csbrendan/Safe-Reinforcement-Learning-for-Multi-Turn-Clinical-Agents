@@ -357,31 +357,50 @@ shaping magnitude to diagnostics --- it \emph{under}-corrects, collapsing to one
 ask like the control. The three points bracket the optimum. The correct scaling is
 \emph{per ask}: a useful ask reduces posterior entropy by $\approx 0.33$ nats, and
 the policy only gathers when the shaping offsets the per-ask cost ($0.03$), i.e.\
-$\lambda\cdot\Delta H_{\text{ask}}\gtrsim c$, predicting $\lambda\approx0.1$ (the
-$\lambda{=}0.1$ confirmation run is in progress). Titration's larger information
-scale (nine joint states, prior entropy $2.03$, per-episode information-gain
-$3\text{--}5\times$ diagnostics') is why a single transferred $\lambda$ cannot serve
-both tasks: the credit-assignment coefficient is itself a geometric quantity that
-must be calibrated to the per-ask information-gain-to-cost ratio.
+$\lambda\cdot\Delta H_{\text{ask}}\gtrsim c$, predicting $\lambda\approx0.1$. The
+$\lambda{=}0.1$ run \emph{confirms the prediction on gathering}: it lands at mean
+asks $2.67 \approx$ the oracle's $2.77$ with no one-ask collapse and no
+over-gathering (consistently across checkpoints), and lifts high-clot oracle-grade
+support to $1.00$ at sensible depth ($2.5$ asks, versus the control's hollow
+$1.5$). Titration's larger information scale (nine joint states, prior entropy
+$2.03$, per-episode information-gain $3\text{--}5\times$ diagnostics') is why a
+single transferred $\lambda$ cannot serve both tasks: the credit-assignment
+coefficient is itself a geometric quantity that must be calibrated to the per-ask
+information-gain-to-cost ratio.
+
+The calibrated coefficient, however, does \emph{not} convert into an overall
+clinical-value win: $\lambda{=}0.1$ remains \textsc{inconclusive} (overall value
+$-0.036$, support flat at base level). The reason ties reward geometry back to the
+gates: titration barely clears Gate~1 (BC-gap only $+0.075$), so its value surface
+is shallow and the ceiling on any value improvement is intrinsically low --- even
+\emph{perfectly calibrated} gathering cannot manufacture headroom the task does not
+have. This is a clean separation of the two factors: the credit coefficient
+controls \emph{gathering behavior} exactly as the per-ask law predicts, but whether
+better gathering yields a clinical-value win is governed by the task's
+\emph{demonstrability headroom}. Diagnostics has a large BC-gap and converts;
+titration has a marginal one and does not, despite identical machinery.
 
 \begin{table}[ht]
 \centering
 \caption{Titration, held-out hidden condition, pure verifiable reward
-(titration-aware subsets). Three coefficients bracket a narrow optimum: plain GRPO
-and $\lambda{=}0.03$ \emph{under}-gather (one-ask collapse), $\lambda{=}0.2$
-\emph{over}-gathers (asks far above the oracle's $\approx 2.8$, netting negative).
-The per-ask analysis predicts $\lambda\approx0.1$ (confirmation in progress).
-High-clot value for the collapsed policies is a degenerate-policy artifact (cheap
-one-ask aggressive commit), flagged \textsc{exploit} by the guard.}
+(titration-aware subsets). The coefficient is a gathering dial: $\lambda{\le}0.03$
+and plain GRPO \emph{under}-gather (one-ask collapse), $\lambda{=}0.2$
+\emph{over}-gathers; the per-ask-predicted $\lambda{=}0.1$ lands at the oracle's
+gathering level (asks $2.67$, no collapse) and lifts high-clot support to $1.00$.
+But even calibrated gathering stays \textsc{inconclusive} on overall value, because
+titration's BC-gap ($+0.075$) leaves little value headroom. High-clot value for the
+collapsed policies ($\lambda{\le}0.03$, control) is a degenerate-policy artifact
+(cheap one-ask aggressive commit), flagged \textsc{exploit} by the guard.}
 \label{tab:ti}
-\begin{tabular}{lcccc}
+\begin{tabular}{lccccc}
 \toprule
-Policy & overall value & overall asks & one-ask rate & high-clot value \\
+Policy & overall value & overall asks & one-ask rate & high-clot value & high-clot supp \\
 \midrule
-base (untrained)                 & $-0.022$ & $2.76$ & $0.74$ & $+0.396$ \\
-plain GRPO (control)             & $-0.012$ & $1.40$ & $0.91$ & $+0.627$ \\
-\,+ info-gain ($\lambda{=}0.03$) & $-0.010$ & $1.24$ & $0.93$ & $+0.825$ \\
-\,+ info-gain ($\lambda{=}0.2$)  & $-0.091$ & $4.10$ & $0.31$ & $+0.446$ \\
+base (untrained)                 & $-0.022$ & $2.76$ & $0.74$ & $+0.396$ & $0.67$ \\
+plain GRPO (control)             & $-0.012$ & $1.40$ & $0.91$ & $+0.627$ & $1.00$ \\
+\,+ info-gain ($\lambda{=}0.03$) & $-0.010$ & $1.24$ & $0.93$ & $+0.825$ & $1.00$ \\
+\,+ info-gain ($\lambda{=}0.1$)  & $-0.036$ & $2.67$ & $0.62$ & $+0.556$ & $1.00$ \\
+\,+ info-gain ($\lambda{=}0.2$)  & $-0.091$ & $4.10$ & $0.31$ & $+0.446$ & $0.67$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -458,8 +477,7 @@ clinically validated policy. Headline results are reported at a single seed
 (repeat seeds on the diagnostics thesis-positive result are the priority hardening
 step). For diagnostics and titration we characterize RL \emph{from base}; the
 SFT-vs-RL bridge currently rests on one task (refill triage), with the two
-diagnostics cells forthcoming. The titration $\lambda{=}0.1$ confirmation is in
-progress.
+diagnostics cells forthcoming.
 
 \paragraph{Future work.} The natural next study is the full
 \emph{coverage}$\,\times\,$\emph{demonstrability} matrix --- including
