@@ -182,6 +182,20 @@ cite SPIRAL as conceptual support for the broader move toward training structure
 inference procedures; it is math/reasoning work, not medical, and not evidence for
 clinical safety.)
 
+\paragraph{Denser feedback than sparse outcome rewards.} Recent work has also
+explored alternatives to sparse outcome-reward RLVR that preserve on-policy training
+while providing denser feedback. \citet{zhao2026selfdistilledreasoner} introduce
+On-Policy Self-Distillation (OPSD), where the same LLM plays both student and
+teacher: the student generates an on-policy response from the problem alone, while
+the teacher conditions on privileged reference solutions and provides token-level
+distributional supervision along the student's rollout. OPSD is not conventional
+RLVR, but it targets the same credit-assignment weakness of sequence-level rewards
+that motivates our work: GRPO supplies a sparse final-answer signal, whereas OPSD
+provides dense feedback even when the final answer is wrong. Our approach is
+complementary --- rather than using privileged reference traces for token-level
+self-distillation, we use an analytic verifier to assign dense information-gain
+credit to clinically useful questions during RL.
+
 
 \section{Methods}
 \label{sec:method}
@@ -489,7 +503,11 @@ the inference procedure the model learns to execute. In our clinical setting the
 failure mode is not redundant or poorly aggregated reasoning traces but unsafe
 under-gathering, one-question collapse, and defensive hedging. Reward design
 therefore has to target the clinical \emph{procedure} itself --- which facts are
-gathered and when to commit --- not just the final answer.
+gathered and when to commit --- not just the final answer. Together with OPSD-style
+on-policy distillation \citep{zhao2026selfdistilledreasoner}, our results support a
+broader view of post-training: the central problem is not simply SFT versus RL, but
+how to convert verifiable or privileged information into dense credit assignment over
+the inference procedure the model should learn.
 
 \paragraph{Limitations.} The environments are stylized, synthetic, and
 rule-labeled with a deterministic simulator at a single 4B model scale, and the RL
