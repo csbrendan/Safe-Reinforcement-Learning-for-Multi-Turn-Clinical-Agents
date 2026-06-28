@@ -168,6 +168,20 @@ fixed RL-initialization policy, never on any reward shaping we add for RL; we ke
 all shaping out of $U$ and the gates so gate measurements remain a clean,
 shaping-independent description of the task.
 
+\paragraph{Training structured inference procedures.} Recent RL methods increasingly
+train models not merely to produce a single correct reasoning trace, but to use
+structured inference-time compute. SPIRAL \citep{hamid2026spiral} trains a language
+model to coordinate sequential reasoning, parallel search traces, and aggregation,
+optimizing the full search-and-aggregate pipeline against the final reward. This is
+complementary to our setting: rather than training parallel trace aggregation, we
+study a different structured inference primitive --- adaptive clinical information
+gathering before commitment. In safety-critical clinical tasks the desired object is
+not merely a correct final answer but a structured procedure: gather relevant facts,
+compare alternatives, resolve uncertainty, and only then commit to an action. (We
+cite SPIRAL as conceptual support for the broader move toward training structured
+inference procedures; it is math/reasoning work, not medical, and not evidence for
+clinical safety.)
+
 
 \section{Methods}
 \label{sec:method}
@@ -467,6 +481,15 @@ guess. Because the damage concentrates in the rare high-risk subset and is maske
 by mean reward, a pipeline that selects on aggregate reward can ship a less safe
 policy --- which is exactly why the per-subset, guarded evaluation and the pre-RL
 gates are the practical contributions.
+
+\paragraph{RL shapes the inference procedure, not just the answer.} Our results fit
+the same broader lesson as recent structured-inference work such as SPIRAL
+\citep{hamid2026spiral}: RL does not merely change final-answer accuracy, it shapes
+the inference procedure the model learns to execute. In our clinical setting the
+failure mode is not redundant or poorly aggregated reasoning traces but unsafe
+under-gathering, one-question collapse, and defensive hedging. Reward design
+therefore has to target the clinical \emph{procedure} itself --- which facts are
+gathered and when to commit --- not just the final answer.
 
 \paragraph{Limitations.} The environments are stylized, synthetic, and
 rule-labeled with a deterministic simulator at a single 4B model scale, and the RL
