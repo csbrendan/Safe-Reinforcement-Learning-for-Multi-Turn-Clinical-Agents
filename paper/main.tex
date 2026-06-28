@@ -196,6 +196,22 @@ complementary --- rather than using privileged reference traces for token-level
 self-distillation, we use an analytic verifier to assign dense information-gain
 credit to clinically useful questions during RL.
 
+\paragraph{Medical multi-turn agents and RL for clinical consultation.} Closest in
+application are recent medical dialogue agents that use RL to train proactive
+clinical questioning. \citet{feng2026doctoragentrl} introduce DoctorAgent-RL, a
+multi-agent framework in which a doctor agent interacts with an LLM-based patient
+agent and receives evaluator rewards for diagnostic accuracy, information
+acquisition, and protocol compliance; their MTMedDialog dataset supports dynamic
+patient simulation through hidden patient profiles, and their SFT+GRPO pipeline
+trains a Qwen2.5-7B doctor agent to ask strategic questions before diagnosis. This
+work strongly supports the premise that clinical consultation should be modeled as
+an adaptive information-gathering process rather than a single-turn
+answer-generation task. Our work is complementary: DoctorAgent-RL demonstrates an
+applied end-to-end medical consultation system, whereas we isolate the RL learning
+dynamics in controlled verifiable environments, asking when gates, SFT coverage, and
+reward geometry make RL improve safe gathering versus exploit shortcuts such as
+under-gathering, one-question collapse, or defensive hedging.
+
 
 \section{Methods}
 \label{sec:method}
@@ -507,7 +523,10 @@ gathered and when to commit --- not just the final answer. Together with OPSD-st
 on-policy distillation \citep{zhao2026selfdistilledreasoner}, our results support a
 broader view of post-training: the central problem is not simply SFT versus RL, but
 how to convert verifiable or privileged information into dense credit assignment over
-the inference procedure the model should learn.
+the inference procedure the model should learn. The success of applied systems such
+as DoctorAgent-RL \citep{feng2026doctoragentrl} reinforces our central framing: in
+clinical agents, the learned behavior of interest is not merely the final diagnosis
+or action, but the information-gathering policy that produces it.
 
 \paragraph{Limitations.} The environments are stylized, synthetic, and
 rule-labeled with a deterministic simulator at a single 4B model scale, and the RL
