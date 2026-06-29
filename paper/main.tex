@@ -512,6 +512,26 @@ by mean reward, a pipeline that selects on aggregate reward can ship a less safe
 policy --- which is exactly why the per-subset, guarded evaluation and the pre-RL
 gates are the practical contributions.
 
+\paragraph{Why clinical gathering is harder for RL than math or code.} The
+reliable wins of RLVR have come from domains with a \emph{singular, unambiguous}
+outcome --- a math problem is right or wrong, a program passes its tests or does
+not \citep{shao2024deepseekmath} --- where the reward is simple, stable, and hard
+to game. Multi-turn clinical decision-making has no such singular outcome: the
+object of interest is a \emph{process} --- gather the decision-relevant facts,
+weigh patient safety against burden, and commit only when enough is known --- so
+the reward is subtler and shortcut policies (defensive hedging, under-gathering,
+one-question collapse) are low-resistance attractors that score well on aggregate
+while failing the cases that matter most. This reframes our cautionary results,
+including the failed coverage-repair attempt, not as artifacts of a particular RL
+implementation but as a property of the domain: in tasks where the reward is an
+unambiguous endpoint, RL tends to help out of the box; in tasks where the reward
+must encode a careful process, RL's value is contingent on reward design and on
+actively screening for shortcut exploitation. The frontier for RL in nuanced
+domains such as medicine is therefore reward and procedure design --- crediting
+the gathering, not just the answer --- rather than raw RL capability, which is the
+gap this paper's gates, credit assignment, and guarded evaluation are meant to
+close.
+
 \paragraph{RL shapes the inference procedure, not just the answer.} Our results fit
 the same broader lesson as recent structured-inference work such as SPIRAL
 \citep{hamid2026spiral}: RL does not merely change final-answer accuracy, it shapes
