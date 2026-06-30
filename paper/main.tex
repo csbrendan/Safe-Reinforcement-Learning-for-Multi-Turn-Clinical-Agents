@@ -218,6 +218,62 @@ reward geometry make RL improve safe gathering versus exploit shortcuts such as
 under-gathering, one-question collapse, or defensive hedging.
 
 
+\section{Experimental setup}
+\label{sec:setup}
+
+\paragraph{Environment family.} All three tasks instantiate the same
+ask$\to$commit POMDP. The hidden state $\mu$ is a latent severity (or, for
+titration, a joint clot/bleed risk) fixed by a vector of binary \emph{findings}
+drawn from per-finding prevalences; a \emph{family} (presentation archetype) sets
+which findings are decision-relevant. At each turn the policy emits one structured
+JSON action: an \emph{ask} (query one finding, answered by a deterministic
+simulator at per-ask cost $c{=}0.03$) or a \emph{commit} (one terminal action),
+after which the episode ends. The verifiable reward is
+$R=U[\mu][a]-c\,n_{\text{asks}}$ with $U$ a hand-specified utility matrix; an
+action is \emph{oracle-grade} if its realized reward is within $\text{EPS}{=}0.03$
+of the exact adaptive-oracle value. Episodes are capped at a per-task turn budget.
+Table~\ref{tab:envs} gives the per-task dimensions. All environments are
+synthetic, stylized, and rule-labeled by a deterministic simulator; they are
+controlled RL testbeds, \emph{not} clinically validated data.
+
+\begin{table}[ht]
+\centering
+\caption{Per-task environment dimensions. ``Findings'' is the binary
+decision-feature vocabulary; ``actions'' is the terminal commit set (titration's
+are ordered). Diagnostics is the co-designed deephedge variant. All use per-ask
+cost $0.03$ and oracle-grade tolerance $0.03$.}
+\label{tab:envs}
+\begin{tabular}{lccccc}
+\toprule
+Task & Findings & Commit actions & Families & Latent state & Turn cap \\
+\midrule
+Refill triage & 12 & 5 & 2 (ACEi/ARB, NSAID) & severity (none/mod/high) & 10 \\
+Diagnostics (deephedge) & 18 & 5 & 2 (chest, abdominal) & severity (none/mod/high) & 12 \\
+Titration & 6 & 3 (ordered) & 1 (anticoag) & joint clot$\times$bleed (9 states) & 10 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Data, splits, and rollouts.} Cases are generated on demand (no fixed
+corpus). RL trains on $300$ cases per task drawn at the \emph{hidden} condition
+($\rho{=}0$, nothing pre-revealed) with generation seed $12345$; evaluation uses a
+disjoint held-out set generated with a different seed ($100$), so train and test
+draw non-overlapping cases from the same distribution. Held-out evaluation uses
+$n{=}60$ cases per condition (hidden and anchor), raised to $n{=}200$ for the
+coverage experiment to give the rare high-risk subset adequate support, with
+$k{=}12$ sampled rollouts per case (the support@$k$ probe). During RL, GRPO draws
+$8$ rollouts per prompt (the group). The SFT warmups use $800$ oracle/checklist
+trajectories (generation seed $7$). Unless noted, each configuration is run at a
+single training seed ($1$); we report this as a limitation
+(Section~\ref{sec:discussion}) rather than reporting confidence intervals we did
+not measure. The safety-critical \emph{high-risk} subset (true emergency /
+high-clot) is reported separately from aggregate metrics throughout, because it is
+small ($\approx5\text{--}10\%$ of cases) and is where shortcut policies do their
+damage while mean reward hides it. Representative cases for each task are in
+Appendix~\ref{app:cases}; full hyperparameters are in
+Appendix~\ref{app:impl}.
+
+
 \section{Methods}
 \label{sec:method}
 
@@ -312,7 +368,49 @@ factors, then choose an ordered treatment intensity). Diagnostics is a co-design
 ``deephedge'' variant: a fixed checklist must over-order while the oracle walks one
 short path, and the high-stakes action requires a multi-finding conjunction (no
 single finding is diagnostic) --- which is what makes it clear both gates while
-still admitting a defensive-hedge shortcut.
+still admitting a defensive-hedge shortcut. Table~\ref{tab:master} consolidates the
+final held-out metrics across all tasks and methods; the per-task subsections that
+follow analyze them, and Appendix~\ref{app:impl} reports training curves.
+
+\begin{table}[ht]
+\centering
+\caption{Master results: final held-out metrics by task and method (hidden
+condition, pure verifiable reward, $k{=}12$). \textbf{Primary} safety metrics are
+high-risk value and high-risk oracle-grade support@12 (the safety-critical
+subset); overall value/support and mean asks are diagnostic. Bold marks the best
+\emph{safe} high-risk outcome per task (support gains over a degenerate one-ask
+policy --- e.g.\ titration plain-GRPO and refill GRPO --- are k-fold sampling
+artifacts flagged \textsc{exploit} by the guard, not adaptive gathering). Single
+seed; no confidence intervals (Section~\ref{sec:discussion}).}
+\label{tab:master}
+\begin{tabular}{llccccc}
+\toprule
+Task & Method & overall val & overall supp & high val & high supp & asks \\
+\midrule
+\multirow{4}{*}{Diagnostics}
+ & base                 & $+0.251$ & $0.35$ & $+0.160$ & $0.50$ & $2.5$ \\
+ & plain GRPO           & $+0.255$ & $0.37$ & $+0.095$ & $0.50$ & $1.9$ \\
+ & info-gain            & $+0.334$ & $0.65$ & $+0.139$ & $0.50$ & $2.2$ \\
+ & DREAM                & $+0.329$ & $0.42$ & $\mathbf{+0.248}$ & $\mathbf{1.00}$ & $4.4$ \\
+\midrule
+\multirow{3}{*}{Titration}
+ & base                 & $-0.022$ & $0.52$ & $+0.396$ & $0.67$ & $2.8$ \\
+ & plain GRPO           & $-0.012$ & $0.57$ & $+0.627$ & $1.00^\dagger$ & $1.4$ \\
+ & info-gain ($\lambda{=}0.1$) & $-0.036$ & $0.52$ & $\mathbf{+0.556}$ & $\mathbf{1.00}$ & $2.7$ \\
+\midrule
+\multirow{4}{*}{Refill triage}
+ & base                 & $+0.386$ & $0.58$ & $+0.151$ & $0.00$ & $2.2$ \\
+ & SFT warmup           & $+0.318$ & $0.97$ & $\mathbf{+0.195}$ & $1.00$ & $2.8$ \\
+ & plain GRPO           & $+0.431$ & $0.97$ & $+0.032$ & $1.00^\dagger$ & $1.3$ \\
+ & info-gain            & $+0.415$ & $0.93$ & $+0.043$ & $1.00^\dagger$ & $1.6$ \\
+\bottomrule
+\end{tabular}
+
+\vspace{2pt}
+{\footnotesize $^\dagger$ high-risk support is a $k$-fold sampling artifact over a
+degenerate under-gathering policy (mean asks $\ll$ oracle), not adaptive gathering;
+the guarded report labels these \textsc{exploit}.}
+\end{table}
 
 \subsection{Gates pass, yet plain GRPO learns unsafe shortcuts}
 On diagnostics, Gate~1 holds (BC-gap $+0.161$; oracle gathers $\approx 3.9$ asks)
@@ -711,6 +809,107 @@ collapses benign support ($0.92\to0.16$) by over-gathering. Companion to
 Table~\ref{tab:repair} and Figure~\ref{fig:reptraj}.}
 \label{fig:rep4arm}
 \end{figure}
+
+\appendix
+
+\section{Implementation details}
+\label{app:impl}
+
+All models adapt the text-only \texttt{medgemma-4b-it} base with LoRA (rank $32$,
+$\alpha{=}64$). Tables~\ref{tab:sfthp}--\ref{tab:rlhp} list the supervised and RL
+hyperparameters; both are run with the disaggregated two-node stack (a training
+node plus a separate vLLM rollout server) on NVIDIA DGX~Spark (Grace-Hopper,
+unified memory), at roughly $0.5$\,h per SFT warmup and $6$--$8$\,h per $60$-step
+GRPO run. Figure~\ref{fig:traincurves} shows the diagnostics RL training
+diagnostics (reward, KL, entropy, and rollout mean-asks per step) and the biased-SFT
+loss curve, read directly from the run logs.
+
+\begin{table}[ht]
+\centering
+\caption{Supervised fine-tuning (protocol warmup) hyperparameters.}
+\label{tab:sfthp}
+\begin{tabular}{ll}
+\toprule
+Base model & \texttt{medgemma-4b-it} (text-only causal LM) \\
+Adapter & LoRA $r{=}32$, $\alpha{=}64$, dropout $0.05$, all-linear targets \\
+Objective & causal-LM cross-entropy on \emph{every} assistant turn (system/user masked) \\
+Optimizer & AdamW, lr $1{\times}10^{-4}$, linear warmup $5\%$ then constant \\
+Epochs / batch / max seq len & $2$ / $4$ / $2048$ \\
+Training trajectories & $800$ (oracle-adaptive; generation seed $7$) \\
+Seed / checkpoint & $1$ / \texttt{final} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[ht]
+\centering
+\caption{Reinforcement learning (GRPO) hyperparameters. Information-gain adds the
+potential $\lambda\,\Phi$ to the rollout reward only; DREAM replaces it with
+phase-alternated explore (recoverability) / exploit (\texttt{env.score}) updates.}
+\label{tab:rlhp}
+\begin{tabular}{ll}
+\toprule
+Algorithm & GRPO (TRL), custom on-policy \texttt{rollout\_func} \\
+Initialization & base model, or merged SFT adapter \\
+Adapter & LoRA $r{=}32$, $\alpha{=}64$ (q,k,v,o,gate,up,down) \\
+Group size (rollouts/prompt) & $8$ \\
+Per-device batch / grad-accum & $8$ / $4$ \\
+Training cases / steps / save & $300$ / $60$ / every $20$ \\
+Learning rate / KL $\beta$ & $1{\times}10^{-5}$ / $0.02$ \\
+Rollout temperature / max tokens-per-turn & $1.0$ / $128$ \\
+Max completion length / turn cap & $512$ / $10$--$12$ \\
+Importance-sampling correction & off (fully on-policy, ratio $\approx 1$) \\
+EOS token ids / token masking & $\{1,106\}$ / \texttt{env\_mask} (model tokens only) \\
+Reward & $U[\mu][a]-0.03\,n_{\text{asks}}$ ($+\lambda\Phi$ for info-gain) \\
+Info-gain $\lambda$ & $0.2$ (diagnostics/refill); swept $\{0,0.03,0.1,0.2\}$ (titration) \\
+Seed & $1$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\textwidth]{figs/training_curves_diagnostics.png}\\[4pt]
+\includegraphics[width=0.5\textwidth]{figs/sft_loss_curve.png}
+\caption{Training diagnostics, from the run logs. Top: diagnostics deephedge GRPO
+over $60$ steps --- optimized reward, KL to init, policy entropy, and rollout mean
+asks --- for plain GRPO, info-gain, and DREAM. The mean-asks panel shows the
+behavioral signatures: plain GRPO drifts below the oracle ($\approx3.9$), info-gain
+holds intermediate gathering, DREAM gathers most. Bottom: biased-SFT training loss
+(converges to $\approx0.002$, confirming the warmup is well-fit before RL).}
+\label{fig:traincurves}
+\end{figure}
+
+\section{Representative cases}
+\label{app:cases}
+
+Each task is an ask$\to$commit dialogue; below is one held-out case per task with
+its exact oracle trajectory (the simulator's finding answers and the oracle commit).
+Findings not asked are never revealed to the policy.
+
+\begin{verbatim}
+DIAGNOSTICS (deephedge) -- true latent: high (emergency); oracle: emergent_tx
+  user:      Presentation: adult with acute chest pain. Chart: no results yet.
+  assistant: {"action_type":"ask","intent":"troponin_high"}   user: troponin elevated
+  assistant: {"action_type":"ask","intent":"ecg_ischemia"}    user: ECG shows ischemia
+  assistant: {"action_type":"ask","intent":"dyspnea_severe"}  user: severe dyspnea
+  assistant: {"action_type":"ask","intent":"hypotension"}     user: hypotensive
+  assistant: {"action_type":"commit","decision":"emergent_tx",...}   reward = 0.83
+
+REFILL TRIAGE -- true latent: moderate; oracle: dose_adjust
+  user:      Refill request: ACE inhibitor / ARB (lisinopril). Chart: no recent labs.
+  assistant: {"action_type":"ask","intent":"renal_decline"}     user: eGFR declining
+  assistant: {"action_type":"ask","intent":"egfr_severe"}       user: decline mild
+  assistant: {"action_type":"ask","intent":"volume_dehydrated"} user: dehydrated
+  assistant: {"action_type":"commit","decision":"dose_adjust",...}   reward = 0.81
+
+TITRATION -- true latent: high clot / low bleed; oracle: high (full intensity)
+  user:      Patient: older adult with atrial fibrillation. Chart: none documented.
+  assistant: {"action_type":"ask","intent":"bleed_history"}  user: no prior bleeding
+  assistant: {"action_type":"ask","intent":"fall_risk"}      user: low fall risk
+  assistant: {"action_type":"commit","decision":"high",...}   reward = 1.34
+\end{verbatim}
+
 
 \section*{Code}
 \url{https://github.com/csbrendan/rl-gains-in-clinical-tasks}
