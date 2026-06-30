@@ -53,9 +53,14 @@ diagnostics, and a decoupled explore/exploit variant pushes high-risk
 oracle-grade support to $1.00$ at a characterizable over-gathering cost. We show
 the credit coefficient is itself a task-specific safety dial with a narrow
 optimum: too small and the policy under-gathers, too large and it over-gathers.
-A small SFT-vs-RL bridge indicates RL's benefit tracks the \emph{headroom} a
-supervised initialization leaves: where a warmup already saturates the
-safety-critical behavior, RL adds little. Our contribution is a mechanism and a
+SFT-initialized experiments show RL's benefit tracks the \emph{headroom} the
+supervised model leaves: where a warmup already saturates the safety-critical
+behavior, RL adds little, and --- testing the common case of an SFT trained on
+incomplete data --- RL does \emph{not} reliably repair a high-risk coverage gap.
+Re-measuring the latent-support gate on the biased SFT predicts repairability, but
+satisfying it is necessary, not sufficient: from a strong biased initialization
+both rewards re-shortcut (one under-gathering, one over-gathering) rather than
+repair. Our contribution is a mechanism and a
 practical recipe --- gate before training, then shape the reward to credit
 gathering --- for predicting and controlling whether RL makes clinical decision
 agents safer or merely game the verifier. The environments are stylized; the claim
@@ -268,17 +273,23 @@ as a single dialogue, evaluated \emph{only} in that composed form --- a hard gua
 ensures the commit phase never sees the privileged latent, so reported numbers
 reflect a deployable policy.
 
-\subsection{An SFT-vs-RL observation}
+\subsection{SFT-then-RL: initialization and coverage}
 \label{subsec:bridge}
 The industrially standard pipeline is SFT \emph{then} RL, which raises the question
 of when RL adds value \emph{over} a supervised initialization. Our three main tasks
-are designed to isolate reward geometry and so train RL from base (diagnostics,
-titration) or a light warmup (refill triage); a systematic SFT$\times$coverage
-study is out of scope here (Section~\ref{sec:discussion}, future work). We do,
-however, have one informative data point --- refill triage, whose RL initializes
-from a light protocol-teaching SFT warmup --- which we report as evidence that
-\emph{the headroom a supervised initialization leaves modulates RL's payoff}
-(Section~\ref{subsec:bridge-result}).
+isolate reward geometry by training RL from base (diagnostics, titration) or a
+light warmup (refill triage). We add two SFT-initialized probes of how
+initialization and \emph{data coverage} interact with RL. First, refill triage is
+RL-initialized from a light protocol-teaching SFT warmup, giving one data point on
+initialization strength (Section~\ref{subsec:bridge-result}). Second, on
+diagnostics we construct a \emph{coverage-biased} SFT --- oracle-adaptive
+trajectories with high-risk cases under-sampled --- to test directly whether RL
+repairs a high-risk coverage gap; we re-measure Gate~2 on the biased SFT to predict
+repairability, and run both the information-gain and DREAM rewards from it
+(Section~\ref{subsec:coverage}). The biased SFT is trained with the same generic
+warmup as refill triage; an SFT-dose/saturation sweep and the full
+coverage$\times$demonstrability matrix remain future work
+(Section~\ref{sec:discussion}).
 
 \subsection{Evaluation}
 All policies are scored on held-out cases with the \emph{pure} verifiable reward
@@ -385,7 +396,8 @@ Titration --- a stylized ordered-intensity decision (no therapy / reduced / full
 under a clot-vs-bleed trade --- passes its gates (BC-gap $+0.075$; oracle uses all
 three actions; gathering changes the committed action on $85\%$ of cases; optimal
 intensity flips between clot-first and bleed-first priorities on $64\%$ of cases;
-base latent support@12 $0.52$/$0.63$). The RL comparison (Table~\ref{tab:ti})
+base latent support@12 $0.52$/$0.63$). The RL comparison (Table~\ref{tab:ti},
+Figure~\ref{fig:tidial})
 reveals a \emph{narrow} safe optimum for the credit coefficient, with failures on
 both sides. Plain GRPO ($\lambda{=}0$) under-gathers (mean asks $2.8 \to 1.4$,
 one-ask $0.91$, \textsc{exploit}). At the \emph{same} coefficient that was
@@ -445,6 +457,17 @@ plain GRPO (control)             & $-0.012$ & $1.40$ & $0.91$ & $+0.627$ & $1.00
 \end{tabular}
 \end{table}
 
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.7\textwidth]{figs/titration_lambda_dial.png}
+\caption{Titration: the credit coefficient $\lambda$ is a gathering dial. Mean asks
+(red) collapse below the oracle ask-level (blue band, $\approx2.8$) at
+$\lambda{\le}0.03$, hit oracle-level at the per-ask-predicted $\lambda{=}0.1$, and
+overshoot at $\lambda{=}0.2$; overall value (green) is best near the oracle-level
+operating point. Held-out hidden, pure env.score.}
+\label{fig:tidial}
+\end{figure}
+
 \subsection{Initialization matters: a saturated warmup leaves no headroom}
 \label{subsec:bridge-result}
 Refill triage is the one task whose RL starts not from base but from a \emph{light}
@@ -460,9 +483,81 @@ no headroom for shaping to convert into a measured win; diagnostics and titratio
 instead train from base, where the headroom exists. This single SFT-initialized
 case makes a concrete point that mirrors the titration BC-gap finding from the
 other side: \emph{RL's payoff tracks the headroom left by the initialization}, just
-as it tracks the headroom set by the task's demonstrability. A systematic test of
-this rule --- full-SFT$\to$RL on a demonstrable task, and biased-SFT$\to$RL that
-under-samples high-risk cases --- is the natural next study (Section~\ref{sec:discussion}).
+as it tracks the headroom set by the task's demonstrability. We probe this
+directly with a controlled coverage experiment next.
+
+\subsection{SFT coverage: latent support is necessary but not sufficient for
+repair}
+\label{subsec:coverage}
+To test the industrially common case of an SFT trained on incomplete data, we
+build a deliberately \emph{coverage-biased} SFT on diagnostics --- oracle-adaptive
+trajectories with the high-risk (emergent) cases under-sampled --- and ask whether
+RL on the full environment repairs the resulting hole. The biased SFT illustrates
+the central danger of aggregate metrics (Figure~\ref{fig:hole}): it looks excellent
+overall (support $0.93$, value $+0.34$) while being \emph{unsafe} on the rare
+high-risk cases (value $-0.29$; with all high-risk cases dropped, high-risk
+support is $0.00$ and \texttt{emergent\_tx} is never emitted). A coverage gap is
+thus hidden behind a strong headline score.
+
+Crucially, the latent-support gate (Gate~2), \emph{re-measured on the biased SFT},
+predicts whether RL can repair the hole. Severe bias (drop all high-risk) leaves
+the high-risk action with $0\%$ sample rate --- Gate~2 fails, so RL has no signal
+to reinforce. A milder bias (keep $30\%$) retains a $21\%$ \texttt{emergent\_tx}
+sample rate --- Gate~2 passes --- so we run RL from it. Yet \emph{even with Gate~2
+satisfied, RL does not repair the hole} (Table~\ref{tab:repair},
+Figures~\ref{fig:reptraj}). The two variants fail in \emph{opposite} directions:
+information-gain GRPO \textsc{exploits} --- it trims gathering ($3.0\to2.2$ asks)
+and the high-risk oracle-grade support collapses ($1.00\to0.14$) into a defensive
+hedge; DREAM \emph{over}-gathers ($3.0\to4.3$ asks, benign included), which damages
+low-acuity cases (benign support $0.92\to0.16$) without restoring high-risk
+support ($\to0.36$) and in fact lowers the \texttt{emergent\_tx} rate below the
+SFT's. Both crash the SFT's strong overall support ($0.93\to0.41$). The pattern is
+checkpoint-robust. This is the saturated-initialization regime of
+Section~\ref{subsec:bridge-result} again: from a strong (if biased) SFT, RL erodes
+the good behavior rather than targeting the hole. The conclusion is a sharp,
+cautionary one: \emph{latent support is necessary but not sufficient for RL to
+repair an SFT coverage gap} --- the initialization's strength and the reward
+geometry determine whether RL repairs or merely re-shortcuts.
+
+\begin{table}[ht]
+\centering
+\caption{SFT-coverage repair on diagnostics (held-out hidden, $n{=}200$, pure
+verifiable reward). From a coverage-biased SFT that under-samples high-risk cases,
+neither RL variant repairs the high-risk hole: info-gain collapses gathering (and
+high-risk support) into a hedge; DREAM over-gathers and damages benign/moderate.
+``supp'' is oracle-grade support@12.}
+\label{tab:repair}
+\begin{tabular}{lcccccc}
+\toprule
+Policy & overall val & overall supp & high val & high supp & benign supp & mean asks \\
+\midrule
+biased SFT (init)     & $+0.337$ & $\mathbf{0.93}$ & $-0.285$ & $\mathbf{1.00}$ & $\mathbf{0.92}$ & $3.0$ \\
+\,+ info-gain GRPO    & $+0.236$ & $0.45$ & $+0.092$ & $0.14$ & $0.45$ & $2.2$ \\
+\,+ DREAM             & $+0.292$ & $0.41$ & $+0.040$ & $0.36$ & $0.16$ & $4.3$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\textwidth]{figs/repair_trajectory.png}
+\caption{Repairing a biased SFT's high-risk hole fails for both RL variants. From
+the biased SFT (step 0), info-gain trims asks down (under-gather) while DREAM
+pushes them up past the oracle (over-gather) --- opposite failures --- and both
+erode the SFT's overall support; high-risk value rises only marginally.}
+\label{fig:reptraj}
+\end{figure}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.92\textwidth]{figs/coverage_hole_gate2.png}
+\caption{Left: a coverage-biased SFT looks strong on aggregate but is unsafe on
+high-risk. Right: bias severity sets the high-risk action's latent support
+(\texttt{emergent\_tx} sample rate), i.e.\ Gate~2 --- $0\%$ (fail) under severe
+bias vs.\ $21\%$ (pass) under mild bias --- which predicts whether RL has any
+signal to repair the hole.}
+\label{fig:hole}
+\end{figure}
 
 
 \section{Discussion}
@@ -492,13 +587,13 @@ systematic SFT$\times$coverage study.}
 Situation & Guidance & Evidence \\
 \midrule
 Demonstrability gate fails (a fixed action is near-optimal) & Do not run RL & analytic (have) \\
-Latent-support gate fails (init cannot sample the optimum) & SFT/warm up first & have \\
+Latent-support gate fails (init cannot sample the optimum) & SFT/warm up first; RL has no signal & have (severe-biased SFT) \\
 Gates pass, naive outcome reward & Expect unsafe shortcuts (1-ask, hedge, high-risk regression) & have (controls) \\
 Gates pass, info-gain credit assignment, tuned coefficient & Safe adaptive gathering; calibrate $\lambda$ per task & have (diagnostics, titration) \\
 High-risk safety is the priority & Decouple explore/exploit; accept some over-gathering & have (DREAM) \\
 Task barely clears the demonstrability gate (small BC-gap) & Even calibrated RL yields little value gain & have (titration) \\
 Strong/saturated SFT initialization & RL adds little --- no headroom to capture & have (refill triage) \\
-Biased/incomplete SFT (real data) & RL should repair high-risk / long-tail holes & future (predicted) \\
+Biased/incomplete SFT, Gate~2 passes & RL still may \emph{not} repair the hole --- it re-shortcuts from a strong init; do not assume repair & have (diagnostics coverage) \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -553,17 +648,19 @@ rule-labeled with a deterministic simulator at a single 4B model scale, and the 
 runs are bounded; the contribution is a mechanism and a decision framework, not a
 clinically validated policy. Headline results are single-seed; multi-seed
 replication of the diagnostics thesis-positive result would further harden them. For
-diagnostics and titration we characterize RL \emph{from base}, and the
-SFT-vs-RL observation rests on one task (refill triage); a systematic SFT-vs-RL
-study is future work, below.
+diagnostics and titration we characterize RL \emph{from base}; the SFT-initialized
+evidence is two cells (a light warmup on refill triage and a coverage-biased SFT on
+diagnostics), without an SFT-dose/saturation sweep, so our SFT-coverage claim is a
+demonstrated failure-to-repair under a strong biased init, not a full
+characterization across SFT strengths.
 
 \paragraph{Future work.} The natural next study is the full
-\emph{coverage}$\,\times\,$\emph{demonstrability} matrix. Within our existing tasks,
-two SFT$\to$RL cells test the practical rule directly: a \emph{strong}-SFT$\to$RL
-cell (full SFT on oracle trajectories on a demonstrable task --- does RL still add
-once SFT has plateaued?) and a \emph{biased}-SFT$\to$RL cell (SFT under-sampling the
-high-risk cases --- does RL repair the safety-critical hole?), each with an SFT-dose
-curve to establish saturation. The larger version adds \emph{non-demonstrable} task
+\emph{coverage}$\,\times\,$\emph{demonstrability} matrix. The complement to our
+biased-SFT cell is a \emph{strong}-SFT$\to$RL cell (full SFT on oracle trajectories
+on a demonstrable task --- does RL still add once SFT has plateaued?) with an
+SFT-dose curve to establish saturation, and a weaker-init biased cell to test
+whether repair is possible when the initialization is \emph{not} already saturated.
+The larger version adds \emph{non-demonstrable} task
 variants (stochastic patient responses, hidden confounders, ambiguous stopping)
 where no static demonstration captures the optimal policy and RL should retain value
 even after strong SFT. Two further extensions of the present machinery are gated and
@@ -595,6 +692,17 @@ Info-gain preserves high-risk reward at the warmup level at step-20 ($+0.205$)
 while the control has already crashed it ($-0.007$); the benefit is transient as
 both trim gathering with continued training.}
 \label{fig:rxtraj}
+\end{figure}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\textwidth]{figs/repair_4arm.png}
+\caption{SFT-coverage repair by risk subset (held-out hidden, $n{=}200$): biased
+SFT vs.\ info-gain-repair vs.\ DREAM-repair. Neither RL variant restores high-risk
+oracle-grade support ($1.00\to0.14$ info-gain / $0.36$ DREAM); DREAM additionally
+collapses benign support ($0.92\to0.16$) by over-gathering. Companion to
+Table~\ref{tab:repair} and Figure~\ref{fig:reptraj}.}
+\label{fig:rep4arm}
 \end{figure}
 
 \section*{Code}
