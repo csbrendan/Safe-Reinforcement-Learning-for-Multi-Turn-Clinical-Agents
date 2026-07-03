@@ -45,8 +45,8 @@ the optimal behavior?) --- are \emph{necessary but not sufficient}. Even when bo
 gates pass, plain Group Relative Policy Optimization (GRPO) trained on the outcome
 reward learns \emph{unsafe shortcut policies}: one-question collapse,
 under-gathering, and defensive hedging that raise mean reward while
-\emph{regressing} performance on the rare, safety-critical high-risk cases. An
-information-gain credit-assignment reward --- dense credit for asks that reduce
+\emph{regressing} performance on the rare, safety-critical high-risk cases. A
+\emph{credit-assignment} reward --- dense credit for asks that reduce
 uncertainty about the latent state, applied only in the RL rollout so the gates
 stay pure --- recovers safer high-risk behavior and is \emph{thesis-positive} on
 diagnostics, and a decoupled explore/exploit variant pushes high-risk
@@ -105,8 +105,7 @@ beat the best fixed policy?) and a \emph{latent-support} gate (can the
 initialization policy even sample the optimal behavior?). (2) Across three
 structurally distinct medical tasks we show these gates are \emph{necessary but
 not sufficient}: passing them does not earn an RL win, because plain GRPO finds
-the unsafe shortcuts above. We show that an explicit \emph{information-gain
-credit-assignment} reward is the missing ingredient that converts a gates-passing
+the unsafe shortcuts above. We show that an explicit \emph{credit-assignment} reward is the missing ingredient that converts a gates-passing
 task from exploited to safely adaptive, that a decoupled explore/exploit scheme
 further improves the safety-critical subset, and that the credit coefficient is a
 task-specific dial with a narrow safe optimum. (3) We add a small SFT-vs-RL bridge
@@ -240,7 +239,7 @@ controlled RL testbeds, \emph{not} clinically validated data.
 \centering
 \caption{Per-task environment dimensions. ``Findings'' is the binary
 decision-feature vocabulary; ``actions'' is the terminal commit set (titration's
-are ordered). Diagnostics is the co-designed deephedge variant. All use per-ask
+are ordered). Diagnostics is the co-designed diagnostic hedging task. All use per-ask
 cost $0.03$ and oracle-grade tolerance $0.03$.}
 \label{tab:envs}
 \begin{tabular}{lccccc}
@@ -248,7 +247,7 @@ cost $0.03$ and oracle-grade tolerance $0.03$.}
 Task & Findings & Commit actions & Families & Latent state & Turn cap \\
 \midrule
 Refill triage & 12 & 5 & 2 (ACEi/ARB, NSAID) & severity (none/mod/high) & 10 \\
-Diagnostics (deephedge) & 18 & 5 & 2 (chest, abdominal) & severity (none/mod/high) & 12 \\
+Diagnostics (hedging) & 18 & 5 & 2 (chest, abdominal) & severity (none/mod/high) & 12 \\
 Titration & 6 & 3 (ordered) & 1 (anticoag) & joint clot$\times$bleed (9 states) & 10 \\
 \bottomrule
 \end{tabular}
@@ -295,12 +294,15 @@ one of several verdicts --- \textsc{thesis-positive}, \textsc{exploit}
 (ask-collapse or high-risk regression), or \textsc{termination-only} (reward rose
 only by learning to commit, not by gathering better).
 
-\subsection{Information-gain credit assignment}
+\subsection{Credit-assignment GRPO}
 The shortcut problem is one of credit assignment: the terminal reward does not
 tell the policy \emph{which ask} produced a good commit, so the cheapest way to
-raise reward is to stop asking. We address it directly with a dense
-\emph{information-gain} reward --- an intrinsic reward for uncertainty reduction,
-in the spirit of potential-based reward shaping \citep{ng1999shaping}: each new,
+raise reward is to stop asking. We introduce \emph{credit-assignment GRPO}, a GRPO
+variant that assigns dense credit to questions by how much they reduce uncertainty
+about the latent clinical state. Concretely, we add a dense reward --- an intrinsic
+reward for uncertainty reduction, computed from the same information gain the gates
+use and applied in the spirit of potential-based reward shaping
+\citep{ng1999shaping}: each new,
 decision-relevant ask is rewarded in proportion to the entropy reduction of the
 posterior over the latent state,
 $\Phi = -\,\Delta H\big(p(\mu \mid \text{revealed})\big)$, summed over the asks and
@@ -314,10 +316,12 @@ policy and a single episode; it densifies the gathering signal but does
 \emph{not} separate exploration from exploitation. The decoupled variant below
 does.
 
-\subsection{DREAM-style decoupled exploration and exploitation}
-The information-gain reward shares one policy and one trajectory across asking and
+\subsection{Decoupled exploration-exploitation GRPO}
+The credit-assignment reward shares one policy and one trajectory across asking and
 committing, so the two still compete for the same gradient. The DREAM line of
-meta-RL \citep{liu2021dream} decouples them; we adapt that idea with a
+meta-RL \citep{liu2021dream} decouples them; we adapt that idea --- without
+implementing DREAM exactly --- as \emph{decoupled exploration-exploitation GRPO},
+which separates the gathering phase from the committing phase while using a
 \emph{single network and adapter} (no learned decoder, no second policy) and a
 mode token: an \emph{explore} phase that may only ask, rewarded by recoverability
 of $\mu$ (the information-gain signal), and an \emph{exploit} phase that commits
@@ -341,7 +345,7 @@ initialization strength (Section~\ref{subsec:bridge-result}). Second, on
 diagnostics we construct a \emph{coverage-biased} SFT --- oracle-adaptive
 trajectories with high-risk cases under-sampled --- to test directly whether RL
 repairs a high-risk coverage gap; we re-measure Gate~2 on the biased SFT to predict
-repairability, and run both the information-gain and DREAM rewards from it
+repairability, and run both the credit-assignment and decoupled-GRPO rewards from it
 (Section~\ref{subsec:coverage}). The biased SFT is trained with the same generic
 warmup as refill triage; an SFT-dose/saturation sweep and the full
 coverage$\times$demonstrability matrix remain future work
@@ -365,7 +369,7 @@ We study three tasks under the identical gate-and-guard framework: \textbf{refil
 triage} (approve / modify / escalate), \textbf{acute diagnostics} (order findings,
 then commit one of a five-way disposition), and \textbf{titration} (gather risk
 factors, then choose an ordered treatment intensity). Diagnostics is a co-designed
-``deephedge'' variant: a fixed checklist must over-order while the oracle walks one
+diagnostic hedging task: a fixed checklist must over-order while the oracle walks one
 short path, and the high-stakes action requires a multi-finding conjunction (no
 single finding is diagnostic) --- which is what makes it clear both gates while
 still admitting a defensive-hedge shortcut. Table~\ref{tab:master} consolidates the
@@ -380,8 +384,9 @@ high-risk value and high-risk oracle-grade support@12 (the safety-critical
 subset); overall value/support and mean asks are diagnostic. Bold marks the best
 \emph{safe} high-risk outcome per task (support gains over a degenerate one-ask
 policy --- e.g.\ titration plain-GRPO and refill GRPO --- are k-fold sampling
-artifacts flagged \textsc{exploit} by the guard, not adaptive gathering). Single
-seed; no confidence intervals (Section~\ref{sec:discussion}).}
+artifacts flagged \textsc{exploit} by the guard, not adaptive gathering).
+$^\ddagger$Diagnostics plain-GRPO and credit-assignment GRPO are mean$\pm$std over 3 seeds; all
+other rows are single-seed (Section~\ref{sec:discussion}).}
 \label{tab:master}
 \begin{tabular}{llccccc}
 \toprule
@@ -389,20 +394,20 @@ Task & Method & overall val & overall supp & high val & high supp & asks \\
 \midrule
 \multirow{4}{*}{Diagnostics}
  & base                 & $+0.251$ & $0.35$ & $+0.160$ & $0.50$ & $2.5$ \\
- & plain GRPO           & $+0.255$ & $0.37$ & $+0.095$ & $0.50$ & $1.9$ \\
- & info-gain            & $+0.334$ & $0.65$ & $+0.139$ & $0.50$ & $2.2$ \\
- & DREAM                & $+0.329$ & $0.42$ & $\mathbf{+0.248}$ & $\mathbf{1.00}$ & $4.4$ \\
+ & plain GRPO$^\ddagger$ & $+0.285$\scriptsize$\pm.027$ & $0.41$\scriptsize$\pm.11$ & $+0.098$\scriptsize$\pm.037$ & $0.33$\scriptsize$\pm.29$ & $1.8$\scriptsize$\pm.1$ \\
+ & credit-assignment GRPO$^\ddagger$  & $+0.313$\scriptsize$\pm.024$ & $0.59$\scriptsize$\pm.05$ & $+0.157$\scriptsize$\pm.057$ & $\mathbf{0.50}$\scriptsize$\pm.00$ & $2.1$\scriptsize$\pm.3$ \\
+ & decoupled GRPO                & $+0.329$ & $0.42$ & $\mathbf{+0.248}$ & $\mathbf{1.00}$ & $4.4$ \\
 \midrule
 \multirow{3}{*}{Titration}
  & base                 & $-0.022$ & $0.52$ & $+0.396$ & $0.67$ & $2.8$ \\
  & plain GRPO           & $-0.012$ & $0.57$ & $+0.627$ & $1.00^\dagger$ & $1.4$ \\
- & info-gain ($\lambda{=}0.1$) & $-0.036$ & $0.52$ & $\mathbf{+0.556}$ & $\mathbf{1.00}$ & $2.7$ \\
+ & credit-assignment GRPO ($\lambda{=}0.1$) & $-0.036$ & $0.52$ & $\mathbf{+0.556}$ & $\mathbf{1.00}$ & $2.7$ \\
 \midrule
 \multirow{4}{*}{Refill triage}
  & base                 & $+0.386$ & $0.58$ & $+0.151$ & $0.00$ & $2.2$ \\
  & SFT warmup           & $+0.318$ & $0.97$ & $\mathbf{+0.195}$ & $1.00$ & $2.8$ \\
  & plain GRPO           & $+0.431$ & $0.97$ & $+0.032$ & $1.00^\dagger$ & $1.3$ \\
- & info-gain            & $+0.415$ & $0.93$ & $+0.043$ & $1.00^\dagger$ & $1.6$ \\
+ & credit-assignment GRPO            & $+0.415$ & $0.93$ & $+0.043$ & $1.00^\dagger$ & $1.6$ \\
 \bottomrule
 \end{tabular}
 
@@ -426,7 +431,7 @@ the unsafe shortcut} --- the central negative result, and the reason a safety-bl
 RLVR pipeline is risky.
 
 \subsection{Information-gain credit assignment recovers safe high-risk behavior}
-Adding the information-gain reward ($\lambda{=}0.2$), with the gates and $U$
+Adding the credit-assignment reward ($\lambda{=}0.2$), with the gates and $U$
 unchanged, flips diagnostics to \textsc{thesis-positive} (Table~\ref{tab:dx},
 Figure~\ref{fig:dx4arm}). Held-out clinical value rises ($+0.255 \to +0.334$),
 high-risk oracle-grade support is held at $0.50$ and high-risk reward at
@@ -440,8 +445,8 @@ ingredient that turns a gates-passing task from exploited to safely adaptive.
 \begin{table}[ht]
 \centering
 \caption{Diagnostics, held-out hidden condition, pure verifiable reward. Plain GRPO
-exploits (high-risk regression / defensive hedge); the information-gain reward is
-thesis-positive; DREAM trades further high-risk gains for low-acuity
+exploits (high-risk regression / defensive hedge); the credit-assignment reward is
+thesis-positive; decoupled GRPO trades further high-risk gains for low-acuity
 over-gathering. ``supp'' is oracle-grade support@12.}
 \label{tab:dx}
 \begin{tabular}{lccccc}
@@ -450,8 +455,8 @@ Policy & overall value & high value & high supp & moderate supp & mean asks \\
 \midrule
 base (untrained)                & $+0.251$ & $+0.160$ & $0.50$ & $0.26$ & $2.5$ \\
 plain GRPO (control)            & $+0.255$ & $+0.095$ & $0.50$ & $0.34$ & $1.9$ \\
-\,+ info-gain ($\lambda{=}0.2$) & $\mathbf{+0.334}$ & $+0.139$ & $0.50$ & $\mathbf{0.77}$ & $2.2$ \\
-DREAM (best ckpt)               & $+0.329$ & $\mathbf{+0.248}$ & $\mathbf{1.00}$ & $0.63$ & $4.4$ \\
+\,+ credit-assignment ($\lambda{=}0.2$) & $\mathbf{+0.334}$ & $+0.139$ & $0.50$ & $\mathbf{0.77}$ & $2.2$ \\
+decoupled GRPO (best ckpt)               & $+0.329$ & $\mathbf{+0.248}$ & $\mathbf{1.00}$ & $0.63$ & $4.4$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -460,8 +465,8 @@ DREAM (best ckpt)               & $+0.329$ & $\mathbf{+0.248}$ & $\mathbf{1.00}$
 \centering
 \includegraphics[width=\textwidth]{figs/dream_diagnostics_4arm.png}
 \caption{Diagnostics by risk subset (held-out hidden, pure reward): base vs.\
-plain-GRPO vs.\ info-gain vs.\ DREAM. Plain GRPO trims asks and regresses high-risk;
-info-gain restores gathering and lifts the moderate subset; DREAM maximizes
+plain-GRPO vs.\ credit-assignment GRPO vs.\ decoupled GRPO. Plain GRPO trims asks and regresses high-risk;
+credit-assignment GRPO restores gathering and lifts the moderate subset; decoupled GRPO maximizes
 high-risk oracle-grade support but over-gathers on low-acuity cases.}
 \label{fig:dx4arm}
 \end{figure}
@@ -475,16 +480,16 @@ safety-critical high-risk subset improves markedly --- reward $+0.139 \to +0.248
 and oracle-grade support $0.50 \to 1.00$ at the best checkpoint
 (Figure~\ref{fig:dreamtraj}) --- while still clearing all guards. The trade is that
 the unconstrained explorer over-gathers on \emph{low-acuity} cases (benign support
-$0.48 \to 0.04$) and overall value dips slightly below the info-gain policy. DREAM
+$0.48 \to 0.04$) and overall value dips slightly below the credit-assignment-GRPO policy. decoupled GRPO
 thus delivers a favorable \emph{safety} trade rather than a strict domination: it
 helps where gathering is decision-relevant and over-explores where it is not.
 
 \begin{figure}[ht]
 \centering
 \includegraphics[width=0.92\textwidth]{figs/dream_diagnostics_trajectory.png}
-\caption{DREAM checkpoint trajectory on diagnostics (held-out hidden, pure reward).
+\caption{decoupled-GRPO checkpoint trajectory on diagnostics (held-out hidden, pure reward).
 High-risk oracle-grade support and reward peak at checkpoint-40 (support $1.00$,
-reward $+0.248$), above the information-gain reference, as mean asks rise toward
+reward $+0.248$), above the credit-assignment-GRPO reference, as mean asks rise toward
 and past the oracle's $\approx 3.9$.}
 \label{fig:dreamtraj}
 \end{figure}
@@ -548,9 +553,9 @@ Policy & overall value & overall asks & one-ask rate & high-clot value & high-cl
 \midrule
 base (untrained)                 & $-0.022$ & $2.76$ & $0.74$ & $+0.396$ & $0.67$ \\
 plain GRPO (control)             & $-0.012$ & $1.40$ & $0.91$ & $+0.627$ & $1.00$ \\
-\,+ info-gain ($\lambda{=}0.03$) & $-0.010$ & $1.24$ & $0.93$ & $+0.825$ & $1.00$ \\
-\,+ info-gain ($\lambda{=}0.1$)  & $-0.036$ & $2.67$ & $0.62$ & $+0.556$ & $1.00$ \\
-\,+ info-gain ($\lambda{=}0.2$)  & $-0.091$ & $4.10$ & $0.31$ & $+0.446$ & $0.67$ \\
+\,+ credit-assignment ($\lambda{=}0.03$) & $-0.010$ & $1.24$ & $0.93$ & $+0.825$ & $1.00$ \\
+\,+ credit-assignment ($\lambda{=}0.1$)  & $-0.036$ & $2.67$ & $0.62$ & $+0.556$ & $1.00$ \\
+\,+ credit-assignment ($\lambda{=}0.2$)  & $-0.091$ & $4.10$ & $0.31$ & $+0.446$ & $0.67$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -570,7 +575,7 @@ operating point. Held-out hidden, pure env.score.}
 \label{subsec:bridge-result}
 Refill triage is the one task whose RL starts not from base but from a \emph{light}
 SFT warmup (the protocol-teaching gatherer of a prior multi-turn study, not a heavy
-task-specific SFT). There, info-gain beats the plain-GRPO control at every
+task-specific SFT). There, credit-assignment GRPO beats the plain-GRPO control at every
 checkpoint (more asks, fewer one-ask shortcuts), and at the comparable early
 checkpoint it \emph{preserves} high-risk reward at the warmup level ($+0.205$) where
 the control has already crashed it ($-0.007$) --- but the benefit is transient and
@@ -604,9 +609,9 @@ to reinforce. A milder bias (keep $30\%$) retains a $21\%$ \texttt{emergent\_tx}
 sample rate --- Gate~2 passes --- so we run RL from it. Yet \emph{even with Gate~2
 satisfied, RL does not repair the hole} (Table~\ref{tab:repair},
 Figures~\ref{fig:reptraj}). The two variants fail in \emph{opposite} directions:
-information-gain GRPO \textsc{exploits} --- it trims gathering ($3.0\to2.2$ asks)
+credit-assignment GRPO \textsc{exploits} --- it trims gathering ($3.0\to2.2$ asks)
 and the high-risk oracle-grade support collapses ($1.00\to0.14$) into a defensive
-hedge; DREAM \emph{over}-gathers ($3.0\to4.3$ asks, benign included), which damages
+hedge; decoupled GRPO \emph{over}-gathers ($3.0\to4.3$ asks, benign included), which damages
 low-acuity cases (benign support $0.92\to0.16$) without restoring high-risk
 support ($\to0.36$) and in fact lowers the \texttt{emergent\_tx} rate below the
 SFT's. Both crash the SFT's strong overall support ($0.93\to0.41$). The pattern is
@@ -621,8 +626,8 @@ geometry determine whether RL repairs or merely re-shortcuts.
 \centering
 \caption{SFT-coverage repair on diagnostics (held-out hidden, $n{=}200$, pure
 verifiable reward). From a coverage-biased SFT that under-samples high-risk cases,
-neither RL variant repairs the high-risk hole: info-gain collapses gathering (and
-high-risk support) into a hedge; DREAM over-gathers and damages benign/moderate.
+neither RL variant repairs the high-risk hole: credit-assignment GRPO collapses gathering (and
+high-risk support) into a hedge; decoupled GRPO over-gathers and damages benign/moderate.
 ``supp'' is oracle-grade support@12.}
 \label{tab:repair}
 \begin{tabular}{lcccccc}
@@ -630,8 +635,8 @@ high-risk support) into a hedge; DREAM over-gathers and damages benign/moderate.
 Policy & overall val & overall supp & high val & high supp & benign supp & mean asks \\
 \midrule
 biased SFT (init)     & $+0.337$ & $\mathbf{0.93}$ & $-0.285$ & $\mathbf{1.00}$ & $\mathbf{0.92}$ & $3.0$ \\
-\,+ info-gain GRPO    & $+0.236$ & $0.45$ & $+0.092$ & $0.14$ & $0.45$ & $2.2$ \\
-\,+ DREAM             & $+0.292$ & $0.41$ & $+0.040$ & $0.36$ & $0.16$ & $4.3$ \\
+\,+ credit-assignment GRPO    & $+0.236$ & $0.45$ & $+0.092$ & $0.14$ & $0.45$ & $2.2$ \\
+\,+ decoupled GRPO             & $+0.292$ & $0.41$ & $+0.040$ & $0.36$ & $0.16$ & $4.3$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -640,7 +645,7 @@ biased SFT (init)     & $+0.337$ & $\mathbf{0.93}$ & $-0.285$ & $\mathbf{1.00}$ 
 \centering
 \includegraphics[width=\textwidth]{figs/repair_trajectory.png}
 \caption{Repairing a biased SFT's high-risk hole fails for both RL variants. From
-the biased SFT (step 0), info-gain trims asks down (under-gather) while DREAM
+the biased SFT (step 0), credit-assignment GRPO trims asks down (under-gather) while decoupled GRPO
 pushes them up past the oracle (over-gather) --- opposite failures --- and both
 erode the SFT's overall support; high-risk value rises only marginally.}
 \label{fig:reptraj}
@@ -666,8 +671,7 @@ post-training clinical gathering agents (Table~\ref{tab:guide}). The gates are
 valuable as a \emph{negative} screen --- they predict where RL cannot help (no
 BC-gap, or no latent support) so compute is not wasted --- but passing them does
 not earn a win: with the plain outcome reward, GRPO learns unsafe shortcuts. The
-controllable factor is \emph{reward geometry}. An information-gain
-credit-assignment reward, applied purely in the RL rollout, restores safe adaptive
+controllable factor is \emph{reward geometry}. A credit-assignment reward, applied purely in the RL rollout, restores safe adaptive
 gathering where headroom exists; decoupling exploration from exploitation buys a
 further high-risk-safety improvement at an over-gathering cost; and the credit
 coefficient is a task-specific dial with a narrow safe optimum. The SFT-vs-RL
@@ -687,8 +691,8 @@ Situation & Guidance & Evidence \\
 Demonstrability gate fails (a fixed action is near-optimal) & Do not run RL & analytic (have) \\
 Latent-support gate fails (init cannot sample the optimum) & SFT/warm up first; RL has no signal & have (severe-biased SFT) \\
 Gates pass, naive outcome reward & Expect unsafe shortcuts (1-ask, hedge, high-risk regression) & have (controls) \\
-Gates pass, info-gain credit assignment, tuned coefficient & Safe adaptive gathering; calibrate $\lambda$ per task & have (diagnostics, titration) \\
-High-risk safety is the priority & Decouple explore/exploit; accept some over-gathering & have (DREAM) \\
+Gates pass, credit-assignment GRPO, tuned coefficient & Safe adaptive gathering; calibrate $\lambda$ per task & have (diagnostics, titration) \\
+High-risk safety is the priority & Decouple explore/exploit; accept some over-gathering & have (decoupled GRPO) \\
 Task barely clears the demonstrability gate (small BC-gap) & Even calibrated RL yields little value gain & have (titration) \\
 Strong/saturated SFT initialization & RL adds little --- no headroom to capture & have (refill triage) \\
 Biased/incomplete SFT, Gate~2 passes & RL still may \emph{not} repair the hole --- it re-shortcuts from a strong init; do not assume repair & have (diagnostics coverage) \\
@@ -783,7 +787,7 @@ reward-geometry-aware foundation established here.
 \centering
 \includegraphics[width=\textwidth]{figs/infogain_rx_base_sft_ctrl_ig.png}
 \caption{Refill triage by risk subset (held-out hidden, pure reward): base /
-SFT-v3 warmup / GRPO-control / GRPO-info-gain (final checkpoints). At the endpoint
+SFT-v3 warmup / GRPO-control / credit-assignment GRPO (final checkpoints). At the endpoint
 both GRPO arms erode high-risk relative to the SFT warmup, which already saturates
 it.}
 \label{fig:rx4arm}
@@ -792,7 +796,7 @@ it.}
 \begin{figure}[ht]
 \centering
 \includegraphics[width=0.92\textwidth]{figs/infogain_rx_checkpoint_trajectory.png}
-\caption{Refill-triage checkpoint trajectory, GRPO-control vs.\ GRPO-info-gain.
+\caption{Refill-triage checkpoint trajectory, GRPO-control vs.\ credit-assignment GRPO.
 Info-gain preserves high-risk reward at the warmup level at step-20 ($+0.205$)
 while the control has already crashed it ($-0.007$); the benefit is transient as
 both trim gathering with continued training.}
@@ -803,8 +807,8 @@ both trim gathering with continued training.}
 \centering
 \includegraphics[width=\textwidth]{figs/repair_4arm.png}
 \caption{SFT-coverage repair by risk subset (held-out hidden, $n{=}200$): biased
-SFT vs.\ info-gain-repair vs.\ DREAM-repair. Neither RL variant restores high-risk
-oracle-grade support ($1.00\to0.14$ info-gain / $0.36$ DREAM); DREAM additionally
+SFT vs.\ credit-assignment-GRPO repair vs.\ decoupled-GRPO repair. Neither RL variant restores high-risk
+oracle-grade support ($1.00\to0.14$ credit-assignment GRPO / $0.36$ decoupled GRPO); decoupled GRPO additionally
 collapses benign support ($0.92\to0.16$) by over-gathering. Companion to
 Table~\ref{tab:repair} and Figure~\ref{fig:reptraj}.}
 \label{fig:rep4arm}
@@ -844,7 +848,7 @@ Seed / checkpoint & $1$ / \texttt{final} \\
 \begin{table}[ht]
 \centering
 \caption{Reinforcement learning (GRPO) hyperparameters. Information-gain adds the
-potential $\lambda\,\Phi$ to the rollout reward only; DREAM replaces it with
+potential $\lambda\,\Phi$ to the rollout reward only; decoupled GRPO replaces it with
 phase-alternated explore (recoverability) / exploit (\texttt{env.score}) updates.}
 \label{tab:rlhp}
 \begin{tabular}{ll}
@@ -860,7 +864,7 @@ Rollout temperature / max tokens-per-turn & $1.0$ / $128$ \\
 Max completion length / turn cap & $512$ / $10$--$12$ \\
 Importance-sampling correction & off (fully on-policy, ratio $\approx 1$) \\
 EOS token ids / token masking & $\{1,106\}$ / \texttt{env\_mask} (model tokens only) \\
-Reward & $U[\mu][a]-0.03\,n_{\text{asks}}$ ($+\lambda\Phi$ for info-gain) \\
+Reward & $U[\mu][a]-0.03\,n_{\text{asks}}$ ($+\lambda\Phi$ for credit-assignment GRPO) \\
 Info-gain $\lambda$ & $0.2$ (diagnostics/refill); swept $\{0,0.03,0.1,0.2\}$ (titration) \\
 Seed & $1$ \\
 \bottomrule
@@ -871,11 +875,11 @@ Seed & $1$ \\
 \centering
 \includegraphics[width=\textwidth]{figs/training_curves_diagnostics.png}\\[4pt]
 \includegraphics[width=0.5\textwidth]{figs/sft_loss_curve.png}
-\caption{Training diagnostics, from the run logs. Top: diagnostics deephedge GRPO
+\caption{Training diagnostics, from the run logs. Top: diagnostic-hedging-task GRPO
 over $60$ steps --- optimized reward, KL to init, policy entropy, and rollout mean
-asks --- for plain GRPO, info-gain, and DREAM. The mean-asks panel shows the
-behavioral signatures: plain GRPO drifts below the oracle ($\approx3.9$), info-gain
-holds intermediate gathering, DREAM gathers most. Bottom: biased-SFT training loss
+asks --- for plain GRPO, credit-assignment GRPO, and decoupled GRPO. The mean-asks panel shows the
+behavioral signatures: plain GRPO drifts below the oracle ($\approx3.9$), credit-assignment GRPO
+holds intermediate gathering, decoupled GRPO gathers most. Bottom: biased-SFT training loss
 (converges to $\approx0.002$, confirming the warmup is well-fit before RL).}
 \label{fig:traincurves}
 \end{figure}
@@ -888,7 +892,7 @@ its exact oracle trajectory (the simulator's finding answers and the oracle comm
 Findings not asked are never revealed to the policy.
 
 \begin{verbatim}
-DIAGNOSTICS (deephedge) -- true latent: high (emergency); oracle: emergent_tx
+DIAGNOSTICS (hedging task) -- true latent: high (emergency); oracle: emergent_tx
   user:      Presentation: adult with acute chest pain. Chart: no results yet.
   assistant: {"action_type":"ask","intent":"troponin_high"}   user: troponin elevated
   assistant: {"action_type":"ask","intent":"ecg_ischemia"}    user: ECG shows ischemia
