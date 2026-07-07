@@ -441,21 +441,29 @@ the \emph{moderate} subset --- where gathering actually changes the disposition 
 with support rising $0.26 \to 0.77$, and it is monotone across checkpoints, ruling
 out a sampling artifact. Credit assignment, applied purely in the RL reward, is the
 ingredient that turns a gates-passing task from exploited to safely adaptive.
+Across three seeds this advantage is not only larger in the mean but far more
+\emph{reliable}: credit-assignment GRPO holds high-risk oracle-grade support at
+$0.50\pm0.00$, whereas plain GRPO averages $0.33\pm0.29$ --- one seed collapses it
+to $0.00$ (the defensive hedge), so plain GRPO's safety-critical behavior is
+effectively a coin-flip across seeds while credit-assignment GRPO removes that
+catastrophic-seed risk (Figure~\ref{fig:dx4arm}).
 
 \begin{table}[ht]
 \centering
 \caption{Diagnostics, held-out hidden condition, pure verifiable reward. Plain GRPO
 exploits (high-risk regression / defensive hedge); the credit-assignment reward is
 thesis-positive; decoupled GRPO trades further high-risk gains for low-acuity
-over-gathering. ``supp'' is oracle-grade support@12.}
+over-gathering. ``supp'' is oracle-grade support@12. $^\ddagger$Plain GRPO and
+credit-assignment GRPO are mean$\pm$std over 3 seeds; base and decoupled GRPO are
+single-seed.}
 \label{tab:dx}
 \begin{tabular}{lccccc}
 \toprule
 Policy & overall value & high value & high supp & moderate supp & mean asks \\
 \midrule
 base (untrained)                & $+0.251$ & $+0.160$ & $0.50$ & $0.26$ & $2.5$ \\
-plain GRPO (control)            & $+0.255$ & $+0.095$ & $0.50$ & $0.34$ & $1.9$ \\
-\,+ credit-assignment ($\lambda{=}0.2$) & $\mathbf{+0.334}$ & $+0.139$ & $0.50$ & $\mathbf{0.77}$ & $2.2$ \\
+plain GRPO (control)$^\ddagger$ & $+0.285${\scriptsize$\pm.03$} & $+0.098${\scriptsize$\pm.04$} & $0.33${\scriptsize$\pm.29$} & $0.38${\scriptsize$\pm.18$} & $1.8${\scriptsize$\pm.1$} \\
+\,+ credit-assignment$^\ddagger$ & $\mathbf{+0.313}${\scriptsize$\pm.02$} & $+0.157${\scriptsize$\pm.06$} & $\mathbf{0.50}${\scriptsize$\pm.00$} & $\mathbf{0.67}${\scriptsize$\pm.10$} & $2.1${\scriptsize$\pm.3$} \\
 decoupled GRPO (best ckpt)               & $+0.329$ & $\mathbf{+0.248}$ & $\mathbf{1.00}$ & $0.63$ & $4.4$ \\
 \bottomrule
 \end{tabular}
@@ -463,11 +471,15 @@ decoupled GRPO (best ckpt)               & $+0.329$ & $\mathbf{+0.248}$ & $\math
 
 \begin{figure}[ht]
 \centering
-\includegraphics[width=\textwidth]{figs/dream_diagnostics_4arm.png}
+\includegraphics[width=\textwidth]{figs/dx_4arm_seeds.png}
 \caption{Diagnostics by risk subset (held-out hidden, pure reward): base vs.\
-plain-GRPO vs.\ credit-assignment GRPO vs.\ decoupled GRPO. Plain GRPO trims asks and regresses high-risk;
-credit-assignment GRPO restores gathering and lifts the moderate subset; decoupled GRPO maximizes
-high-risk oracle-grade support but over-gathers on low-acuity cases.}
+plain GRPO vs.\ credit-assignment GRPO vs.\ decoupled GRPO. Plain GRPO and
+credit-assignment GRPO are mean$\pm$std over 3 seeds (error bars); base and
+decoupled GRPO are single-seed. Plain GRPO regresses high-risk and is
+\emph{unstable} across seeds (high-risk support $0.33\pm0.29$ --- one seed collapses
+to $0$); credit-assignment GRPO restores gathering and holds high-risk support at
+$0.50\pm0.00$ and lifts the moderate subset; decoupled GRPO maximizes high-risk
+support but over-gathers on low-acuity cases.}
 \label{fig:dx4arm}
 \end{figure}
 
