@@ -13,7 +13,7 @@ from __future__ import annotations
 import os
 os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 os.environ.setdefault("TRL_EXPERIMENTAL_SILENCE", "1")
-import argparse, importlib, re, time, statistics as stx
+import argparse, importlib, json, re, time, statistics as stx
 from pathlib import Path
 import torch
 from datasets import Dataset
@@ -69,7 +69,8 @@ def traj_infogain(env, case, asks):
     return gain
 
 
-def make_rollout(tok, env, rollout_temp, infogain_coef=0.0):
+def make_rollout(tok, env, rollout_temp, infogain_coef=0.0, claude_judge=None, claude_alpha=0.0,
+                 claude_norm="zscore_clip", claude_log=None):
     def rollout_func(prompts, trainer):
         client = trainer.vllm_generation.vllm_client
         st = []
@@ -103,7 +104,47 @@ def make_rollout(tok, env, rollout_temp, infogain_coef=0.0):
             r = 0.0 if s["case"] is None else env.score(s["case"], s["asks"], s["dec"])[0]
             ig = 0.0 if (s["case"] is None or infogain_coef == 0.0) else traj_infogain(env, s["case"], s["asks"])
             igains.append(ig)
-            rewards.append(r + infogain_coef * ig)   # shaped reward = clinical reward + lambda * info-gain
+            rewards.append(r + infogain_coef * ig)   # base reward = clinical reward + lambda * info-gain
+        # --- Claude process reward (disabled unless claude_judge is set AND alpha > 0) -------------------
+        # total = base_reward + alpha * within-case-normalized Claude score. Judge sees student-visible info
+        # ONLY; the analytic reward is never replaced. Raw/normalized/analytic/total are logged.
+        if claude_judge is not None and claude_alpha > 0.0:
+            from framework.procreward.reward import assemble
+            claude_judge.reset_stats()
+            _t0 = time.time()
+            claude_raw = [None if s["case"] is None else claude_judge.score(s["case"], s["asks"], s["dec"])
+                          for s in st]
+            _score_wall = time.time() - _t0
+            case_ids = [(s["case"]["case_id"] if s["case"] else f"none-{i}") for i, s in enumerate(st)]
+            lengths = [len(s["asks"]) for s in st]
+            totals, normd, log, gstats = assemble(rewards, claude_raw, case_ids, claude_alpha, claude_norm,
+                                                  extra=[{"n_asks": n} for n in lengths])
+            _cr = [c for c in claude_raw if c is not None]
+            js = claude_judge.stats
+            _api = js["api_calls"] or 1
+            # correlation of raw process score with trajectory length (asks)
+            _pairs = [(c, l) for c, l in zip(claude_raw, lengths) if c is not None]
+            _corr = float("nan")
+            if len(_pairs) > 2:
+                cs, ls = [p[0] for p in _pairs], [p[1] for p in _pairs]
+                mc, ml = stx.mean(cs), stx.mean(ls)
+                den = (sum((c-mc)**2 for c in cs)*sum((l-ml)**2 for l in ls))**0.5
+                _corr = (sum((c-mc)*(l-ml) for c, l in _pairs)/den) if den else float("nan")
+            print(f"[claude-reward] alpha={claude_alpha} norm={claude_norm} "
+                  f"mean_analytic={stx.mean(rewards):.3f} mean_total={stx.mean(totals):.3f} "
+                  f"claude_raw[mean={(stx.mean(_cr) if _cr else float('nan')):.2f} "
+                  f"sd={(stx.pstdev(_cr) if len(_cr)>1 else 0):.2f}] "
+                  f"mean|alpha*norm|={stx.mean(abs(a) for a in [claude_alpha*n for n in normd]):.4f} "
+                  f"nonzero_adv_groups={gstats['nonzero_advantage_groups']}/{gstats['n_groups']}", flush=True)
+            print(f"[claude-judge] scored={len(_cr)}/{len(st)} cache_hits={js['cache_hits']}/{js['calls']} "
+                  f"api_calls={js['api_calls']} retries={js['retries']} parse_fail={js['parse_fail']} "
+                  f"score_wall={_score_wall:.1f}s api_latency/call={js['api_latency_s']/_api:.2f}s "
+                  f"corr(score,len)={_corr:+.2f}", flush=True)
+            if claude_log:
+                with open(claude_log, "a") as f:
+                    for row in log:
+                        f.write(json.dumps(row) + "\n")
+            rewards = totals
         nt = sum(s["nt"] for s in st) or 1
         print(f"[rollout-diag] mean_asks={stx.mean(len(s['asks']) for s in st):.2f} "
               f"parse_validity={sum(s['vt'] for s in st)/nt:.3f} "
@@ -230,6 +271,14 @@ def main():
                     help="lambda for DREAM-inspired info-gain shaping (0 = baseline; shaping is RL-only, not in env.score/gates)")
     ap.add_argument("--dream", action="store_true",
                     help="DREAM-inspired decoupled explore/exploit (single net, mode token); overrides --infogain-coef")
+    # --- Claude process reward (DISABLED BY DEFAULT: alpha 0.0). total = analytic + alpha*norm(claude) ---
+    ap.add_argument("--claude-alpha", type=float, default=0.0,
+                    help="weight on the within-case-normalized Claude process reward (0 = OFF, the default)")
+    ap.add_argument("--claude-norm", choices=["zscore_clip", "centered_rank"], default="zscore_clip",
+                    help="within-case normalization for the Claude score")
+    ap.add_argument("--claude-cache", default="results/procreward_pilot/grpo_judge_cache.jsonl",
+                    help="JSONL cache for judge calls (reused across steps/arms)")
+    ap.add_argument("--claude-log", default="", help="optional JSONL log of raw/norm/analytic/total per rollout")
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
     MAX_DIALOG_TURNS = args.max_turns
@@ -257,8 +306,16 @@ def main():
         save_strategy="steps", save_steps=args.save_steps, save_total_limit=4,
         use_vllm=True, vllm_mode="server", vllm_server_host=args.server_host, vllm_server_port=args.server_port,
         vllm_importance_sampling_correction=False)
+    claude_judge = None
+    if args.claude_alpha > 0.0:
+        from framework.procreward.rollout_judge import RolloutJudge
+        claude_judge = RolloutJudge(env, args.claude_cache)
+        print(f"[grpo] Claude process reward ON: alpha={args.claude_alpha} norm={args.claude_norm} "
+              f"cache={args.claude_cache}", flush=True)
     rollout = (make_dream_rollout(tok, env, args.rollout_temp) if args.dream
-               else make_rollout(tok, env, args.rollout_temp, args.infogain_coef))
+               else make_rollout(tok, env, args.rollout_temp, args.infogain_coef,
+                                 claude_judge=claude_judge, claude_alpha=args.claude_alpha,
+                                 claude_norm=args.claude_norm, claude_log=(args.claude_log or None)))
     trainer = GRPOTrainer(model=model, reward_funcs=[reward_echo], args=cfg, train_dataset=ds,
                           processing_class=tok, peft_config=lora, rollout_func=rollout)
     print("[grpo] trainer built; train()", flush=True)

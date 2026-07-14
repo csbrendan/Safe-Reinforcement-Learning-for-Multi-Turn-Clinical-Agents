@@ -92,6 +92,9 @@ def main():
     ap.add_argument("--n-cases", type=int, default=60)
     ap.add_argument("--conditions", default="hidden,anchor")
     ap.add_argument("--max-turns", type=int, default=MAX_TURNS, help="dialogue-horizon cap")
+    ap.add_argument("--seed", type=int, default=100,
+                    help="eval case-generation seed (100 = the held-out TEST set; use a different seed for a "
+                         "VALIDATION set when selecting alpha/checkpoints)")
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
     MAX_TURNS = args.max_turns
@@ -108,7 +111,7 @@ def main():
                "max_turns": MAX_TURNS}
     records = []
     for cond in args.conditions.split(","):
-        cases = env.gen_cases(args.n_cases, RHO[cond], seed=100)
+        cases = env.gen_cases(args.n_cases, RHO[cond], seed=args.seed)
         st = run_condition(llm, tok, lreq, env, cases, args.k, SamplingParams)
         summ, _ = summarize(env, st, args.k); results[cond] = summ
         for s in st:

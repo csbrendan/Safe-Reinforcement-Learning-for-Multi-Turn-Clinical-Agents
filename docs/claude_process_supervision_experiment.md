@@ -3,6 +3,7 @@
 > **Status:** planned workshop-style extension
 > **Owner:** _tbd_
 > **Depends on:** existing GRPO training stack (MedGemma-4B-Instruct, synthetic multi-turn clinical environment) and the existing InfoGain reward path.
+> **Feasibility smoke test (2026-07-12): PASS, no blockers.** Verified end-to-end on CPU against the live API — a real diagnostics trajectory renders the §5 rubric prompt, `claude-opus-4-8` returns schema-valid JSON on every turn, the deterministic reduction produces `s_t`, and `R = R_task + λ_cl·ClaudeProc` assembles. The `anthropic` SDK (0.100.0) is in `~/spark1/.venv` and network egress to `api.anthropic.com` works. The one plan change surfaced: `temperature` is deprecated for this model (see §5 Determinism).
 
 ---
 
@@ -161,7 +162,7 @@ Field notes:
 ### Robustness rules
 - **Strict JSON parse**; on parse failure, retry once with a "return valid JSON only" reminder, then treat as `s_t = neutral (0.5)` and log a parse-failure counter. Parse-failure rate is a reported diagnostic.
 - **Rubric versioning.** The rubric text and schema are versioned (`rubric_vX.json`); the version id is stored on every score record so runs are reproducible.
-- **Determinism.** Score with temperature 0 and a fixed system prompt; log the exact model id (`claude-opus-4-8`) and rubric version with every record.
+- **Determinism.** `claude-opus-4-8` **deprecates the `temperature` parameter** (a smoke-test call with `temperature=0` returns HTTP 400 `` `temperature` is deprecated for this model ``), so the original "score at temp 0" plan is not available. Determinism therefore rests on: a **fixed system prompt**, a **versioned rubric**, and the **deterministic reduction** we compute ourselves from the dimension integers (we never trust the model's free-form overall number). Because sampling can no longer be pinned to greedy, **run-to-run stability must be measured, not assumed** — re-score a fixed subset and report the score variance (see §10). Log the exact model id (`claude-opus-4-8`) and rubric version with every record.
 
 ---
 
@@ -193,7 +194,7 @@ The **only** new measurements are training-time diagnostics and the Claude-vs-In
 
 1. **Freeze the shared config.** Pin seeds, GRPO hyperparameters, environment version, and eval set so C1–C4 differ *only* in the shaping term. Re-run C1 and C2 under this frozen config to serve as clean references.
 2. **Trajectory logger.** Ensure each rollout persists: case context, per-turn text, turn indices, existing per-turn InfoGain `g_t`, and `R_task`. This is the input to Claude scoring and the §6 analysis.
-3. **Claude scoring service.** Build a batched, cached client (`claude-opus-4-8`, temp 0) that takes a trajectory + target turn and returns the §5 JSON. Include: strict-JSON validation, one retry, parse-failure fallback, rubric-version stamping, and a response cache keyed on `(rubric_version, case_id, turn_hash)` so re-runs and C3/C4 sharing the same rollouts don't re-score.
+3. **Claude scoring service.** Build a batched, cached client (`claude-opus-4-8`; **do not pass `temperature`** — the parameter is deprecated for this model and returns a 400, see §5 Determinism) that takes a trajectory + target turn and returns the §5 JSON. Include: strict-JSON validation, one retry, parse-failure fallback, rubric-version stamping, and a response cache keyed on `(rubric_version, case_id, turn_hash)` so re-runs and C3/C4 sharing the same rollouts don't re-score.
 4. **Reward assembler.** Implement `ClaudeProc(traj)` reduction (§4) and wire the four reward expressions behind a single config switch (`shaping ∈ {none, infogain, claude, both}`).
 5. **λ calibration sweep.** Small dev sweep to set `λ_cl` so Claude's reward magnitude is comparable to InfoGain's under C2. Record the chosen value; use it for both C3 and C4.
 6. **Run C1–C4.** Same compute budget each. Log training curves, reward-component magnitudes, and the paired `(g_t, s_t)` records.
@@ -220,7 +221,7 @@ The **only** new measurements are training-time diagnostics and the Claude-vs-In
 
 ## 10. Risks and mitigations
 
-- **Scorer noise / prompt sensitivity.** Fix rubric version, temp 0, deterministic reduction; report parse-failure and inter-run stability on a re-scored subset.
+- **Scorer noise / prompt sensitivity.** Fix rubric version and use the deterministic reduction; **`temperature` is unavailable on `claude-opus-4-8`** (see §5), so run-to-run stability is *load-bearing* here, not optional — report parse-failure rate and inter-run score variance on a re-scored subset, and if variance is material, average over a small number of re-scores per turn.
 - **Reward hacking toward "Claude-pleasing" turns.** Watch for verbosity or thoroughness-signaling that raises `s_t` without helping eval; the unchanged eval set is the guard, and disagreement analysis (§6.3) surfaces it.
 - **Magnitude imbalance.** If `λ_cl` is mis-set, C3/C4 either ignore or over-weight the signal; M3 calibration is the mitigation.
 - **Cost/latency.** Off-policy post-rollout scoring + caching keeps Claude off the generation hot path; §6.5 reports the cost-adjusted tradeoff honestly.
