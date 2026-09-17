@@ -1,16 +1,13 @@
 #!/usr/bin/env python3
-"""Experiment overview (v2) — editorial redesign of the v1 strip for
+"""Experiment overview (v2, Nature-style pass) for
 "Reward Design Governs Information Gathering in Clinical Multi-Turn Agents."
 
-Hierarchy, not a row of equal boxes:
-  ZONE 1  a large "Clinical multi-turn environment" container = the focal process
-          (MedGemma <-> patient simulator, hidden state, commit -> clinical action;
-           oracle + verifier as small secondary badges attached to it)
-  ZONE 2  GRPO training -> fans OUT into three reward-variant pills (reward differs)
-  ZONE 3  the three variants CONVERGE back into one common held-out evaluation
-          (same pure verifier, shaping off) -> metrics
+Editorial reduction of the earlier v2: three zones (pale panels for the environment and evaluation,
+an unpaneled training section), strong outlines reserved for the few objects that matter
+(MedGemma, GRPO training, Same pure verifier), oracle/verifier reduced to annotation badges,
+reward variants as a clean pill row under GRPO, a vertical evaluation stack, and a subordinate
+disaggregated two-node inset. Conceptual; not Figure 1.
 
-Conceptual schematic; no equations/results/trajectories. Not Figure 1.
 Outputs: figs/experiment_overview_strip_v2.{png,svg,pdf}. Run inside ~/spark1/.venv.
 """
 import os
@@ -25,164 +22,137 @@ plt.rcParams.update({
     "svg.fonttype": "none", "pdf.fonttype": 42,
 })
 
-INK="#20303f"; MUTE="#66707b"; FAINT="#98a0aa"; HAIR="#d8dde2"
-TEAL="#207d8b"; TEAL_L="#e2f0f2"
-GRAYB="#c6ccd2"; GRAY_L="#eef1f3"
-GOLD="#b0851f"; GOLD_L="#f6edcf"
+INK="#22303c"; MUTE="#7c848d"; FAINT="#a3aab2"; HAIR="#e0e4e8"
+TEAL="#1f7f8c"; TEAL_L="#e6f1f3"
+GRAY_L="#f1f4f6"; GRAYB="#d6dbe0"
+GOLD="#a9821f"; GOLD_L="#f6eed4"
 VIO="#5f5a7a"; VIO_L="#e9e7f0"
-RED="#bd4657"; RED_L="#f6e3e6"
-GREEN="#2e7d32"; GREEN_L="#e2efe3"
-BLUE="#3b6fb6"; BLUE_L="#e5edf7"
-ENV_BG="#f1f6f8"
+RED="#bd4657"; RED_L="#f7e6e9"
+GREEN="#2e7d32"; GREEN_L="#e4efe4"
+BLUE="#3b6fb6"; BLUE_L="#e6edf7"
+ENV_BG="#f4f7f8"; EVAL_BG="#f7f8f9"
 
-FIG_W, FIG_H = 16.6, 8.4
-BY = 4.55                      # main-flow baseline
+FIG_W, FIG_H = 16.0, 8.2
+BY = 5.35
 os.makedirs("figs", exist_ok=True)
 fig = plt.figure(figsize=(FIG_W, FIG_H))
 ax = fig.add_axes([0, 0, 1, 1]); ax.set_xlim(0, FIG_W); ax.set_ylim(0, FIG_H)
 ax.set_aspect("equal"); ax.axis("off")
 
 
-def rrect(x, y, w, h, fc="white", ec=GRAYB, lw=1.3, r=0.10, z=2, alpha=1.0, ls="-"):
+def rrect(x, y, w, h, fc="white", ec=HAIR, lw=1.1, r=0.10, z=2, alpha=1.0):
     ax.add_patch(FancyBboxPatch((x, y), w, h, boxstyle=f"round,pad=0,rounding_size={r}",
-                 linewidth=lw, edgecolor=ec, facecolor=fc, zorder=z, alpha=alpha, mutation_scale=1, linestyle=ls))
+                 linewidth=lw, edgecolor=ec, facecolor=fc, zorder=z, alpha=alpha, mutation_scale=1))
 
-def arrow(p1, p2, color="#a4abb3", lw=1.7, rad=0.0, z=3, ms=12, ls="-"):
-    ax.add_patch(FancyArrowPatch(p1, p2, arrowstyle="-|>", mutation_scale=ms, linewidth=lw, color=color,
-                 connectionstyle=f"arc3,rad={rad}", shrinkA=1, shrinkB=1, zorder=z, linestyle=ls))
+def arrow(p1, p2, color="#aab0b8", lw=1.4, rad=0.0, z=3, ms=11, style="-|>"):
+    ax.add_patch(FancyArrowPatch(p1, p2, arrowstyle=style, mutation_scale=ms, linewidth=lw, color=color,
+                 connectionstyle=f"arc3,rad={rad}", shrinkA=1, shrinkB=1, zorder=z))
 
-def dline(p1, p2, color=GOLD, lw=1.1):
+def dline(p1, p2, color=FAINT, lw=1.0):
     ax.plot([p1[0], p2[0]], [p1[1], p2[1]], color=color, lw=lw, ls=(0, (3, 3)), zorder=1.6)
 
-def cap(cx, cy, w, h, title, sub, ec, fc, r=0.30, tfs=9.4, sfs=7.2):
-    rrect(cx - w/2, cy - h/2, w, h, fc=fc, ec=ec, r=r, z=2.6, lw=1.6)
-    ax.text(cx, cy + 0.12, title, ha="center", va="center", fontsize=tfs, fontweight="bold", color=ec, zorder=3)
-    ax.text(cx, cy - 0.15, sub, ha="center", va="center", fontsize=sfs, color=MUTE, zorder=3)
-
-def box(cx, cy, w, h, title, sub=None, ec=GRAYB, fc="white", tc=INK, tfs=10.5, sfs=7.8, r=0.11, lw=1.4):
+def obj(cx, cy, w, h, title, sub=None, ec=GRAYB, fc="white", tc=INK, tfs=10.5, sfs=7.2, r=0.11, lw=1.2, bold=True):
     rrect(cx - w/2, cy - h/2, w, h, fc=fc, ec=ec, r=r, z=2.4, lw=lw)
     if sub:
-        ax.text(cx, cy + 0.16, title, ha="center", va="center", fontsize=tfs, fontweight="bold", color=tc, zorder=3)
-        ax.text(cx, cy - 0.19, sub, ha="center", va="center", fontsize=sfs, color=MUTE, zorder=3, linespacing=0.95)
+        ax.text(cx, cy + 0.15, title, ha="center", va="center", fontsize=tfs,
+                fontweight=("bold" if bold else "medium"), color=tc, zorder=3)
+        ax.text(cx, cy - 0.18, sub, ha="center", va="center", fontsize=sfs, color=MUTE, zorder=3)
     else:
-        ax.text(cx, cy, title, ha="center", va="center", fontsize=tfs, fontweight="bold", color=tc, zorder=3)
+        ax.text(cx, cy, title, ha="center", va="center", fontsize=tfs,
+                fontweight=("bold" if bold else "medium"), color=tc, zorder=3)
 
-# tiny title
-ax.text(0.34, FIG_H - 0.26, "Experimental overview", ha="left", va="top", fontsize=12.5,
+# ============================ title + zone panels ============================
+ax.text(0.36, FIG_H - 0.28, "Experimental overview", ha="left", va="top", fontsize=13.5,
+        fontweight="bold", color=INK)
+EX0, EX1, EY0, EY1 = 0.35, 6.25, 0.80, 7.02
+VX0, VX1 = 11.35, 15.65
+rrect(EX0, EY0, EX1 - EX0, EY1 - EY0, fc=ENV_BG, ec="none", r=0.16, z=0.6)
+rrect(VX0, EY0, VX1 - VX0, EY1 - EY0, fc=EVAL_BG, ec="none", r=0.16, z=0.6)
+ax.text(EX0 + 0.26, EY1 - 0.20, "Clinical multi-turn environment", ha="left", va="top", fontsize=11.5,
+        fontweight="bold", color=INK)
+ax.text(EX0 + 0.27, EY1 - 0.52, "refill triage · acute diagnostics · dosing titration", ha="left", va="top",
+        fontsize=7.8, color=MUTE)
+ax.text(VX0 + 0.26, EY1 - 0.20, "Held-out evaluation", ha="left", va="top", fontsize=11.5,
         fontweight="bold", color=INK)
 
-# ============================ ZONE 1: environment ============================
-EX0, EX1, EY0, EY1 = 0.4, 6.75, 0.85, 7.05
-rrect(EX0, EY0, EX1 - EX0, EY1 - EY0, fc=ENV_BG, ec="#cdd7db", r=0.16, z=0.7, lw=1.4)
-ax.text(EX0 + 0.24, EY1 - 0.22, "Clinical multi-turn environment", ha="left", va="top", fontsize=12.5,
-        fontweight="bold", color=INK)
-ax.text(EX0 + 0.25, EY1 - 0.58, "refill triage · acute diagnostics · dosing titration", ha="left", va="top",
-        fontsize=8.2, color=MUTE)
-
-# hidden-state banner above the simulator
-rrect(3.28, 5.66, 3.20, 0.42, fc="white", ec="#cdb3b6", r=0.10, z=2.2)
-ax.text(4.88, 5.87, "hidden state:  diagnosis · severity · medication", ha="center", va="center",
-        fontsize=7.2, color=RED, zorder=3)
-
-# policy <-> simulator (the focal interaction)
-box(1.83, BY + 0.30, 2.02, 1.02, "MedGemma-4B-it", "LoRA-adapted policy", ec=TEAL, fc=TEAL_L, tc=TEAL, r=0.30)
-box(4.88, BY + 0.30, 2.05, 1.02, "Patient simulator", "hidden clinical state", ec=GRAYB, fc="white")
-arrow((2.72, BY + 0.52), (3.73, BY + 0.52), color=TEAL, rad=-0.32, ms=11)
-ax.text(3.22, BY + 0.92, "ask", ha="center", va="center", fontsize=7.6, color=TEAL, fontweight="bold")
-arrow((3.73, BY + 0.16), (2.72, BY + 0.16), color="#a4abb3", rad=-0.32, ms=11)
-ax.text(3.22, BY - 0.20, "finding revealed", ha="center", va="center", fontsize=7.0, color=MUTE)
-
+# ============================ ZONE A: environment ============================
+# hidden-state pill (small, light) above the simulator
+rrect(3.05, BY + 0.70, 2.55, 0.32, fc="white", ec=HAIR, r=0.14, z=2.2)
+ax.text(4.33, BY + 0.86, "hidden state · diagnosis · severity · dose", ha="center", va="center",
+        fontsize=6.7, color=MUTE, zorder=3)
+# model <-> simulator (only MedGemma is strongly outlined)
+obj(1.74, BY, 1.92, 1.00, "MedGemma-4B-it", "LoRA-adapted policy", ec=TEAL, fc=TEAL_L, tc=TEAL, lw=2.0, r=0.28)
+obj(4.33, BY, 1.94, 1.00, "Patient simulator", "hidden clinical state", ec=GRAYB, fc=GRAY_L, lw=1.0, bold=False)
+arrow((2.62, BY + 0.20), (3.44, BY + 0.20), color=TEAL, rad=-0.32, ms=10)
+ax.text(3.03, BY + 0.50, "ask", ha="center", va="center", fontsize=7.2, color=TEAL, fontweight="bold")
+arrow((3.44, BY - 0.16), (2.62, BY - 0.16), color="#aab0b8", rad=-0.32, ms=10)
+ax.text(3.03, BY - 0.44, "finding", ha="center", va="center", fontsize=6.8, color=MUTE)
 # commit -> clinical action
-arrow((1.83, BY - 0.21), (1.83, BY - 0.86), color="#a4abb3", ms=11)
-ax.text(2.06, BY - 0.54, "commit", ha="left", va="center", fontsize=7.2, color=INK)
-box(1.83, BY - 1.20, 1.86, 0.52, "clinical action", ec="#c6ccd2", fc="#f4f6f8", tfs=8.6)
-ax.text(4.88, BY - 0.70, "ask again  or  commit", ha="center", va="center", fontsize=7.0, color=FAINT, style="italic")
-
-# oracle + verifier: small secondary badges attached to the environment
+arrow((1.74, BY - 0.50), (1.74, BY - 0.92), color="#aab0b8", ms=10)
+ax.text(1.98, BY - 0.71, "commit", ha="left", va="center", fontsize=6.8, color=MUTE)
+obj(1.74, BY - 1.26, 1.60, 0.44, "clinical action", ec=HAIR, fc="white", tfs=8.2, bold=False)
+# oracle + verifier as small annotation badges
 def badge(cx, cy, title, sub, ec, fc):
-    w, h = 2.20, 0.70
-    rrect(cx - w/2, cy - h/2, w, h, fc=fc, ec=ec, r=0.13, z=2.5, lw=1.4)
-    ax.text(cx - w/2 + 0.20, cy + 0.13, "◆", ha="center", va="center", fontsize=7.5, color=ec, zorder=3)
-    ax.text(cx + 0.08, cy + 0.13, title, ha="center", va="center", fontsize=8.6, fontweight="bold", color=ec, zorder=3)
-    ax.text(cx, cy - 0.15, sub, ha="center", va="center", fontsize=7.0, color=MUTE, zorder=3)
-badge(2.45, 1.62, "Exact adaptive oracle", "reference procedure", GOLD, GOLD_L)
-badge(4.95, 1.62, "Deterministic verifier", "terminal outcome scorer", VIO, VIO_L)
-dline((2.75, 1.97), (3.95, BY - 0.05), color=GOLD)
-dline((4.95, 1.97), (4.88, BY - 0.21), color=VIO)
-ax.text(3.62, 1.05, "analytic properties of the controlled simulator", ha="center", va="center",
-        fontsize=6.8, color=FAINT, style="italic")
+    w, h = 1.98, 0.56
+    rrect(cx - w/2, cy - h/2, w, h, fc=fc, ec=ec, r=0.13, z=2.4, lw=1.0)
+    ax.text(cx - w/2 + 0.18, cy + 0.10, "◆", ha="center", va="center", fontsize=6.6, color=ec, zorder=3)
+    ax.text(cx + 0.09, cy + 0.10, title, ha="center", va="center", fontsize=8.0, fontweight="bold", color=ec, zorder=3)
+    ax.text(cx, cy - 0.14, sub, ha="center", va="center", fontsize=6.6, color=MUTE, zorder=3)
+badge(1.95, 2.30, "Exact adaptive oracle", "reference procedure", GOLD, GOLD_L)
+badge(4.28, 2.30, "Deterministic verifier", "outcome scorer", VIO, VIO_L)
+dline((2.20, 2.58), (3.30, BY - 0.52), color=GOLD)
+dline((4.28, 2.58), (4.33, BY - 0.52), color=VIO)
 
-# ============================ ZONE 2: GRPO -> fan out ========================
-arrow((EX1, BY), (7.35, BY), color="#8f97a0", ms=13, lw=1.9)
-ax.text((EX1 + 7.35) / 2, BY + 0.22, "policy rollouts", ha="center", va="center", fontsize=7.2, color=MUTE)
-box(8.25, BY, 1.72, 1.02, "GRPO training", "reward varies\nby method", ec=INK, fc="white", tfs=10.5, sfs=7.6)
+# ============================ ZONE B: training ==============================
+arrow((EX1, BY), (7.42, BY), color="#9aa1a9", ms=12, lw=1.6)
+ax.text((EX1 + 7.42) / 2, BY + 0.20, "policy rollouts", ha="center", va="center", fontsize=6.8, color=MUTE)
+obj(8.35, BY, 1.66, 0.90, "GRPO training", ec=INK, fc="white", tc=INK, lw=2.0, tfs=10.5)
+# reward variants: a clean pill row beneath GRPO (branching implied by a light fork, no arcs)
+PY = BY - 1.42
+pills = [(7.20, RED, RED_L, "Outcome-only", "terminal reward"),
+         (8.35, GREEN, GREEN_L, "Credit assignment", "+ info credit"),
+         (9.50, BLUE, BLUE_L, "Decoupled", "gather / commit")]
+dline((8.35, BY - 0.45), (8.35, PY + 0.46), color=GRAYB, lw=1.0)
+ax.plot([7.20, 9.50], [PY + 0.40, PY + 0.40], color=GRAYB, lw=1.0, zorder=1.5)
+for cx, ec, fc, t, s in pills:
+    ax.plot([cx, cx], [PY + 0.40, PY + 0.26], color=GRAYB, lw=1.0, zorder=1.5)
+    rrect(cx - 0.58, PY - 0.26, 1.16, 0.52, fc=fc, ec=ec, r=0.26, z=2.5, lw=1.3)
+    ax.text(cx, PY + 0.055, t, ha="center", va="center", fontsize=7.6, fontweight="bold", color=ec, zorder=3)
+    ax.text(cx, PY - 0.145, s, ha="center", va="center", fontsize=6.0, color=MUTE, zorder=3)
+ax.text(8.35, PY + 0.62, "training reward differs", ha="center", va="center", fontsize=7.8,
+        fontweight="bold", color=MUTE)
+# trained policies -> common evaluation
+arrow((9.18, BY), (12.18, BY), color="#9aa1a9", ms=12, lw=1.6)
+ax.text((9.18 + 12.18) / 2, BY + 0.20, "trained policies · common evaluation", ha="center", va="center",
+        fontsize=7.0, color=MUTE)
 
-pills = [(RED, RED_L, "Outcome-only", "terminal reward", BY + 1.30),
-         (GREEN, GREEN_L, "Credit assignment", "+ information credit", BY),
-         (BLUE, BLUE_L, "Decoupled", "separate gather / commit", BY - 1.30)]
-PX = 10.75
-for ec, fc, t, s, cy in pills:
-    arrow((9.13, BY), (PX - 1.08, cy), color="#b7bdc4", ms=9, lw=1.4, rad=(0.0 if cy == BY else (0.12 if cy > BY else -0.12)))
-    cap(PX, cy, 2.10, 0.66, t, s, ec, fc)
-# "training reward differs" bracket over the pills
-bx0, bx1, byk = PX - 1.15, PX + 1.15, BY + 1.86
-ax.plot([bx0, bx0, bx1, bx1], [byk - 0.10, byk, byk, byk - 0.10], color="#c3c9d0", lw=1.2)
-ax.text(PX, byk + 0.16, "training reward differs", ha="center", va="bottom", fontsize=8.6,
-        fontweight="bold", color=INK)
+# disaggregated two-node inset (subordinate, tied to GRPO/training column)
+IX0, IX1, IY0, IY1 = 6.98, 9.72, 1.66, 2.98
+dline((8.35, PY - 0.26), (8.35, IY1), color=HAIR, lw=1.0)
+rrect(IX0, IY0, IX1 - IX0, IY1 - IY0, fc=EVAL_BG, ec=HAIR, r=0.10, z=1.7)
+ax.text((IX0 + IX1) / 2, IY1 - 0.15, "Disaggregated RL", ha="center", va="center", fontsize=7.0,
+        fontweight="bold", color=FAINT, zorder=3)
+for cx, name, sub in [(7.62, "Trainer node", "GRPO · LoRA"), (9.08, "Rollout node", "vLLM · 8 rollouts")]:
+    rrect(cx - 0.60, 2.06, 1.20, 0.52, fc="white", ec="#d3d8dd", r=0.10, z=2.0, lw=1.0)
+    ax.text(cx, 2.44, name, ha="center", va="center", fontsize=6.4, fontweight="bold", color=MUTE, zorder=3)
+    ax.text(cx, 2.24, sub, ha="center", va="center", fontsize=5.6, color=FAINT, zorder=3)
+ax.add_patch(FancyArrowPatch((8.22, 2.32), (8.48, 2.32), arrowstyle="<|-|>", mutation_scale=7,
+             linewidth=1.0, color="#b3b9c0", shrinkA=1, shrinkB=1, zorder=2.4))
+ax.text((IX0 + IX1) / 2, 1.82, "two DGX Spark nodes · updates ↔ rollouts", ha="center", va="center",
+        fontsize=5.6, color=FAINT, zorder=3)
 
-# ============================ ZONE 3: converge -> common eval ================
-MERGE = 12.30
-for _, _, _, _, cy in pills:
-    arrow((PX + 1.08, cy), (MERGE, BY), color="#b7bdc4", ms=9, lw=1.4,
-          rad=(0.0 if cy == BY else (-0.12 if cy > BY else 0.12)))
-EXC = 14.15
-arrow((MERGE, BY), (EXC - 1.20, BY), color="#8f97a0", ms=13, lw=1.9)
-box(EXC, BY, 2.30, 0.66, "Held-out simulator cases", "unseen patients", tfs=9.6, sfs=7.2)
-arrow((EXC, BY - 0.33), (EXC, BY - 0.72), color="#a4abb3", ms=11)
-# prominent shared verifier
-rrect(EXC - 1.28, BY - 1.66, 2.56, 0.92, fc=VIO_L, ec=VIO, r=0.14, z=2.6, lw=2.2)
-ax.text(EXC, BY - 1.01, "Same pure verifier", ha="center", va="center", fontsize=11, fontweight="bold",
-        color=VIO, zorder=3)
-ax.text(EXC, BY - 1.30, "one terminal scorer, every method", ha="center", va="center", fontsize=7.4,
-        color=MUTE, zorder=3)
-rrect(EXC - 1.05, BY - 2.14, 2.10, 0.34, fc="white", ec=RED, r=0.10, z=2.8)
-ax.text(EXC, BY - 1.97, "reward shaping off", ha="center", va="center", fontsize=7.8, fontweight="bold",
-        color=RED, zorder=3)
-arrow((EXC, BY - 2.16), (EXC, BY - 2.50), color="#a4abb3", ms=10)
-# metrics (2x2)
-rrect(EXC - 1.55, BY - 3.55, 3.10, 0.92, fc="white", ec=HAIR, r=0.11, z=2.3)
-ax.text(EXC, BY - 2.78, "evaluation metrics", ha="center", va="center", fontsize=8.2, fontweight="bold",
-        color=INK, zorder=3)
-for lab, mx, my in [("overall value", EXC - 0.76, BY - 3.10), ("high-risk value", EXC + 0.76, BY - 3.10),
-                    ("question burden", EXC - 0.76, BY - 3.42), ("oracle-grade support", EXC + 0.76, BY - 3.42)]:
-    ax.text(mx, my, "· " + lab, ha="center", va="center", fontsize=6.9, color=MUTE, zorder=3)
-# "common evaluation" bracket over the eval column
-cbx0, cbx1, cby = EXC - 1.30, EXC + 1.30, BY + 0.62
-ax.plot([cbx0, cbx0, cbx1, cbx1], [cby - 0.10, cby, cby, cby - 0.10], color="#cdbf9a", lw=1.2)
-ax.text(EXC, cby + 0.16, "common evaluation — held constant", ha="center", va="bottom", fontsize=8.6,
-        fontweight="bold", color=GOLD)
-
-# ---- disaggregated two-node RL inset (secondary; tied to the GRPO block) ----
-IX0, IX1, IY0, IY1 = 6.78, 9.55, 1.72, 3.42
-dline((8.16, BY - 0.51), (8.16, IY1), color="#c3c9d0", lw=1.1)         # visual link to GRPO training
-rrect(IX0, IY0, IX1 - IX0, IY1 - IY0, fc="#f7f8f9", ec=HAIR, r=0.10, z=1.8)
-ax.text((IX0 + IX1) / 2, IY1 - 0.17, "Disaggregated two-node RL", ha="center", va="center",
-        fontsize=7.8, fontweight="bold", color=MUTE, zorder=3)
-
-def _node(cx, name, l1, l2, l3):
-    w, h = 1.02, 1.00
-    rrect(cx - w/2, 2.52 - h/2, w, h, fc="white", ec="#c9ced4", r=0.08, z=2.2, lw=1.1)
-    ax.text(cx, 2.85, name, ha="center", va="center", fontsize=7.0, fontweight="bold", color=INK, zorder=3)
-    ax.text(cx, 2.63, l1, ha="center", va="center", fontsize=6.0, color=FAINT, style="italic", zorder=3)
-    ax.text(cx, 2.44, l2, ha="center", va="center", fontsize=5.9, color=MUTE, zorder=3)
-    ax.text(cx, 2.26, l3, ha="center", va="center", fontsize=5.9, color=MUTE, zorder=3)
-
-_node(7.30, "Trainer Node", "DGX Spark", "GRPO optimization", "LoRA policy updates")
-_node(8.95, "Rollout Node", "DGX Spark", "vLLM server", "8 rollouts / prompt")
-ax.add_patch(FancyArrowPatch((7.81, 2.55), (8.44, 2.55), arrowstyle="<|-|>", mutation_scale=8,
-             linewidth=1.2, color="#9aa2ab", shrinkA=1, shrinkB=1, zorder=3))
-ax.text((IX0 + IX1) / 2, 1.94, "policy updates out  ·  on-policy rollout trajectories back",
-        ha="center", va="center", fontsize=6.2, color=MUTE, zorder=3)
+# ============================ ZONE C: evaluation ============================
+obj(13.5, BY, 2.50, 0.60, "Held-out simulator cases", "unseen patients", ec=GRAYB, fc="white",
+    tfs=9.4, sfs=6.8, lw=1.0, bold=False)
+arrow((13.5, BY - 0.30), (13.5, 4.36), color="#aab0b8", ms=10)
+obj(13.5, 3.96, 2.60, 0.80, "Same pure verifier", "common scorer", ec=VIO, fc=VIO_L, tc=VIO,
+    lw=2.0, tfs=10.5, sfs=7.0)
+arrow((13.5, 3.56), (13.5, 3.30), color="#aab0b8", ms=9)
+rrect(13.5 - 0.86, 3.00, 1.72, 0.30, fc="white", ec=RED, r=0.12, z=2.6)
+ax.text(13.5, 3.15, "reward shaping off", ha="center", va="center", fontsize=7.2, fontweight="bold", color=RED, zorder=3)
+ax.text(13.5, 2.55, "metrics", ha="center", va="center", fontsize=7.2, fontweight="bold", color=MUTE, zorder=3)
+ax.text(13.5, 2.29, "overall value   ·   high-risk value", ha="center", va="center", fontsize=7.0, color=MUTE, zorder=3)
+ax.text(13.5, 2.07, "question burden   ·   oracle-grade support", ha="center", va="center", fontsize=7.0, color=MUTE, zorder=3)
 
 for ext in ("png", "svg", "pdf"):
     out = f"figs/experiment_overview_strip_v2.{ext}"

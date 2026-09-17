@@ -1,81 +1,75 @@
-# Experiment overview (v2) — notes
+# Experiment overview (v2, Nature-style pass) — notes
 
 Companion to `scripts/make_experiment_overview_strip_v2.py` →
 `figs/experiment_overview_strip_v2.{png,svg,pdf}`.
 Paper: *Reward Design Governs Information Gathering in Clinical Multi-Turn Agents.*
 
-A substantial redesign of the v1 strip. Same content, rethought composition: instead of six equal-weight boxes in
-one pipeline, it uses hierarchy and a **one → three → one** flow (one environment/model family → three training
-reward variants → one common evaluation). Standalone; not Figure 1.
+Editorial reduction of the earlier v2 (fewer outlined boxes, more whitespace, stronger hierarchy). Same content;
+restyled toward a journal opening figure rather than a lab schematic. Standalone; not Figure 1.
 
-## Hierarchy chosen
+## Hierarchy chosen (three zones, unequal weight)
 
-Three zones with deliberately unequal visual weight:
-1. **Zone 1 — Clinical multi-turn environment (largest, focal).** A big soft-shaded container holding the main
-   process: **MedGemma-4B-it ⇄ Patient simulator** with a two-arrow ask/reveal loop, a red "hidden state" banner,
-   and a `commit → clinical action` branch. This is the visual anchor because the interactive, partially-observed
-   process is the conceptual heart of the paper.
-2. **Zone 2 — GRPO training (medium).** A single neutral anchor ("GRPO training · reward varies by method") that
-   **fans out** into three small reward **pills** (capsules), not full cards.
-3. **Zone 3 — Common held-out evaluation (medium, emphatic endpoint).** The three pills **converge** back to one
-   path: held-out cases → the prominent violet **Same pure verifier** box → "reward shaping off" → metrics.
+- **Zone A — Clinical multi-turn environment** (left, **pale tinted panel**, no border): the focal process. Model ⇄
+  simulator with a curved ask/finding loop, a small light hidden-state pill above the simulator, a `commit → clinical
+  action` box below the model, and the oracle/verifier as annotation badges along the bottom.
+- **Zone B — Training** (center, **no panel**, just a labelled section): a single strongly-outlined **GRPO training**
+  anchor; beneath it a clean **row of three reward pills** under a "training reward differs" label; a small
+  subordinate two-node inset below.
+- **Zone C — Held-out evaluation** (right, **pale panel**): a vertical stack — held-out cases → **Same pure verifier**
+  (the anchor) → "reward shaping off" pill → metrics as light text.
 
-Type hierarchy: zone titles (12.5 pt bold) > box titles (10–11 pt) > pill titles (9.4 pt) > secondary/italic
-labels (6.8–7.4 pt). Two bracket call-outs carry the thesis contrast: **"training reward differs"** over the pills,
-**"common evaluation — held constant"** over the eval column.
+One horizontal main flow ties them together: `environment → GRPO training → common evaluation`. The three reward
+variants hang **below** GRPO (implying "reward differs during training"), while the single arrow into evaluation
+("trained policies · common evaluation") carries the convergence — all methods are judged by one verifier.
 
-## Why the environment is a container, not a pipeline box
+## Why the environment is a pale container, not outlined boxes
 
-In v1 the environment was one box equal in size to "GRPO" and "evaluation", which implied the model *passes
-through* it as a stage. Scientifically the environment is not a stage — it is the setting in which the whole
-policy↔patient interaction happens, and the oracle/verifier are analytic properties *of* that setting. Making it a
-large enclosing region with the interaction inside communicates "interactive RL environment," not "static dataset
-step," and lets the ask/reveal/commit loop be the focal process rather than a caption.
+Only three objects are strongly outlined — **MedGemma-4B-it**, **GRPO training**, **Same pure verifier** — so the eye
+knows what matters. Everything else is a light fill with a thin or no border, and the environment/evaluation are pale
+background regions rather than hard rectangles. This removes the "row of equal boxes" feel and gives an editorial
+hierarchy: containers for context, outlines for the few key actors.
 
 ## How oracle and verifier are distinguished
 
-They are **small secondary badges** along the bottom of the environment container (never stages the model passes
-through), each marked with a ◆ and tied to the simulator by a thin **dashed** connector labeled "analytic
-properties of the controlled simulator." Roles and color are kept distinct: **oracle = muted gold**, "reference
-procedure" (a reference adaptive policy); **verifier = violet**, "terminal outcome scorer" (a scorer). The verifier's
-violet is reused on the Zone-3 "Same pure verifier" box so the reader sees the *same* scorer reappear at evaluation.
+They are **small annotation badges** (◆) along the bottom of the environment, tied to the simulator by thin **dashed**
+connectors — read as analytic properties of the controlled simulator, not stages the model passes through. Distinct
+roles/colors: **oracle = muted gold** ("reference procedure"); **verifier = violet-gray** ("outcome scorer"). The
+verifier's violet reappears on the Zone-C "Same pure verifier" anchor so the reader sees the same scorer at eval.
 
-## How the reward methods branch and then converge
+## How the reward methods branch (and converge)
 
-One arrow ("policy rollouts") leaves the environment into the single **GRPO training** anchor. From there, three
-arrows **fan out** to three colored pills — Outcome-only (red, "terminal reward"), Credit assignment (green,
-"+ information credit"), Decoupled (blue, "separate gather / commit") — under the "training reward differs" bracket.
-The three pills then **fan in** (converging arrows) to a single merge point and one arrow into **Held-out simulator
-cases**, under the "common evaluation — held constant" bracket. This diamond (1→3→1) is the core visual argument:
-methods differ only in training reward, then are judged identically. The pills are capsules, not big cards, so they
-read as variants of one method family rather than separate tasks/environments.
+Under GRPO, a light fork (one line to a short bus, then three ticks) drops to a row of three **pills** — Outcome-only
+(red), Credit assignment (green), Decoupled (blue) — with the "training reward differs" label above. No curved branch
+arrows; alignment and the bracket imply the branching. Convergence is stated, not drawn as arcs: a single
+"trained policies · common evaluation" arrow runs from GRPO into the evaluation panel, where one verifier scores every
+method. This keeps the train-varies / eval-constant contrast without arc clutter.
 
 ## Two-node infrastructure inset
 
-**Included**, small and secondary (visually subordinate, ~10–15% of the panel), and explicitly attached to the
-**GRPO training** block by a thin dashed connector (not to the clinical-environment loop). It shows the
-**disaggregated two-node RL** architecture as two distinct compute nodes:
-- **Trainer Node (DGX Spark)** — GRPO optimization · LoRA policy updates.
-- **Rollout Node (DGX Spark)** — vLLM server · 8 rollouts / prompt (on-policy, multi-turn).
-They are joined by a single **bidirectional arrow** with the caption "policy updates out · on-policy rollout
-trajectories back," so an ML reader immediately recognizes disaggregated rollout training. Styling is deliberately
-restrained (neutral gray, thin arrows, minimal text, no hardware/networking detail) so it does not distract from
-the main story (environment → reward design → learned procedure). Delete the "disaggregated two-node RL inset"
-block in the script to remove it, or move the two nodes/labels to adjust wording.
+**Included**, deliberately subordinate (light gray, thin text, small — a technical footnote), below the pills and
+dash-linked to the training column. It shows the **disaggregated two-node RL** architecture: **Trainer node**
+(GRPO · LoRA) ⇄ **Rollout node** (vLLM · 8 rollouts), captioned "two DGX Spark nodes · updates ↔ rollouts." Restrained
+styling keeps it from competing with the main story; delete the "disaggregated two-node inset" block in the script to
+remove it entirely.
 
-## What I would remove first if this must fit above Figure 1
+## Text reduction
 
-1. **The disaggregated-RL inset** (pure implementation; least essential).
-2. **The `commit → clinical action` sub-branch** and the "ask again or commit" italics — the ask/reveal loop alone
-   conveys the interaction.
-3. **Compress the metrics** from four to two (high-risk value, question burden) to avoid duplicating Figure 1's
-   quantitative panel, and drop "oracle-grade support" first.
-4. **Shrink the environment container** height (tighten the vertical gap between the interaction and the
-   oracle/verifier badges) to reduce total height.
-5. **De-duplicate:** this figure and the separate `train_eval_overview` cover overlapping ground (shared-verifier
-   control). Use only one above Figure 1 — this version if a single environment→train→eval narrative is wanted;
-   the train/eval split if the train-vs-evaluate control is the point to foreground. Don't stack both.
-Editable-text SVG (`svg.fonttype=none`) is provided for Figma/Illustrator.
+~25% less text than the prior v2: "one terminal scorer, every method" → "common scorer"; "reward varies by method" is
+now only the "training reward differs" label; "hidden diagnosis / severity / medication" → "hidden state · diagnosis ·
+severity · dose"; "finding revealed" → "finding"; the "analytic properties of the controlled simulator" caption
+removed (the dashed badges already say it); metrics are light two-column text, not a boxed panel.
+
+## Typography & color
+
+One sans family; **bold** only for the zone/section titles and the three key actors; medium for object titles; light
+gray for subtitles. Restrained palette — teal (MedGemma), neutral gray (environment/simulator), gold (oracle),
+violet-gray (verifier), red/green/blue for the three reward variants only, pale background fills.
+
+## If it must fit above Figure 1 — remove first
+
+1. The two-node inset. 2. The `commit → clinical action` box (the ask/finding loop conveys interaction). 3. Compress
+metrics to two items. 4. Shrink the environment panel height. 5. De-duplicate with `train_eval_overview` — use only
+one overview above Figure 1. Editable-text SVG (`svg.fonttype=none`) is provided for Figma.
 
 ## Reproduce
 ```bash
