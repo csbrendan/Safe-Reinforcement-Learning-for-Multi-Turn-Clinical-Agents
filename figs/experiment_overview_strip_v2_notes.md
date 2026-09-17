@@ -52,9 +52,16 @@ read as variants of one method family rather than separate tasks/environments.
 
 ## Two-node infrastructure inset
 
-**Included**, small and secondary (~10%), beneath the GRPO anchor: a light "Disaggregated RL" box with two tiny
-nodes `trainer ⇄ rollout` and the note "LoRA updates · vLLM generation." It is low-contrast so it does not compete
-with the experimental-design message; delete the "disaggregated-RL inset" block in the script to remove it.
+**Included**, small and secondary (visually subordinate, ~10–15% of the panel), and explicitly attached to the
+**GRPO training** block by a thin dashed connector (not to the clinical-environment loop). It shows the
+**disaggregated two-node RL** architecture as two distinct compute nodes:
+- **Trainer Node (DGX Spark)** — GRPO optimization · LoRA policy updates.
+- **Rollout Node (DGX Spark)** — vLLM server · 8 rollouts / prompt (on-policy, multi-turn).
+They are joined by a single **bidirectional arrow** with the caption "policy updates out · on-policy rollout
+trajectories back," so an ML reader immediately recognizes disaggregated rollout training. Styling is deliberately
+restrained (neutral gray, thin arrows, minimal text, no hardware/networking detail) so it does not distract from
+the main story (environment → reward design → learned procedure). Delete the "disaggregated two-node RL inset"
+block in the script to remove it, or move the two nodes/labels to adjust wording.
 
 ## What I would remove first if this must fit above Figure 1
 

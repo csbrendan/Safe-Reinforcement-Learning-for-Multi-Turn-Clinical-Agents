@@ -162,15 +162,27 @@ ax.plot([cbx0, cbx0, cbx1, cbx1], [cby - 0.10, cby, cby, cby - 0.10], color="#cd
 ax.text(EXC, cby + 0.16, "common evaluation — held constant", ha="center", va="bottom", fontsize=8.6,
         fontweight="bold", color=GOLD)
 
-# optional disaggregated-RL inset (small, secondary), under GRPO
-ix, iy = 8.25, 2.05
-rrect(ix - 1.30, iy - 0.62, 2.60, 1.16, fc="white", ec=HAIR, r=0.10, z=1.8)
-ax.text(ix, iy + 0.38, "Disaggregated RL", ha="center", va="center", fontsize=7.8, fontweight="bold", color=MUTE)
-box(ix - 0.66, iy - 0.14, 1.02, 0.40, "trainer", ec="#c9ced4", fc="#f4f6f8", tfs=7.2, lw=1.0)
-box(ix + 0.66, iy - 0.14, 1.02, 0.40, "rollout", ec="#c9ced4", fc="#f4f6f8", tfs=7.2, lw=1.0)
-arrow((ix - 0.13, iy - 0.06), (ix + 0.13, iy - 0.06), color="#c3c8ce", ms=7, lw=1.0)
-arrow((ix + 0.13, iy - 0.22), (ix - 0.13, iy - 0.22), color="#c3c8ce", ms=7, lw=1.0)
-ax.text(ix, iy - 0.50, "LoRA updates  ·  vLLM generation", ha="center", va="center", fontsize=6.4, color=FAINT)
+# ---- disaggregated two-node RL inset (secondary; tied to the GRPO block) ----
+IX0, IX1, IY0, IY1 = 6.78, 9.55, 1.72, 3.42
+dline((8.16, BY - 0.51), (8.16, IY1), color="#c3c9d0", lw=1.1)         # visual link to GRPO training
+rrect(IX0, IY0, IX1 - IX0, IY1 - IY0, fc="#f7f8f9", ec=HAIR, r=0.10, z=1.8)
+ax.text((IX0 + IX1) / 2, IY1 - 0.17, "Disaggregated two-node RL", ha="center", va="center",
+        fontsize=7.8, fontweight="bold", color=MUTE, zorder=3)
+
+def _node(cx, name, l1, l2, l3):
+    w, h = 1.02, 1.00
+    rrect(cx - w/2, 2.52 - h/2, w, h, fc="white", ec="#c9ced4", r=0.08, z=2.2, lw=1.1)
+    ax.text(cx, 2.85, name, ha="center", va="center", fontsize=7.0, fontweight="bold", color=INK, zorder=3)
+    ax.text(cx, 2.63, l1, ha="center", va="center", fontsize=6.0, color=FAINT, style="italic", zorder=3)
+    ax.text(cx, 2.44, l2, ha="center", va="center", fontsize=5.9, color=MUTE, zorder=3)
+    ax.text(cx, 2.26, l3, ha="center", va="center", fontsize=5.9, color=MUTE, zorder=3)
+
+_node(7.30, "Trainer Node", "DGX Spark", "GRPO optimization", "LoRA policy updates")
+_node(8.95, "Rollout Node", "DGX Spark", "vLLM server", "8 rollouts / prompt")
+ax.add_patch(FancyArrowPatch((7.81, 2.55), (8.44, 2.55), arrowstyle="<|-|>", mutation_scale=8,
+             linewidth=1.2, color="#9aa2ab", shrinkA=1, shrinkB=1, zorder=3))
+ax.text((IX0 + IX1) / 2, 1.94, "policy updates out  ·  on-policy rollout trajectories back",
+        ha="center", va="center", fontsize=6.2, color=MUTE, zorder=3)
 
 for ext in ("png", "svg", "pdf"):
     out = f"figs/experiment_overview_strip_v2.{ext}"
