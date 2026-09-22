@@ -122,7 +122,7 @@ AY0 = AY1 - A_H                  # bottom
 AMY = AY0 + 2.40                 # the model <-> simulator axis (zones align on it)
 
 head(0.42, Y(A_TOP), "A", "Experimental setup",
-     sub="partially observed clinical simulator  ·  GRPO with three reward formulations  ·  one common held-out verifier")
+     sub="partially observed clinical simulator  ·  GRPO with alternative reward and training strategies  ·  one common held-out verifier")
 
 EX0, EX1 = 0.42, 6.32            # environment zone
 VX0, VX1 = 10.60, 13.62          # evaluation zone
@@ -140,7 +140,7 @@ ax.text(VX0 + 0.25, AY1 - 0.48, "unseen simulator cases", ha="left", va="top",
 # ---- zone 1: model <-> simulator ----
 rrect(3.28, AMY + 0.70, 2.54, 0.32, fc="white", ec=HAIR, r=0.14, z=2.2)
 ax.text(4.55, AMY + 0.86, "hidden state  ·  diagnosis · severity · dose", ha="center", va="center",
-        fontsize=6.7, color=MUTE, zorder=3)
+        fontsize=7.0, color=MUTE, zorder=3)
 obj(1.80, AMY, 1.94, 1.00, "MedGemma-4B-it", "LoRA-adapted policy",
     ec=TEAL, fc=TEAL_L, tc=TEAL, lw=2.0, r=0.28)
 obj(4.55, AMY, 1.94, 1.00, "Patient simulator", "hidden clinical state",
@@ -148,13 +148,13 @@ obj(4.55, AMY, 1.94, 1.00, "Patient simulator", "hidden clinical state",
 arrow((2.77, AMY + 0.20), (3.58, AMY + 0.20), color=TEAL, rad=-0.32, ms=10)
 ax.text(3.17, AMY + 0.50, "ask", ha="center", va="center", fontsize=FS_ANNO2, color=TEAL, fontweight="bold")
 arrow((3.58, AMY - 0.16), (2.77, AMY - 0.16), color=LINE, rad=-0.32, ms=10)
-ax.text(3.17, AMY - 0.45, "finding revealed", ha="center", va="center", fontsize=6.6, color=MUTE)
-ax.text(3.64, AMY - 0.70, "ask again  ·  or commit", ha="left", va="center", fontsize=6.6,
+ax.text(3.17, AMY - 0.45, "finding revealed", ha="center", va="center", fontsize=7.0, color=MUTE)
+ax.text(3.64, AMY - 0.70, "ask again  ·  or commit", ha="left", va="center", fontsize=7.0,
         color=MUTE, style="italic")
 
 # commit -> clinical action
 arrow((1.80, AMY - 0.50), (1.80, AMY - 0.80), color=LINE, ms=10)
-ax.text(2.02, AMY - 0.65, "commit", ha="left", va="center", fontsize=6.6, color=MUTE)
+ax.text(2.02, AMY - 0.65, "commit", ha="left", va="center", fontsize=7.0, color=MUTE)
 obj(1.80, AMY - 1.06, 1.62, 0.42, "clinical action", ec=HAIR, fc="white", tfs=8.2, bold=False, r=0.09)
 
 # ---- oracle + verifier as annotation badges (properties of the simulator, not pipeline stages) ----
@@ -163,7 +163,7 @@ def badge(cx, cy, title, sub, ec, fc, w=1.86, h=0.56):
     ax.text(cx - w/2 + 0.17, cy + 0.10, "◆", ha="center", va="center", fontsize=6.4, color=ec, zorder=3)
     ax.text(cx + 0.09, cy + 0.10, title, ha="center", va="center", fontsize=7.9,
             fontweight="bold", color=ec, zorder=3)
-    ax.text(cx, cy - 0.145, sub, ha="center", va="center", fontsize=6.5, color=MUTE, zorder=3)
+    ax.text(cx, cy - 0.145, sub, ha="center", va="center", fontsize=7.0, color=MUTE, zorder=3)
 
 BGY = AY0 + 0.42
 badge(1.76, BGY, "Exact adaptive oracle", "reference procedure", GOLD, GOLD_L)
@@ -176,7 +176,7 @@ arrow((EX1, AMY), (7.50, AMY), color="#9aa1a9", ms=12, lw=1.6)
 ax.text((EX1 + 7.50)/2, AMY + 0.19, "policy rollouts", ha="center", va="center",
         fontsize=FS_ANNO2, color=MUTE)
 obj(8.55, AMY, 1.74, 0.92, "GRPO training", ec=INK, fc="white", tc=INK, lw=2.0, tfs=FS_OBJ)
-ax.text(8.55, AMY - 0.68, "training reward differs by method", ha="center", va="center",
+ax.text(8.55, AMY - 0.68, "reward or training strategy differs", ha="center", va="center",
         fontsize=FS_ANNO, fontweight="bold", color=MUTE)
 
 PY = AMY - 1.06
@@ -189,7 +189,7 @@ for cx, ec, fc, t, s in pills:
     ax.plot([cx, cx], [PY + 0.38, PY + 0.26], color=GRAYB, lw=1.0, zorder=1.5)
     rrect(cx - 0.61, PY - 0.26, 1.22, 0.52, fc=fc, ec=ec, r=0.26, z=2.5, lw=1.3)
     ax.text(cx, PY + 0.06, t, ha="center", va="center", fontsize=7.5, fontweight="bold", color=ec, zorder=3)
-    ax.text(cx, PY - 0.145, s, ha="center", va="center", fontsize=5.9, color=MUTE, zorder=3)
+    ax.text(cx, PY - 0.145, s, ha="center", va="center", fontsize=6.4, color=MUTE, zorder=3)
 
 # ---- subordinate two-node inset ----
 IX0, IX1 = 7.06, 10.04
@@ -198,18 +198,18 @@ IY0 = AY0 + 0.02
 dline((8.55, PY - 0.26), (8.55, IY1), color=HAIR, lw=1.0)
 rrect(IX0, IY0, IX1 - IX0, IY1 - IY0, fc=EVAL_BG, ec=HAIR, r=0.10, z=1.7)
 ax.text((IX0 + IX1)/2, IY1 - 0.14, "Disaggregated RL", ha="center", va="center",
-        fontsize=7.0, fontweight="bold", color=FAINT, zorder=3)
+        fontsize=7.6, fontweight="bold", color=FAINT, zorder=3)
 NY = IY0 + 0.46
 for cx, name, nsub in [(7.78, "Trainer node", "GRPO · LoRA updates"),
                        (9.32, "Rollout node", "vLLM · 8 rollouts/prompt")]:
     rrect(cx - 0.66, NY - 0.22, 1.32, 0.44, fc="white", ec="#d3d8dd", r=0.10, z=2.0, lw=1.0)
-    ax.text(cx, NY + 0.08, name, ha="center", va="center", fontsize=6.3, fontweight="bold",
+    ax.text(cx, NY + 0.08, name, ha="center", va="center", fontsize=7.0, fontweight="bold",
             color=MUTE, zorder=3)
-    ax.text(cx, NY - 0.09, nsub, ha="center", va="center", fontsize=FS_TINY - 0.5, color=FAINT, zorder=3)
+    ax.text(cx, NY - 0.09, nsub, ha="center", va="center", fontsize=6.0, color=FAINT, zorder=3)
 ax.add_patch(FancyArrowPatch((8.46, NY), (8.64, NY), arrowstyle="<|-|>", mutation_scale=7,
              linewidth=1.0, color="#b3b9c0", shrinkA=1, shrinkB=1, zorder=2.4))
 ax.text((IX0 + IX1)/2, IY0 + 0.12, "policy weights →   ·   ← rollout trajectories",
-        ha="center", va="center", fontsize=FS_TINY - 0.3, color=FAINT, zorder=3)
+        ha="center", va="center", fontsize=6.0, color=FAINT, zorder=3)
 
 # ---- zone 3: held-out evaluation ----
 arrow((9.42, AMY), (VX0, AMY), color="#9aa1a9", ms=12, lw=1.6)
@@ -220,7 +220,7 @@ obj(VCX, AMY + 0.56, 2.58, 0.54, "Held-out simulator cases", ec=GRAYB, fc="white
     tfs=9.2, lw=1.0, bold=False)
 arrow((VCX, AMY + 0.29), (VCX, AMY + 0.12), color=LINE, ms=9)
 obj(VCX, AMY - 0.26, 2.66, 0.74, "Same pure verifier", "one terminal score, every method",
-    ec=VIO, fc=VIO_L, tc=VIO, lw=2.0, tfs=FS_OBJ, sfs=6.6)
+    ec=VIO, fc=VIO_L, tc=VIO, lw=2.0, tfs=FS_OBJ, sfs=7.0)
 arrow((VCX, AMY - 0.63), (VCX, AMY - 0.80), color=LINE, ms=9)
 rrect(VCX - 0.90, AMY - 1.12, 1.80, 0.30, fc="white", ec=RED, r=0.12, z=2.6)
 ax.text(VCX, AMY - 0.97, "reward shaping off", ha="center", va="center", fontsize=7.2,
@@ -228,9 +228,9 @@ ax.text(VCX, AMY - 0.97, "reward shaping off", ha="center", va="center", fontsiz
 ax.text(VCX, BGY + 0.34, "metrics", ha="center", va="center", fontsize=7.0,
         fontweight="bold", color=MUTE, zorder=3)
 ax.text(VCX, BGY + 0.13, "overall value   ·   high-risk value", ha="center", va="center",
-        fontsize=6.8, color=MUTE, zorder=3)
+        fontsize=7.2, color=MUTE, zorder=3)
 ax.text(VCX, BGY - 0.08, "question burden   ·   oracle-grade support", ha="center", va="center",
-        fontsize=6.8, color=MUTE, zorder=3)
+        fontsize=7.2, color=MUTE, zorder=3)
 
 # =============================================================================
 #  PANEL B — same patient, different decision procedures  (CENTREPIECE)
@@ -238,9 +238,8 @@ ax.text(VCX, BGY - 0.08, "question burden   ·   oracle-grade support", ha="cent
 BHEAD = AY0 - GAP_AB
 head(0.42, BHEAD, "B", "Same patient, different decision procedures",
      sub="one held-out high-risk case (acute abdominal pain, hidden emergent severity)  ·  "
-         "same simulator, same final verifier  ·  only the training reward differs",
-     sub2="single representative rollouts (k = 12 per condition); illustrative of procedure class, "
-          "not modal or aggregate behaviour")
+         "same simulator, same final verifier  ·  only the training method differs",
+     sub2="single representative rollouts (k = 12 per condition), not modal or aggregate behaviour  ·  oracle-grade reward does not establish that sufficient evidence was gathered")
 
 # chip grid (shared by all four rows -> trajectory length is directly comparable)
 CW, CH, CGAP = 0.84, 0.58, 0.17
@@ -271,7 +270,7 @@ def finding_chip(cx, cy, key, present, dim=False):
         ax.add_patch(Circle((cx - 0.25, cy - 0.185), 0.042, facecolor=(mc if present else "white"),
                      edgecolor=("none" if present else "#bcc2c8"), linewidth=1.0, zorder=3.2))
         ax.text(cx - 0.165, cy - 0.185, "present" if present else "normal", ha="left", va="center",
-                fontsize=5.1, color=(TEAL if present else MUTE), zorder=3.2)
+                fontsize=5.6, color=(TEAL if present else MUTE), zorder=3.2)
 
 def action_pill(cx, cy, key, color, w=1.32, h=0.66):
     rrect(cx - w/2, cy - h/2, w, h, fc=TINT.get(color, "white"), ec=color, lw=2.0, r=0.16, z=2.6)
@@ -331,12 +330,12 @@ trajectory(r1, ["abd_rigidity"], "admit", 0.17, "Outcome-only GRPO", RED,
 trajectory(r2, ["abd_rigidity", "guarding", "rebound_tender", "ct_free_air"], "emergent_tx", 0.83,
            "Credit-assignment GRPO", GREEN,
            "4 findings · successful sampled trajectory",
-           "oracle-grade by reward; evidence order differs from the oracle")
+           "oracle-grade by reward; lactate, an emergent-defining finding, never requested")
 trajectory(r3, ["abd_rigidity", "rebound_tender", "guarding", "radiation_arm", "dyspnea_severe",
                 "hypotension", "wbc_high", "ecg_ischemia"], "emergent_tx", 0.71,
            "Decoupled explore/exploit", BLUE,
            "8 findings vs oracle 4 · correct final action",
-           "excessive information gathering; reward cut by question cost",
+           "5 non-decisive findings; CT free air and lactate never requested",
            dim_from=3, bracket_label="additional non-decisive findings")
 
 # ---- gathering-depth scale, anchored on the oracle ----

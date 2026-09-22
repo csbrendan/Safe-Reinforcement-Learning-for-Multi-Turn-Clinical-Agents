@@ -5,6 +5,12 @@ and `figs/figure1_combined_caption.tex`.
 
 Paper: *Safe Reinforcement Learning for Clinical Multi-Turn Agents Requires More Than Outcome Rewards.*
 
+> **Revision 2** (review pass). Changes: (i) Panel A no longer claims the three methods differ only in
+> reward — decoupled explore/exploit also changes the training procedure; (ii) Panel B now states which
+> emergent-defining findings each learned rollout *failed* to request, and that oracle-grade reward does not
+> establish sufficient evidence; (iii) Panel C's evaluation protocol verified identical across all eight
+> probe files; (iv) small-type floor raised where geometry allowed; (v) caption shortened. Details in §8.
+
 Combines two previously developed graphics into one figure:
 
 | source | contributed | script |
@@ -82,6 +88,32 @@ support@12 numbers reported elsewhere in the paper — **not** in Panel B. Per-r
 off the figure: printing "6/12" next to "1/12" would invite a comparison that is not the paper's claim and
 that the single-case view cannot support.
 
+### Correct final action is not sufficient gathered evidence (the sharpest point in Panel B)
+
+For `abd_pain` under `DX_VARIANT=deephedge`, the emergent state is a **four-finding conjunction**:
+`abd_rigidity & rebound_tender & lactate_high & ct_free_air` (`env_rv.py`, deephedge tree — "emergent =
+rigidity & rebound & lactate & ct_free_air (4, reused)"). Measured against that conjunction:
+
+| row | requests | omits from the emergent conjunction | non-oracle requests |
+|---|---|---|---|
+| Exact adaptive oracle | 4 | — | — |
+| Outcome-only GRPO | 1 | rebound, lactate, CT free air | — |
+| Credit-assignment GRPO | 4 | **lactate** | guarding |
+| Decoupled explore/exploit | 8 | **CT free air, lactate** | guarding, radiating pain, severe dyspnea, blood pressure, white cell count, ECG |
+
+Both credit assignment and decoupled reach `emergent_tx` and are scored well by the verifier (+0.83 and
++0.71) **without ever observing the full evidence conjunction that defines the emergency.** The verifier
+scores the terminal action against the hidden state; it does not certify that the evidence supporting that
+action was gathered. This is a direct instance of the paper's thesis, so the figure now says it in three
+places:
+
+- credit row: *"oracle-grade by reward; lactate, an emergent-defining finding, never requested"*
+- decoupled row: *"5 non-decisive findings; CT free air and lactate never requested"*
+- panel subtitle: *"oracle-grade reward does not establish that sufficient evidence was gathered"*
+
+The earlier wording *"evidence order differs from the oracle"* was imprecise — the credit rollout's evidence
+**set** differs, not merely its order — and has been removed.
+
 ### Decoupled row: which findings are marked non-decisive
 
 Findings 4–8 (radiating pain, severe dyspnea, blood pressure, white cell count, ECG) are drawn at ~55%
@@ -125,6 +157,23 @@ Recomputed here directly from `*.records.jsonl` (`cond=hidden`), not copied from
 
 High-risk value = mean verifier reward over the `true_risk=high` subset (2 cases × 12 rollouts = 24 records
 per condition). SD is across seed means, n=3.
+
+### Evaluation protocol is identical across every plotted value (verified)
+
+Each of the eight probe files was checked to score the **same held-out draw**, by comparing every
+`(case_id → family, true_risk, v_oracle, oracle_asks)` tuple against a freshly generated
+`env_rv.gen_cases(n=60, rho=0.0, seed=100)`:
+
+| | all eight files |
+|---|---|
+| case set identical to `seed=100`, n=60 draw | **yes** (exact tuple match, all 60 cases) |
+| rollouts per case | k = 12 (exactly 12 for every case; 720 `cond=hidden` records each) |
+| turn cap | `max_turns=12` (from each probe's `.json`) |
+| environment | `tasks.diagnostics.env_rv`, `DX_VARIANT=deephedge` |
+| condition | `cond=hidden` (ρ=0, nothing pre-revealed) |
+
+So the bars, the error bars and the dashed oracle line are all computed over the same 60 cases under the
+same rollout protocol. The oracle line is analytic on that same draw (no sampling involved).
 
 ### Three numeric discrepancies against the brief (flagged, not silently absorbed)
 
@@ -193,19 +242,27 @@ BC-gap, titration, SFT-coverage and process-supervision results.
 The canvas is 14.2 in wide, inherited from the two sources (v4 was 14 in, the strip 16 in). Included at a
 7.2-in page width, every point size is multiplied by **0.507**:
 
-| element | authored | at 7.2-in page width |
-|---|---|---|
-| panel letter | 15.5 pt | 7.9 pt |
-| panel title | 13.0 pt | 6.6 pt |
-| method name / object label | 10.2 pt | 5.2 pt |
-| annotation | 7.8 pt | 4.0 pt |
-| secondary annotation | 7.0 pt | 3.5 pt |
-| clinical finding label | 6.4 pt | **3.2 pt** |
-| per-chip present/normal tag | 5.1 pt | **2.6 pt** |
+| element | authored | @7.2 in | @9.5 in | @11 in |
+|---|---|---|---|---|
+| panel letter | 15.5 pt | 7.9 | 10.4 | 12.0 |
+| panel title | 13.0 pt | 6.6 | 8.7 | 10.1 |
+| object / method name (MedGemma, Patient simulator, GRPO training) | 10.2 pt | **5.2** | 6.8 | 7.9 |
+| panel subtitle | 9.0 pt | 4.6 | 6.0 | 7.0 |
+| annotation (LoRA-adapted policy, hidden clinical state) | 7.8 pt | **4.0** | 5.2 | 6.0 |
+| secondary annotation | 7.0 pt | 3.5 | 4.7 | 5.4 |
+| finding label (Abdominal rigidity, …) | 6.4 pt | **3.2** | 4.3 | 5.0 |
+| two-node inset chips (raised from 5.0/6.3) | 6.0–7.0 pt | **3.0–3.5** | 4.0–4.7 | 4.6–5.4 |
+| chip present/normal tag (raised from 5.1) | 5.6 pt | **2.8** | 3.7 | 4.3 |
 
-Most journals set a 5-pt floor, so the finding labels, annotations and inset text are **too small to print at
-full-page width**, even though they are comfortable at the native canvas size. This is a property of both
-source figures, not something introduced by combining them.
+Revision 2 raised the small-type floor from 5.0 pt to 5.6 pt wherever the geometry had slack (the two-node
+inset chips, badge and object subtitles, the reward-variant pill subtitles, the evaluation metrics block and
+the chip status tags). That helps, but does not change the conclusion.
+
+Most journals set a 5-pt floor. **The whole figure clears 5 pt only at a placement width of ≈12.7 in.** At a
+7.2-in page width the object names sit exactly on the floor (5.2 pt) and everything below them — the
+"LoRA-adapted policy" / "hidden clinical state" subtitles (4.0 pt), the clinical finding labels (3.2 pt) and
+the two-node labels (3.0–3.5 pt) — is **not legible in print**. This is a property of both source figures
+(v4 was 14 in wide, the strip 16 in), not something introduced by combining them.
 
 Scaling the existing geometry down does not help (fonts scale with it). Fixing it requires recomposing the
 geometry at print scale — the box sizes are very generous relative to the type, so there is real slack — plus
@@ -226,7 +283,27 @@ Options:
   but still under the 5-pt floor.
 - **(c) Keep as is** and place it as a wide foldout or a supplementary full-bleed figure.
 
-Recommended: **(a)**.
+Recommended: **(a)**. Direct answer to the review question "do the model, simulator and two-node labels
+remain legible at manuscript display size?" — **the model and simulator names just barely do (5.2 pt); the
+two-node labels and every subtitle do not.**
+
+## 8. Revision 2 change log (review pass)
+
+1. **Panel A subtitle** "GRPO with three reward formulations" → **"GRPO with alternative reward and training
+   strategies."** Decoupled explore/exploit changes the training *procedure* (separate gathering and
+   commitment updates), not only the reward.
+2. **Panel A reward-variant label** "training reward differs by method" → **"reward or training strategy
+   differs"** — the same correction, applied where it also appeared.
+3. **Panel B subtitle** "only the training reward differs" → **"only the training method differs"** — the
+   same correction again; it appeared in three places in total.
+4. **Panel B evidence-sufficiency caveat** added (see §3): per-row omissions named, plus the general
+   statement in the panel subtitle.
+5. **Panel C protocol verified** across all eight probe files (see §4). The three numeric differences from
+   the earlier figures stand: 2.54, 4.42, and a 3.78 oracle line, all computed over the same case set as
+   every other plotted value. The manuscript's one-decimal "2.5" and "4.4" remain consistent; **the quoted
+   oracle "3.9" does not and should be updated to 3.8** (3.9 is the oracle on the Gate-1/RL distribution).
+6. **Small-type floor raised** from 5.0 to 5.6 pt where geometry allowed (see §7).
+7. **Caption shortened** to the reviewer's draft, with the evidence-sufficiency sentence retained.
 
 ## Reproduce
 
