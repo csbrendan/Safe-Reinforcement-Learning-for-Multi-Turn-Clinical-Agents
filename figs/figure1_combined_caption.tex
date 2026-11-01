@@ -1,0 +1,49 @@
+% Proposed caption for the combined Figure 1 -- NOT yet inserted into the manuscript.
+% Paper: "Safe Reinforcement Learning for Clinical Multi-Turn Agents Requires More Than Outcome Rewards"
+% Figure: figs/figure1_combined.pdf
+%
+% Adopted from the reviewer's shortened draft. Every factual statement re-checked against the figure and
+% the underlying records; two supporting facts verified for this revision:
+%   * abd_pain emergent is the conjunction rigidity & rebound & lactate & ct_free_air (env_rv deephedge tree),
+%     so "different evidence sequence" and "additional non-decisive findings" are literally true: the
+%     credit-assignment rollout never requests lactate, and the decoupled rollout never requests CT free
+%     air or lactate. Both still reach the correct terminal action.
+%   * All eight probe files behind Panel C score a byte-identical held-out case set
+%     (gen_cases(n=60, rho=0, seed=100), k=12, max_turns=12, cond=hidden), so the oracle reference line
+%     is computed over exactly the same cases as the bars.
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=\textwidth]{figs/figure1_combined.pdf}
+  \caption{
+  \textbf{Experimental framework and effects of reward design on clinical
+  multi-turn decision procedures.}
+  \textbf{A,} The LoRA-adapted MedGemma-4B-it policy interacts with a
+  partially observed patient simulator across medication-refill triage,
+  acute diagnostics and dosing titration. Each environment provides an
+  exact adaptive oracle and deterministic outcome verifier. The three
+  GRPO methods use different training reward formulations or exploration
+  strategies, with policy optimization and rollout generation distributed
+  across two compute nodes. All policies are evaluated on held-out cases
+  using the same unshaped terminal verifier.
+  \textbf{B,} Selected trajectories for the same simulated high-risk
+  abdominal-pain case illustrate different information-gathering procedures.
+  The exact adaptive oracle gathers four targeted findings before emergency
+  treatment. Outcome-only GRPO commits prematurely after one finding.
+  Credit-assignment GRPO reaches the correct terminal action after four
+  requests and receives an oracle-grade reward despite following a different
+  evidence sequence. Decoupled exploration reaches the correct terminal
+  action after eight requests, including additional non-decisive findings.
+  The learned trajectories are selected illustrative examples, not
+  representative estimates of typical policy behavior. Oracle-grade reward
+  does not necessarily establish sufficient gathered clinical evidence.
+  \textbf{C,} Held-out diagnostics performance measured by high-risk
+  verifier value and mean questions asked. Outcome-only and
+  credit-assignment GRPO show mean $\pm$ standard deviation across three
+  training seeds; the base model and decoupled GRPO are single-seed
+  references (hatched bars). The dashed line indicates the exact adaptive
+  oracle's mean question count. All methods are scored using the same
+  unshaped evaluation reward.
+  }
+  \label{fig:overview}
+\end{figure*}
