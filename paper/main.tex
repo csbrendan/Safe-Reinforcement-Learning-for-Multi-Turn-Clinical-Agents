@@ -35,6 +35,15 @@
 
 \pgfplotsset{compat=1.18}
 
+% \paragraph headings on their own line (the style file makes them run-in)
+\makeatletter
+\renewcommand{\paragraph}{%
+  \@startsection{paragraph}{4}{\z@}%
+                {1.5ex \@plus 0.5ex \@minus 0.2ex}%
+                {0.5ex \@plus 0.2ex}%
+                {\normalsize\bf}}
+\makeatother
+
 
 \title{Safe Reinforcement Learning for Clinical Multi-Turn Agents Requires More Than Outcome Rewards}
 
@@ -1084,9 +1093,8 @@ the high-risk stabilization as established.
 verifiable reward. Plain GRPO and credit-assignment GRPO are reported as
 mean$\pm$sample standard deviation over three training seeds. Base and decoupled
 GRPO are single-seed reference policies. Credit assignment improves overall
-value, high-risk value, and moderate oracle-grade support relative to the outcome-only control. It also reduces high-risk instability; one plain GRPO seed loses
-all high-risk support, whereas credit assignment maintains support of $0.50$ in
-each tested seed. ``supp'' denotes oracle-grade support@12 and should be
+value, high-risk value, and moderate oracle-grade support relative to the outcome-only control. One plain GRPO seed loses the supported high-risk case, whereas
+credit assignment retains it in each tested seed. ``supp'' denotes oracle-grade support@12 and should be
 interpreted as sampled capability rather than single-trajectory reliability.
 The held-out high-risk subgroup contains only two cases; every policy with high-risk
 support of $0.50$ supports the same abdominal case, so high-risk values in this table
@@ -1459,7 +1467,7 @@ over-gathering. The titration sweep further shows that the strength of process
 credit must be calibrated to the task.
 
 Supervised initialization adds a fourth consideration. If SFT has already learned
-most of the behaviour measured by the verifier, RL may have little useful
+most of the behaviour measured by the verifier, RL may have little safe
 headroom. If the SFT policy contains a rare coverage gap, the presence of the
 missing action in occasional stochastic rollouts does not ensure that standard RL
 will repair the associated procedure. A practical pipeline should therefore
@@ -1776,6 +1784,7 @@ before RL begins.}
 \end{figure}
 
 
+\FloatBarrier
 \section{Representative oracle trajectories}
 \label{app:cases}
 
@@ -1855,6 +1864,7 @@ figure complements Table~\ref{tab:repair} and Figure~\ref{fig:reptraj}.}
 \end{figure}
 
 
+\FloatBarrier
 \section*{Code}
 \url{https://github.com/csbrendan/rl-gains-in-clinical-tasks}
 
