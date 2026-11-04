@@ -925,8 +925,11 @@ with the evidence gathering behaviour that produced it.
 \centering
 \includegraphics[width=\textwidth]{figs/fig_dialogues.pdf}
 \caption{Agent--simulator dialogues rendered in plain language. The dialogues are
-simplified simulator traces, not real clinical conversations; each question and
-answer paraphrases one requested finding and its revealed value.
+simplified simulator traces, not real clinical conversations. The replying party is
+a rule-based simulator, not a patient or clinician. It looks up each requested
+finding in the case's hidden record and reports whether it is present. Findings
+are binary, so the simulator returns no numeric values; each question and answer
+paraphrases one requested finding and its revealed value.
 \textbf{(A)}~The same held-out high-risk diagnostics case as Figure~\ref{fig:overview}.
 The exact adaptive oracle gathers four findings before emergency treatment (reward
 $+0.83$). The outcome-only GRPO rollout shown is that policy's most common behaviour

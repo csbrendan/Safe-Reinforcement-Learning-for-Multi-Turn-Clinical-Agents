@@ -175,7 +175,7 @@ def bubble(x0, x1, y, s, side, maxw, role=None, fc=None, ec=None, bold=False, lw
 
 
 def dialogue(x0, x1, y, d, maxw):
-    y, _ = bubble(x0, x1, y, d["opening"], "L", maxw, role="Patient sim", fc=SM_FC, ec=SM_EC)
+    y, _ = bubble(x0, x1, y, d["opening"], "L", maxw, role="Simulator (hidden record)", fc=SM_FC, ec=SM_EC)
     y -= GAP_EX
     for i, (q, a) in enumerate(d["turns"]):
         y, _ = bubble(x0, x1, y, q, "R", maxw, role="Agent" if i == 0 else None, fc=AG_FC, ec=AG_EC)
@@ -217,11 +217,12 @@ M = 0.04                                   # outer margin
 # ------------------------------------ Row A ------------------------------------
 yA = H - 0.04
 panel_label(M, yA, "A", "Same patient, different policies",
-            "Held-out diagnostics case with hidden high (emergency) risk. Same simulator, same verifier.")
+            "Held-out diagnostics case with hidden high (emergency) risk. Replies come from a rule-based simulator\n"
+            "that looks up each requested finding in the case's hidden record (present or absent, no numeric values).")
 GAP_A = 0.30
 CW_A = (W - 2 * M - GAP_A) / 2
 cols = [(M, M + CW_A), (W - M - CW_A, W - M)]
-yc = yA - 0.38
+yc = yA - 0.50
 ys = [col_head(*cols[0], yc, "Exact adaptive oracle", "reference procedure: 4 questions"),
       col_head(*cols[1], yc, "Outcome-only GRPO", f"modal rollout ({n_modal} of 12 samples): 1 question")]
 MAXW_A = CW_A
