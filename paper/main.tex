@@ -921,6 +921,24 @@ with the evidence gathering behaviour that produced it.
 \section{Results}
 \label{sec:results}
 
+\begin{figure}[p]
+\centering
+\includegraphics[width=\textwidth]{figs/fig_dialogues.pdf}
+\caption{Agent--simulator dialogues rendered in plain language. The dialogues are
+simplified simulator traces, not real clinical conversations; each question and
+answer paraphrases one requested finding and its revealed value.
+\textbf{(A)}~The same held-out high-risk diagnostics case as Figure~\ref{fig:overview}.
+The exact adaptive oracle gathers four findings before emergency treatment (reward
+$+0.83$). The outcome-only GRPO rollout shown is that policy's most common behaviour
+on this case (6 of 12 samples). It asks one question and admits the patient (reward
+$+0.17$).
+\textbf{(B)}~Exact adaptive oracle trajectories for one held-out case in each task,
+matching Appendix~\ref{app:cases}. Rewards are terminal utility minus $0.03$ per
+question. Hidden risk is never shown to the agent.}
+\label{fig:dialogues}
+\end{figure}
+
+Figure~\ref{fig:dialogues} shows what these procedures look like as conversations.
 The experiments reveal a consistent distinction between improving a terminal
 score and learning a reliable information gathering procedure. Outcome-only GRPO
 can increase aggregate value while reducing the amount of evidence gathered and
