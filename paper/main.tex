@@ -343,7 +343,7 @@ diagnostic systems such as AMIE \citep{tu2024amie} elicit history through dialog
 ED-Copilot learns cost-aware laboratory test selection for emergency department
 triage \citep{sun2024edcopilot}. Such work
 moves medical language models closer to proactive consultation, where the agent
-must elicit missing evidence rather than wait for a fully specified case. My
+must elicit missing evidence rather than wait for a fully specified case. Our
 focus is narrower and more controlled. We use deterministic simulators to isolate
 how reinforcement learning changes three parts of the policy: which information
 the agent requests, when it stops requesting information, and which action it
@@ -379,7 +379,7 @@ Post-training can alter how a language model allocates inference time and
 organises intermediate reasoning, even when evaluation ultimately concerns a
 final output. SPIRAL, for example, trains a model to coordinate search, multiple
 reasoning traces, and aggregation, thereby optimising a broader inference
-procedure rather than a single generated answer \citep{hamid2026spiral}. My
+procedure rather than a single generated answer \citep{hamid2026spiral}. Our
 setting studies a different procedure: clinical gather-then-commit behaviour.
 The model must request relevant findings, use the revealed evidence, and commit
 only when additional information is no longer worth its cost.
@@ -426,7 +426,7 @@ The process credit is used only during training. Every policy is evaluated with
 the same terminal utility and question cost, without the additional shaping
 signal. Any improvement must therefore appear as better gather-then-commit
 behaviour under the original task objective. This separation between training
-credit and evaluation reward is central to the experimental design. It allows me
+credit and evaluation reward is central to the experimental design. It allows us
 to test whether dense credit teaches a more reliable procedure, rather than
 merely increasing the shaped reward that the model was trained to optimise.
 
