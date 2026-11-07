@@ -3,6 +3,8 @@
 \usepackage[utf8]{inputenc} % allow utf-8 input
 \usepackage[T1]{fontenc}    % use 8-bit T1 fonts
 \usepackage{hyperref}       % hyperlinks
+% clickable DOIs in the bibliography (plainnat otherwise prints them as plain text)
+\newcommand{\doi}[1]{doi: \href{https://doi.org/#1}{#1}}
 \usepackage{url}            % simple URL typesetting
 \usepackage{booktabs}       % professional-quality tables
 \usepackage{amsfonts}       % blackboard math symbols
@@ -273,7 +275,7 @@ rare failures rather than relying on aggregate performance alone.
 \section{Background}
 \label{sec:background}
 
-\paragraph{Verifiable reward learning for reasoning and medicine.}
+\paragraph{Verifiable reward learning for reasoning and medicine}
 Reinforcement learning with verifiable rewards has been most successful when the
 quality of an output can be checked directly. In mathematics, a proposed answer
 can be compared with a known solution; in programming, generated code can be
@@ -297,7 +299,7 @@ a procedure that would remain reliable when the case changes. Verifiability
 makes the learning signal measurable, but it does not by itself make the learned
 behaviour clinically appropriate.
 
-\paragraph{Relation to RLHF and preference-based clinical alignment.}
+\paragraph{Relation to RLHF and preference-based clinical alignment}
 Not every clinically important property can be represented by a
 deterministic verifier. Communication quality, uncertainty expression,
 shared decision making, and preference-sensitive tradeoffs may require
@@ -327,7 +329,7 @@ reward or final answer accuracy, but also through audits of premature
 commitment, unsupported escalation, unnecessary information gathering, and
 performance on uncommon high-consequence cases.
 
-\paragraph{Clinical multi-turn agents.}
+\paragraph{Clinical multi-turn agents}
 Clinical multi-turn agents interact with patient states that are incomplete at
 the beginning of an encounter. They must choose which question to ask next,
 update their decision after receiving the answer, and determine when further
@@ -374,7 +376,7 @@ structure, although the synthetic environments do not model the noise,
 ambiguity, workflow constraints, or clinician disagreement present in actual
 care.
 
-\paragraph{Reinforcement learning shapes procedures, not only answers.}
+\paragraph{Reinforcement learning shapes procedures, not only answers}
 Post-training can alter how a language model allocates inference time and
 organises intermediate reasoning, even when evaluation ultimately concerns a
 final output. SPIRAL, for example, trains a model to coordinate search, multiple
@@ -392,7 +394,7 @@ possible question may eventually choose the correct action while imposing
 unnecessary delay and burden. Final action accuracy alone cannot distinguish
 these policies. Evaluation must also measure how the action was reached.
 
-\paragraph{Why dense credit matters for clinical information gathering.}
+\paragraph{Why dense credit matters for clinical information gathering}
 A terminal outcome reward provides feedback only after the dialogue has ended.
 When a model asks several questions before committing, that reward does not
 identify which question changed the decision, which question reduced
@@ -454,7 +456,7 @@ Figure~\ref{fig:overview} summarizes the three clinical tasks, the supervised an
 reinforcement learning stages, the reward variants, and the common held-out
 evaluation procedure.
 
-\paragraph{Environment family.}
+\paragraph{Environment family}
 All three tasks instantiate the same partially observed decision process. A hidden
 clinical state, denoted by $\mu$, represents the underlying patient condition. In
 refill triage and diagnostics, $\mu$ is a latent severity level. In titration, it
@@ -488,7 +490,7 @@ worthwhile only when the information is expected to improve the final decision b
 more than its cost. Asking a repeated or irrelevant question lowers reward without
 changing the patient state.
 
-\paragraph{Exact adaptive oracle.}
+\paragraph{Exact adaptive oracle}
 Because the simulator, state prior, finding probabilities, question cost, and
 utility matrix are known, we can compute an exact adaptive oracle for every task.
 The oracle chooses the next question by considering how each possible answer would
@@ -502,7 +504,7 @@ trajectory is considered \emph{oracle-grade} when its realised reward is within
 $\text{EPS}{=}0.03$ of the oracle value. The tolerance equals the cost of one question, so a policy may differ from the oracle by one marginal request without
 being treated as a substantively different procedure.
 
-\paragraph{Clinical tasks.}
+\paragraph{Clinical tasks}
 We instantiate the framework in three stylized tasks that represent distinct forms
 of clinical uncertainty.
 
@@ -553,7 +555,7 @@ joint clot$\times$bleed (9 states) & 10 \\
 }
 \end{table}
 
-\paragraph{Case generation and data splits.}
+\paragraph{Case generation and data splits}
 The core experiments do not use an external clinical dataset. Instead, cases are
 generated on demand from the task simulators. Each generated case contains a
 latent state, a fixed set of finding values, a clinical family, and the associated
@@ -574,7 +576,7 @@ analysis. The SFT warmups use $800$ oracle or checklist trajectories generated
 with seed $7$. These trajectories demonstrate the action format and desirable
 question sequences before reinforcement learning begins.
 
-\paragraph{Training rollouts and evaluation sampling.}
+\paragraph{Training rollouts and evaluation sampling}
 During GRPO training, the policy generates a group of eight rollouts for each
 prompt. Relative rewards within that group determine the policy update. The model
 therefore learns from comparisons among several candidate ask and commit
@@ -596,7 +598,7 @@ three training seeds. The remaining experimental cells use one seed and are trea
 as exploratory results; this limitation is discussed in
 Section~\ref{sec:discussion}.
 
-\paragraph{Safety-focused evaluation.}
+\paragraph{Safety-focused evaluation}
 Aggregate reward can conceal clinically important failures because high-risk cases are
 rare: the held-out sets contain 2 of 60 high-risk cases for diagnostics, 6 of 60
 high-clot cases for titration, 7 of 60 high-risk cases for refill triage, and 14 of 200
@@ -616,7 +618,7 @@ Representative cases and oracle conversations for all three tasks are provided i
 Appendix~\ref{app:cases}. Full SFT and GRPO hyperparameters are reported in
 Appendix~\ref{app:impl}.
 
-\paragraph{Scope and clinical interpretation.}
+\paragraph{Scope and clinical interpretation}
 The environments are synthetic, stylized, and labelled by deterministic rules.
 They are not clinical validation benchmarks and should not be interpreted as
 evidence that any trained policy is suitable for patient care. The utility matrices
@@ -653,7 +655,7 @@ second measures whether the initial policy can sample the behaviour that RL is
 intended to reinforce. These gates do not guarantee that RL will succeed; rather,
 they identify conditions in which RL has little plausible opportunity to help.
 
-\paragraph{Gate 1: adaptive headroom.}
+\paragraph{Gate 1: adaptive headroom}
 The first gate compares the exact adaptive oracle with the best policy that commits
 without requesting any information. We define the resulting best constant gap as
 
@@ -675,7 +677,7 @@ slightly better than committing immediately. In that setting, a small RL gain ma
 reflect the structure of the task rather than a failure of the optimisation
 algorithm.
 
-\paragraph{Gate 2: latent behavioural support.}
+\paragraph{Gate 2: latent behavioural support}
 The second gate tests whether the initial policy can sample an oracle-grade
 trajectory under stochastic decoding. For every held-out case, we generate
 $k{=}12$ independent rollouts. A case is counted as supported when at least one
@@ -1444,7 +1446,7 @@ using an intermediate decision that performs adequately on common cases. Such a
 policy may optimise the verifier without learning the clinical process that the
 verifier was intended to encourage.
 
-\paragraph{A practical decision rule for RL post-training.}
+\paragraph{A practical decision rule for RL post-training}
 The experiments support a staged approach to reinforcement learning for clinical
 agents. First, the task should be tested for adaptive headroom. When the best
 fixed action performs nearly as well as the exact adaptive oracle, there is little
@@ -1469,7 +1471,7 @@ will repair the associated procedure. A practical pipeline should therefore
 measure both SFT performance and residual error structure before deciding whether
 additional RL is justified.
 
-\paragraph{The safety question concerns procedure, not only outcome.}
+\paragraph{The safety question concerns procedure, not only outcome}
 Clinical decisions are usually justified by evidence. A medication refill may be
 appropriate only after checking renal function, contraindications, or adverse
 effects. Emergency treatment may be appropriate only after obtaining findings
@@ -1494,7 +1496,7 @@ it gathered excessive information on benign cases. Rare high-risk cases should b
 reported separately because aggregate metrics can remain stable while performance
 on the most consequential subgroup deteriorates.
 
-\paragraph{Implications for clinical decision support.}
+\paragraph{Implications for clinical decision support}
 The present environments are not deployment studies, but the failure modes have
 direct relevance to future clinical decision support systems. A model used for
 refill review could reduce interaction burden by asking fewer questions while
@@ -1520,7 +1522,7 @@ which evidence changed the action, what remained unknown at commitment, and
 whether the decision would have changed under plausible alternate findings. Such
 process visibility may be as important as the final confidence score.
 
-\paragraph{Why clinical information gathering differs from math and code RLVR.}
+\paragraph{Why clinical information gathering differs from math and code RLVR}
 RLVR has produced strong results in domains where correctness can be sharply
 verified, including mathematics and programming
 \citep{shao2024deepseekmath}. In those settings, an incorrect answer or failing
@@ -1545,7 +1547,7 @@ information gathering its own optimisation signal. The tradeoffs observed here
 show that neither mechanism is automatically safe; each changes the balance
 between gathering, commitment, and burden.
 
-\paragraph{SFT changes the interpretation of RL gains.}
+\paragraph{SFT changes the interpretation of RL gains}
 Most practical clinical models will undergo supervised adaptation before
 reinforcement learning. The incremental question is therefore whether RL improves
 what SFT leaves unresolved, rather than whether it can teach the task from an
@@ -1572,7 +1574,7 @@ Targeted supervised examples, risk-balanced sampling, explicit subgroup rewards,
 or curriculum design may be required before RL can provide a reliable incremental
 gain.
 
-\paragraph{Relation to clinical RLHF and preference optimisation.}
+\paragraph{Relation to clinical RLHF and preference optimisation}
 The experiments use analytic verifiers because they make the state, utility, and
 optimal adaptive policy measurable. This does not imply that every clinically
 important objective can be reduced to a deterministic reward. Communication
@@ -1597,7 +1599,7 @@ tradeoffs. Both components should be evaluated using the same guarded principle:
 the final response is not sufficient evidence that the underlying procedure is
 reliable.
 
-\paragraph{Limitations.}
+\paragraph{Limitations}
 The experiments use synthetic, stylized environments with deterministic patient
 responses and hand-specified utility matrices. They are designed to isolate
 learning dynamics, not to estimate real clinical benefit or harm. The cases do
@@ -1640,7 +1642,7 @@ An ongoing extension of this study addresses several of these limitations; we
 outline it under Future work. The conclusions reported here rest only on the
 experiments presented in this paper.
 
-\paragraph{Future work.}
+\paragraph{Future work}
 An ongoing extension of this study investigates whether these findings generalize
 to a larger model, an external interactive clinical benchmark, and
 clinician-evaluated trajectories. It will repeat the principal SFT, RL, and
@@ -1697,7 +1699,7 @@ action supported by the available evidence, and preserves safety on rare
 high-consequence cases. Aggregate reward should remain part of the evaluation, but
 it should not be the sole criterion for selecting a clinical policy.
 
-\paragraph{Conclusion.}
+\paragraph{Conclusion}
 The experiments show that verifiable outcomes alone do not ensure reliable
 clinical information gathering. Outcome-only GRPO can improve average reward while
 reducing evidence gathering and weakening high-risk behaviour. Dense credit
