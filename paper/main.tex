@@ -50,13 +50,16 @@
 \author{
   Brendan P. Murphy \\
   \texttt{cs.brendan@gmail.com} \\
+  \And
+  Agustina Saenz, MD, MPH \\
+  \texttt{asaenz@stanford.edu} \\
 }
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
-Reinforcement learning with verifiable rewards is increasingly used to improve language model reasoning, yet its effects on sequential decision procedures remain poorly understood. I study this problem in clinical multi-turn agents that must decide what information to request, when to stop gathering evidence, and which action to take. I introduce three controlled environments: medication refill triage, acute diagnostic work-up, and dosing titration. Each environment includes hidden clinical states, query costs, exact adaptive oracles, and deterministic outcome verifiers. Across these tasks, outcome-only group relative policy optimization often improves aggregate reward while producing undesirable procedures, including premature commitment, one-question collapse, and failures on rare high-risk cases. In diagnostics, assigning dense credit to questions that reduce uncertainty improves held-out value and moderate-case support across three training seeds relative to outcome-only reinforcement learning, without the high-risk seed collapse observed under outcome-only training. Separating exploration from exploitation further increases high-risk support at its best checkpoint, but at the cost of excessive information gathering on low-acuity cases. Additional experiments show that the optimal strength of process credit is task-dependent; after a supervised warmup that already gathers carefully, reinforcement learning raises aggregate reward by trimming questions while degrading high-risk performance; and reinforcement learning does not reliably repair rare behavior gaps inherited from biased supervised data. These findings show that verifiable final outcomes are insufficient for training reliable multi-turn agents. Reward design must account for the procedure used to reach an answer, and evaluation must distinguish adaptive information gathering from reward-exploiting shortcuts. More broadly, the results identify reward geometry, initialization coverage, and task headroom as interacting determinants of whether reinforcement learning improves or degrades sequential reasoning in safety-critical settings.
+Reinforcement learning with verifiable rewards is increasingly used to improve language model reasoning, yet its effects on sequential decision procedures remain poorly understood. We study this problem in clinical multi-turn agents that must decide what information to request, when to stop gathering evidence, and which action to take. We introduce three controlled environments: medication refill triage, acute diagnostic work-up, and dosing titration. Each environment includes hidden clinical states, query costs, exact adaptive oracles, and deterministic outcome verifiers. Across these tasks, outcome-only group relative policy optimization often improves aggregate reward while producing undesirable procedures, including premature commitment, one-question collapse, and failures on rare high-risk cases. In diagnostics, assigning dense credit to questions that reduce uncertainty improves held-out value and moderate-case support across three training seeds relative to outcome-only reinforcement learning, without the high-risk seed collapse observed under outcome-only training. Separating exploration from exploitation further increases high-risk support at its best checkpoint, but at the cost of excessive information gathering on low-acuity cases. Additional experiments show that the optimal strength of process credit is task-dependent; after a supervised warmup that already gathers carefully, reinforcement learning raises aggregate reward by trimming questions while degrading high-risk performance; and reinforcement learning does not reliably repair rare behavior gaps inherited from biased supervised data. These findings show that verifiable final outcomes are insufficient for training reliable multi-turn agents. Reward design must account for the procedure used to reach an answer, and evaluation must distinguish adaptive information gathering from reward-exploiting shortcuts. More broadly, the results identify reward geometry, initialization coverage, and task headroom as interacting determinants of whether reinforcement learning improves or degrades sequential reasoning in safety-critical settings.
 
 \end{abstract}
 
@@ -127,7 +130,7 @@ that strongly encourages information gathering may cause the model to ask too ma
 questions, delay action, or escalate unnecessarily. Aggregate reward alone may
 therefore conceal clinically important changes in behaviour.
 
-I study these learning dynamics in three controlled clinical environments:
+We study these learning dynamics in three controlled clinical environments:
 medication refill triage, acute diagnostic work-up, and dosing titration. Each
 environment is formulated as an ask-to-commit decision process. The agent begins
 with an incomplete case, may request individual findings, receives deterministic
@@ -196,11 +199,11 @@ diagnostics set contains only two high-risk cases.
 
 
 The central question is whether RL learns a better decision procedure, or merely a
-more effective way to exploit the reward. I first compare outcome-only group
+more effective way to exploit the reward. We first compare outcome-only group
 relative policy optimization, or GRPO, with credit-assignment GRPO, which gives
 additional training credit to questions that reduce uncertainty about the hidden
-clinical state. I then study a decoupled exploration and exploitation variant that
-separates information gathering from final commitment. Finally, I examine how the
+clinical state. We then study a decoupled exploration and exploitation variant that
+separates information gathering from final commitment. Finally, we examine how the
 benefit of RL depends on supervised initialization, including a setting in which
 supervised fine-tuning already performs strongly and a setting in which the
 supervised data contain a rare high-risk coverage gap.
@@ -244,13 +247,13 @@ will remain relevant in more realistic systems: reinforcement learning can alter
 decision procedure in clinically important ways even when final answer metrics appear
 to improve.
 
-I make three main contributions. First, I introduce a controlled framework for
+We make three main contributions. First, we introduce a controlled framework for
 studying clinical multi-turn agents as ask-to-commit decision processes with exact
 verifiers, exact adaptive oracles, and separate evaluation of high-risk cases.
-Second, I show that outcome-only GRPO can learn shortcut procedures even when the
+Second, we show that outcome-only GRPO can learn shortcut procedures even when the
 task has measurable value of information and the initial model can sample useful
 behaviour; dense credit assignment improves and stabilizes the main diagnostics
-result. Third, I characterize several limits of RL post-training: stronger
+result. Third, we characterize several limits of RL post-training: stronger
 exploration trades high-risk performance against low-acuity burden, process credit
 must be calibrated to the task, strong supervised models may leave little safe
 headroom, and RL does not reliably repair coverage gaps inherited from biased
@@ -303,11 +306,11 @@ feedback to construct preferences for multi-turn medical dialogue
 \citep{dou2024physicianlogic}. These approaches complement the
 analytically specified reward setting studied here.
 
-I study a complementary part of clinical alignment. In my environments, the
+We study a complementary part of clinical alignment. In our environments, the
 hidden state, the cost of requesting information, and the utility of the final
 action can be specified analytically. This permits exact comparison with an
 adaptive oracle and makes it possible to identify whether reinforcement
-learning improves the decision procedure or exploits the scoring rule. I use
+learning improves the decision procedure or exploits the scoring rule. We use
 RLVR because it provides this experimental control, not because deterministic
 rewards can represent every aspect of clinical quality. The distinction also
 matters when interpreting learned process supervision: feedback from another
@@ -338,7 +341,7 @@ ED-Copilot learns cost-aware laboratory test selection for emergency department
 triage \citep{sun2024edcopilot}. Such work
 moves medical language models closer to proactive consultation, where the agent
 must elicit missing evidence rather than wait for a fully specified case. My
-focus is narrower and more controlled. I use deterministic simulators to isolate
+focus is narrower and more controlled. We use deterministic simulators to isolate
 how reinforcement learning changes three parts of the policy: which information
 the agent requests, when it stops requesting information, and which action it
 takes after gathering evidence.
@@ -348,9 +351,9 @@ clinical reasoning \citep{nori2025sequential}. SDBench evaluates
 diagnostic accuracy and investigation costs as agents acquire clinical
 information over multiple turns, while MAI-DxO uses inference-time
 orchestration to structure hypothesis refinement and test selection.
-Unlike this prompted orchestration approach, I investigate how
+Unlike this prompted orchestration approach, we investigate how
 reinforcement learning changes the information-gathering policy itself.
-My controlled environments expose exact hidden-state dynamics,
+Our controlled environments expose exact hidden-state dynamics,
 deterministic outcome verifiers, and adaptive oracle policies, enabling
 direct measurement of premature commitment, unnecessary investigation,
 and high-risk failures. These simplifications permit a more controlled
@@ -409,7 +412,7 @@ feedback \citep{goldie2025swirl}. On-policy self-distillation instead
 provides token-level teacher supervision on student-generated
 trajectories \citep{zhao2026selfdistilledreasoner}.
 
-My approach instead assigns analytic information-gain credit to
+Our approach instead assigns analytic information-gain credit to
 observable clinical information requests, without requiring a learned
 reward model or supervision of free-form reasoning traces. This credit
 is accumulated within the training reward for on-policy GRPO over
@@ -428,7 +431,7 @@ merely increasing the shaped reward that the model was trained to optimise.
 \section{Experimental setup}
 \label{sec:setup}
 
-I study clinical multi-turn agents in a controlled ask-to-commit setting. Each
+We study clinical multi-turn agents in a controlled ask-to-commit setting. Each
 episode begins with an incomplete clinical case. The agent may request missing
 findings, receive answers from a deterministic simulator, and then commit to one
 clinical action. Requesting information carries a small cost; the agent must
@@ -484,7 +487,7 @@ changing the patient state.
 
 \paragraph{Exact adaptive oracle.}
 Because the simulator, state prior, finding probabilities, question cost, and
-utility matrix are known, I can compute an exact adaptive oracle for every task.
+utility matrix are known, we can compute an exact adaptive oracle for every task.
 The oracle chooses the next question by considering how each possible answer would
 change the optimal action. It stops when no available question has enough expected
 value to justify its cost.
@@ -497,7 +500,7 @@ $\text{EPS}{=}0.03$ of the oracle value. The tolerance equals the cost of one qu
 being treated as a substantively different procedure.
 
 \paragraph{Clinical tasks.}
-I instantiate the framework in three stylized tasks that represent distinct forms
+We instantiate the framework in three stylized tasks that represent distinct forms
 of clinical uncertainty.
 
 \emph{Refill triage} models a medication continuation decision. The agent may need
@@ -562,7 +565,7 @@ use seed $100$ and are generated independently, so the training and held-out set
 are non-overlapping samples from the same simulator distribution.
 
 The main held-out evaluation contains $n{=}60$ cases in the hidden condition. For
-the supervised coverage experiment, I increase the evaluation set to $n{=}200$ so
+the supervised coverage experiment, we increase the evaluation set to $n{=}200$ so
 that the uncommon high-risk subgroup contains enough cases to support a separate
 analysis. The SFT warmups use $800$ oracle or checklist trajectories generated
 with seed $7$. These trajectories demonstrate the action format and desirable
@@ -574,13 +577,13 @@ prompt. Relative rewards within that group determine the policy update. The mode
 therefore learns from comparisons among several candidate ask and commit
 trajectories generated from the same initial case.
 
-During held-out evaluation, I sample $k{=}12$ trajectories per case.
+During held-out evaluation, we sample $k{=}12$ trajectories per case.
 Following the coverage-based perspective of repeated sampling
-\citep{brown2024monkeys}, I define support@$k$ as the fraction of cases
+\citep{brown2024monkeys}, we define support@$k$ as the fraction of cases
 for which at least one sampled trajectory is oracle-grade. This
 metric measures the availability of successful behaviour within the
 policy distribution, rather than its reliability in a single
-deployment trajectory. I therefore interpret support alongside
+deployment trajectory. We therefore interpret support alongside
 realised value, mean number of questions, risk subgroup results,
 and audits of the trajectories themselves.
 
@@ -594,7 +597,7 @@ Section~\ref{sec:discussion}.
 Aggregate reward can conceal clinically important failures because high-risk cases are
 rare: the held-out sets contain 2 of 60 high-risk cases for diagnostics, 6 of 60
 high-clot cases for titration, 7 of 60 high-risk cases for refill triage, and 14 of 200
-for the supervised coverage experiment. I therefore report that subgroup separately throughout the paper. I also examine the
+for the supervised coverage experiment. We therefore report that subgroup separately throughout the paper. We also examine the
 number and type of questions asked, premature commitment, one-question collapse,
 unsupported escalation, hedging, and excessive gathering.
 
@@ -620,7 +623,7 @@ documentation errors, ambiguous symptoms, conflicting records, patient
 preferences, or clinician disagreement.
 
 These simplifications are intentional. By controlling the hidden state, available
-questions, question cost, utility function, and oracle policy, I can identify how
+questions, question cost, utility function, and oracle policy, we can identify how
 reinforcement learning changes the information gathering procedure. The setup
 therefore supports conclusions about learning dynamics and reward design; it does
 not support conclusions about clinical efficacy. Its relevance to future decision
@@ -631,17 +634,17 @@ that conceals deterioration on rare high-consequence cases.
 \section{Methods}
 \label{sec:method}
 
-The experiments follow a common sequence. I first test whether adaptive information
+The experiments follow a common sequence. We first test whether adaptive information
 gathering can improve the task and whether the initial policy can produce useful
-trajectories. I then compare outcome-only GRPO with two methods that change how
-credit is assigned to information gathering. Finally, I evaluate every trained
+trajectories. We then compare outcome-only GRPO with two methods that change how
+credit is assigned to information gathering. Finally, we evaluate every trained
 policy using the same unshaped verifier. This separation ensures that a method
 cannot appear successful merely because its training reward is easier to optimise.
 
 \subsection{Pre-RL eligibility gates}
 \label{subsec:gates}
 
-Before running policy optimisation, I apply two inexpensive eligibility tests. The
+Before running policy optimisation, we apply two inexpensive eligibility tests. The
 first measures whether the task contains meaningful value of information. The
 second measures whether the initial policy can sample the behaviour that RL is
 intended to reinforce. These gates do not guarantee that RL will succeed; rather,
@@ -649,7 +652,7 @@ they identify conditions in which RL has little plausible opportunity to help.
 
 \paragraph{Gate 1: adaptive headroom.}
 The first gate compares the exact adaptive oracle with the best policy that commits
-without requesting any information. I define the resulting best constant gap as
+without requesting any information. We define the resulting best constant gap as
 
 \[
 \text{BC gap}
@@ -671,7 +674,7 @@ algorithm.
 
 \paragraph{Gate 2: latent behavioural support.}
 The second gate tests whether the initial policy can sample an oracle-grade
-trajectory under stochastic decoding. For every held-out case, I generate
+trajectory under stochastic decoding. For every held-out case, we generate
 $k{=}12$ independent rollouts. A case is counted as supported when at least one
 rollout reaches a realised reward within $\text{EPS}{=}0.03$ of the exact adaptive
 oracle. The proportion of supported cases defines support@$k$.
@@ -684,7 +687,7 @@ RL directly from the current model.
 
 Support@$12$ should not be interpreted as ordinary deployment reliability. It is
 a capability and exploration measure; a policy may produce one successful rollout
-among twelve while behaving poorly on most individual trajectories. I therefore
+among twelve while behaving poorly on most individual trajectories. We therefore
 interpret this gate separately from greedy performance, realised value, question
 burden, and high-risk subgroup behaviour.
 
@@ -696,7 +699,7 @@ gate uses the training rewards introduced below.
 \label{subsec:model-setup}
 
 All methods use the text-only \texttt{medgemma-4b-it} model
-\citep{saab2025medgemma}. I adapt the model using LoRA
+\citep{saab2025medgemma}. We adapt the model using LoRA
 \citep{hu2022lora}, which limits the number of trainable parameters while preserving
 the same base checkpoint across comparisons. Reinforcement learning uses group
 relative policy optimisation, or GRPO \citep{shao2024deepseekmath}.
@@ -706,7 +709,7 @@ of candidate multi-turn trajectories, receives a reward for each trajectory, and
 is updated according to relative performance within the group. The same model
 produces both information requests and terminal actions.
 
-I use a disaggregated two-node system. One node performs optimisation, while a
+We use a disaggregated two-node system. One node performs optimisation, while a
 separate vLLM server generates rollouts from the current policy. Simulator responses
 are inserted between model turns but are excluded from the policy gradient using
 an \texttt{env\_mask}. Consequently, gradients are applied only to tokens generated
@@ -750,7 +753,7 @@ uncertainty about the hidden clinical state. The terminal clinical objective is
 unchanged; the additional signal is intended to help the model identify which
 information requests contributed to the decision.
 
-After each newly revealed finding, I update the posterior distribution over the
+After each newly revealed finding, we update the posterior distribution over the
 hidden state. The information credit at turn $t$ is the corresponding reduction
 in posterior entropy:
 
@@ -787,7 +790,7 @@ controls how strongly the model values informative questions relative to their
 explicit cost.
 
 This construction is motivated by potential-based reward shaping
-\citep{ng1999shaping}; however, I use it as an auxiliary process reward and do not
+\citep{ng1999shaping}; however, we use it as an auxiliary process reward and do not
 claim that it is policy invariant under every task and training configuration.
 The coefficient can alter the preferred procedure. A weak coefficient may fail to
 prevent under-gathering, while a strong coefficient may reward excessive
@@ -803,7 +806,7 @@ to perform better under evaluation.
 
 Credit-assignment GRPO still optimises asking and committing within a single-trajectory. The two behaviours may compete for the same gradient signal; asking
 more can increase information credit, while committing earlier can reduce question
-cost. To test whether a stronger separation improves high-risk behaviour, I
+cost. To test whether a stronger separation improves high-risk behaviour, we
 implement a decoupled exploration and exploitation variant inspired by DREAM
 \citep{liu2021dream}.
 
@@ -840,16 +843,16 @@ reinforcement learning. In this setting, the relevant question is not whether RL
 can teach the task from the base model; it is whether RL improves behaviour that
 the supervised model has not already learned.
 
-I study two forms of SFT initialization. In the refill triage task, RL begins from
+We study two forms of SFT initialization. In the refill triage task, RL begins from
 a light protocol-teaching warmup. The supervised trajectories demonstrate the
 structured action format and common medication safety procedures. This experiment
 tests whether RL offers additional value after SFT has already learned much of the
 target behaviour.
 
-In the diagnostics task, I construct a coverage-biased SFT checkpoint by reducing
+In the diagnostics task, we construct a coverage-biased SFT checkpoint by reducing
 the proportion of high-risk oracle trajectories in the supervised data. This
 creates an initialization with strong aggregate performance but a specific rare
-case weakness. I then measure whether the policy can still sample the missing high-risk behaviour and whether credit assignment or decoupled GRPO can repair the
+case weakness. We then measure whether the policy can still sample the missing high-risk behaviour and whether credit assignment or decoupled GRPO can repair the
 coverage gap.
 
 These experiments separate two limitations. A well-covered SFT policy may leave
@@ -862,7 +865,7 @@ guarantee that RL will preferentially reinforce the missing behaviour.
 \subsection{Common evaluation and guarded reporting}
 \label{subsec:evaluation}
 
-I evaluate all trained policies on held-out cases using the pure terminal verifier:
+We evaluate all trained policies on held-out cases using the pure terminal verifier:
 
 \[
 R_{\text{eval}}
@@ -874,14 +877,14 @@ No information credit, exploration reward, or supervised trajectory score is use
 during evaluation. This common objective permits direct comparison among methods
 that were trained with different reward structures.
 
-I report overall realised value, oracle-grade support@$k$, and the mean number of
-questions requested. Where an experiment is replicated, I report variation across
-training seeds. I also analyse the high-risk subgroup separately because uncommon
+We report overall realised value, oracle-grade support@$k$, and the mean number of
+questions requested. Where an experiment is replicated, we report variation across
+training seeds. We also analyse the high-risk subgroup separately because uncommon
 cases can contribute little to the mean while accounting for the most consequential
 failures.
 
 Aggregate metrics are not sufficient to determine whether the procedure improved.
-I therefore use a guarded report that audits the structure of each trajectory. The
+We therefore use a guarded report that audits the structure of each trajectory. The
 report includes:
 
 \begin{itemize}
@@ -953,13 +956,13 @@ cases. The SFT experiments show a further constraint; RL adds little safe improv
 when the supervised policy has already captured the available behaviour, and it does not
 reliably repair a rare coverage gap inherited from supervised training.
 
-I present the results in six stages. First, I show that passing the pre-RL gates
-does not ensure that outcome-only GRPO will learn a safe procedure. Second, I
+We present the results in six stages. First, we show that passing the pre-RL gates
+does not ensure that outcome-only GRPO will learn a safe procedure. Second, we
 compare outcome-only GRPO with credit assignment across three diagnostics seeds.
-Third, I test whether separating exploration from exploitation improves high-risk
-behaviour. Fourth, I examine how the information credit coefficient controls
-under-gathering and over-gathering in titration. Fifth, I measure the remaining
-RL headroom after an SFT warmup. Finally, I test whether RL can repair a high-risk
+Third, we test whether separating exploration from exploitation improves high-risk
+behaviour. Fourth, we examine how the information credit coefficient controls
+under-gathering and over-gathering in titration. Fifth, we measure the remaining
+RL headroom after an SFT warmup. Finally, we test whether RL can repair a high-risk
 coverage gap in a biased SFT policy.
 
 Table~\ref{tab:master} summarizes the final held-out results. High-risk value and
@@ -1035,7 +1038,7 @@ Diagnostics provides the clearest test of whether RL can improve an adaptive
 clinical procedure. The task passes both eligibility gates. Its best constant
 gap is $+0.161$, which shows that gathering information can outperform the best
 fixed action. The exact oracle requests $3.9$ findings per case in expectation over
-the case distribution ($3.8$ on the held-out set); I use the expected value as the
+the case distribution ($3.8$ on the held-out set); we use the expected value as the
 reference oracle level in figures.
 The base model also has nonzero support for oracle-grade trajectories under
 stochastic decoding. The task therefore contains adaptive headroom, and the
@@ -1055,7 +1058,7 @@ one of twelve rollouts. The base model supports one abdominal case; one of the t
 plain GRPO seeds loses it, falling to $0.0$. Mean questioning also falls from $2.5$
 at initialization to $1.82\pm0.11$, well below the oracle level. The policy is
 therefore improving its aggregate score partly by reducing the amount of evidence it
-gathers. I treat the high-risk collapse as an illustrative failure rather than a
+gathers. We treat the high-risk collapse as an illustrative failure rather than a
 precise estimate; the moderate subgroup ($n{=}35$) and overall value carry the
 statistically more informative evidence.
 
@@ -1160,7 +1163,7 @@ value and support, but requests substantially more information.}
 
 Credit assignment still requires one policy trajectory to balance two competing
 objectives. Asking an additional question may improve information credit, while
-committing earlier avoids the explicit question cost. I therefore test a
+committing earlier avoids the explicit question cost. We therefore test a
 decoupled exploration and exploitation policy in which gathering and commitment
 receive separate updates.
 
@@ -1324,7 +1327,7 @@ over the learned safety procedure.
 \label{subsec:coverage}
 
 The final experiment tests whether RL can repair a rare coverage gap inherited
-from supervised training. I construct a diagnostics SFT dataset that under-represents high-risk emergency trajectories. The resulting policy performs well
+from supervised training. We construct a diagnostics SFT dataset that under-represents high-risk emergency trajectories. The resulting policy performs well
 on aggregate metrics while retaining a clinically important weakness.
 
 The biased SFT reaches overall value of $+0.337$ and overall support of $0.93$,
@@ -1651,10 +1654,10 @@ emphasis on deterministic or greedy evaluation, pass at one performance,
 premature commitment rates, supported versus unsupported escalation, expected
 regret, and subgroup-specific uncertainty intervals.
 
-The SFT analysis is also incomplete. I evaluate one light protocol warmup and one
-family of biased diagnostics initializations, but I do not measure a complete dose
-curve across SFT strength and coverage. I therefore show that strong SFT can leave
-little RL headroom and that RL can fail to repair a biased policy; I do not
+The SFT analysis is also incomplete. We evaluate one light protocol warmup and one
+family of biased diagnostics initializations, but we do not measure a complete dose
+curve across SFT strength and coverage. We therefore show that strong SFT can leave
+little RL headroom and that RL can fail to repair a biased policy; we do not
 characterize every supervised regime or every possible repair method.
 
 Finally, the number of high-risk cases is small in the principal held-out sets (two
@@ -1665,6 +1668,14 @@ but larger stratified evaluations would produce more precise estimates. Future
 work should use paired case-level comparisons, confidence intervals, multiple
 training seeds, and larger high-risk test sets before drawing stronger safety
 conclusions.
+
+An extended version of this study, now in progress, targets three of these
+limitations directly. It repeats the main comparisons at a larger scale with
+MedGemma-27B, evaluates the trained policies on an external interactive clinical
+benchmark rather than only on our synthetic environments, and adds blinded
+clinician review of the sampled trajectories and of the utility assumptions. It
+will also use larger risk-stratified evaluation sets and select checkpoints on a
+separate validation split.
 
 \paragraph{Future work.}
 The most direct next experiment is a controlled SFT strength and coverage study.
