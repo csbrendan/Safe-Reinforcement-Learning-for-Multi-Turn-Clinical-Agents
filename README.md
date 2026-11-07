@@ -1,6 +1,4 @@
-# Safe Reinforcement Learning for Multi-Turn Clinical Agents
-
-**When Dense Rewards Beat Outcome Rewards**
+# Safe Reinforcement Learning for Multi-Turn Clinical Agents: When Dense Rewards Beat Outcome Rewards
 
 Brendan P. Murphy · Agustina Saenz, MD, MPH
 
