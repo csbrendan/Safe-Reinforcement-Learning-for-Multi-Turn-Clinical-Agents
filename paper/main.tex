@@ -37,6 +37,8 @@
 
 % \paragraph headings on their own line (the style file makes them run-in)
 \makeatletter
+% arXiv preprint: no conference notice box on the first page
+\renewcommand{\@notice}{}
 \renewcommand{\paragraph}{%
   \@startsection{paragraph}{4}{\z@}%
                 {1.5ex \@plus 0.5ex \@minus 0.2ex}%
@@ -57,6 +59,7 @@
 
 \begin{document}
 \maketitle
+\thispagestyle{plain}
 
 \begin{abstract}
 Reinforcement learning with verifiable rewards is increasingly used to improve language model reasoning, yet its effects on sequential decision procedures remain poorly understood. We study this problem in clinical multi-turn agents that must decide what information to request, when to stop gathering evidence, and which action to take. We introduce three controlled environments: medication refill triage, acute diagnostic work-up, and dosing titration. Each environment includes hidden clinical states, query costs, exact adaptive oracles, and deterministic outcome verifiers. Across these tasks, outcome-only group relative policy optimization often improves aggregate reward while producing undesirable procedures, including premature commitment, one-question collapse, and failures on rare high-risk cases. In diagnostics, assigning dense credit to questions that reduce uncertainty improves held-out value and moderate-case support across three training seeds relative to outcome-only reinforcement learning, without the high-risk seed collapse observed under outcome-only training. Separating exploration from exploitation further increases high-risk support at its best checkpoint, but at the cost of excessive information gathering on low-acuity cases. Additional experiments show that the optimal strength of process credit is task-dependent; after a supervised warmup that already gathers carefully, reinforcement learning raises aggregate reward by trimming questions while degrading high-risk performance; and reinforcement learning does not reliably repair rare behavior gaps inherited from biased supervised data. These findings show that verifiable final outcomes are insufficient for training reliable multi-turn agents. Reward design must account for the procedure used to reach an answer, and evaluation must distinguish adaptive information gathering from reward-exploiting shortcuts. More broadly, the results identify reward geometry, initialization coverage, and task headroom as interacting determinants of whether reinforcement learning improves or degrades sequential reasoning in safety-critical settings.
@@ -1176,7 +1179,8 @@ This checkpoint was selected on the held-out set, so it is an optimistic estimat
 the method. By the final checkpoint, high-risk value returns to $+0.158$ and
 high-risk support to $0.50$, matching credit-assignment GRPO, while mean questions
 rise further to $5.0$. The high-risk advantage of decoupling is therefore transient
-in this run, whereas its over-gathering persists.
+in this run, whereas its over-gathering persists. The full checkpoint trajectory is
+shown in Figure~\ref{fig:dreamtraj} (Appendix~\ref{app:addendum}).
 
 The gain is accompanied by greater interaction burden. Mean questions rise to
 $4.4$, above the base model, the credit-assignment policy, and the oracle level
@@ -1193,18 +1197,6 @@ an unnecessary question, but the present experiment does not establish the
 clinical utility of that operating point. The result is also based on one training
 seed and should be interpreted as exploratory.
 
-\begin{figure}[ht]
-\centering
-\includegraphics[width=0.92\textwidth]{figs/dream_diagnostics_trajectory.png}
-\caption{Checkpoint trajectory for decoupled GRPO on diagnostics. Evaluation
-uses the held-out hidden condition and the pure verifier reward. High-risk
-oracle-grade support and high-risk value peak at checkpoint 40, reaching $1.00$
-and $+0.248$, respectively. The same checkpoint also shows increased gathering;
-mean questions approach and then exceed the oracle level of approximately $3.9$.
-The trajectory illustrates the method's central tradeoff between high-risk
-coverage and information burden.}
-\label{fig:dreamtraj}
-\end{figure}
 
 \FloatBarrier
 \subsection{Information credit is a task-specific control parameter}
@@ -1354,7 +1346,8 @@ initialization could still sample.
 Decoupled GRPO moves in the opposite direction on gathering. Mean questions rise to
 $4.3$, high-risk value reaches $+0.040$, and high-risk support falls to $0.36$. Benign
 support falls from $0.92$ to $0.16$, and overall support falls to $0.41$. Neither
-method converts the sampled oracle-grade behaviour into reliable behaviour.
+method converts the sampled oracle-grade behaviour into reliable behaviour
+(Figure~\ref{fig:reptraj}, Appendix~\ref{app:addendum}).
 
 The experiment clarifies the role of the latent support gate. If the initial
 policy never samples the desired action, RL has no successful trajectory to
@@ -1363,11 +1356,6 @@ not sufficient. When the desired behaviour is rare within an otherwise strong
 policy, GRPO may reinforce a more accessible neighbouring strategy, such as
 asking less or asking broadly, rather than selectively restoring the missing
 trajectory.
-
-Coverage gaps must therefore be addressed through the supervised data, the reward
-distribution, targeted sampling, or a combination of these interventions. The
-presence of a rare action in stochastic rollouts should not be treated as evidence
-that standard RL will recover the associated clinical procedure.
 
 \begin{table}[ht]
 \centering
@@ -1396,17 +1384,6 @@ biased SFT (init)     & $+0.337$ & $\mathbf{0.93}$ & $-0.285$ & $\mathbf{1.00}$ 
 
 \end{table}
 
-\begin{figure}[ht]
-\centering
-\includegraphics[width=\textwidth]{figs/repair_trajectory.png}
-\caption{Attempted reinforcement learning repair of the biased SFT policy.
-Credit assignment and decoupled GRPO move away from the initialization in
-opposite directions. Credit assignment reduces gathering and loses high-risk
-support; decoupled GRPO increases gathering and damages benign support. Both
-methods reduce the SFT policy's strong aggregate support, and neither restores
-the missing high-risk procedure.}
-\label{fig:reptraj}
-\end{figure}
 
 \begin{figure}[ht]
 \centering
@@ -1453,12 +1430,7 @@ or even improving the aggregate score.
 The central conclusion is not that reinforcement learning consistently improves
 clinical multi-turn agents. RL can improve, preserve, or degrade the decision
 procedure depending on the task, the initial policy, and the structure of the
-reward. The strongest positive result appears in diagnostics, where credit
-assignment improves held-out value and moderate-case support relative to outcome-only GRPO across three seeds, without the high-risk seed collapse. The remaining experiments define important
-limits. Stronger exploration improves high-risk coverage but increases question
-burden; calibrated gathering yields little additional value when the task has
-limited adaptive headroom; and RL does not reliably improve a supervised policy
-that is already strong or repair one with a rare coverage gap.
+reward.
 
 These findings suggest that the important question is not simply whether RL
 raises average reward. The more useful question is whether RL teaches a reliable
@@ -1484,11 +1456,7 @@ These gates are negative screens, not certificates of safety. Passing them shows
 that RL has a plausible opportunity to help; it does not show that outcome-only
 GRPO will use that opportunity appropriately. Diagnostics passes both gates, yet
 plain GRPO improves aggregate value while reducing high-risk performance and
-question depth. The reward structure remains the controllable factor. Credit
-assignment improves the replicated diagnostics comparison, while decoupled
-exploration shifts the policy toward greater high-risk coverage at the cost of
-over-gathering. The titration sweep further shows that the strength of process
-credit must be calibrated to the task.
+question depth. The reward structure remains the controllable factor.
 
 Supervised initialization adds a fourth consideration. If SFT has already learned
 most of the behaviour measured by the verifier, RL may have little safe
@@ -1592,8 +1560,7 @@ policy can perform strongly on average while retaining a rare high-risk weakness
 RL is an appealing repair mechanism, but repair is not automatic. When the high-risk action is absent from the policy distribution, there is no useful trajectory
 to reinforce. When the action is present but rare, both tested RL methods move
 toward easier neighbouring strategies rather than selectively restoring the
-missing behaviour. Credit assignment under-gathers; decoupled GRPO over-gathers
-and damages benign performance.
+missing behaviour.
 
 These results suggest that supervised coverage remains a primary safety concern.
 RL can amplify behaviour that is already represented and rewarded frequently
@@ -1664,10 +1631,7 @@ Finally, the number of high-risk cases is small in the principal held-out sets (
 of 60 diagnostics cases), and the decoupled result relies on a checkpoint selected on
 held-out data.
 Reporting the subgroup separately prevents it from being hidden by the aggregate,
-but larger stratified evaluations would produce more precise estimates. Future
-work should use paired case-level comparisons, confidence intervals, multiple
-training seeds, and larger high-risk test sets before drawing stronger safety
-conclusions.
+but larger stratified evaluations would produce more precise estimates.
 
 An ongoing extension of this study addresses several of these limitations; we
 outline it under Future work. The conclusions reported here rest only on the
@@ -1675,15 +1639,25 @@ experiments presented in this paper.
 
 \paragraph{Future work.}
 An ongoing extension of this study investigates whether these findings generalize
-to larger models, external interactive clinical benchmarks, and clinician-evaluated
-trajectories. It repeats the main comparisons with MedGemma-27B, evaluates trained
-policies on an external interactive clinical benchmark in addition to our synthetic
-environments, and adds blinded clinician review of sampled trajectories and of the
-utility assumptions. It also uses larger, risk-stratified evaluation sets and
-selects checkpoints on a separate validation split. These experiments are designed
-to test the generality of the present results, not to establish clinical safety.
+to a larger model, an external interactive clinical benchmark, and
+clinician-evaluated trajectories. It will repeat the principal SFT, RL, and
+reward-design comparisons with MedGemma-27B, and evaluate trained policies on an
+independent multi-turn clinical benchmark to test generalization beyond our
+deterministic synthetic environments. A qualified clinician will review sampled
+trajectories blind to training condition, assessing information gathering,
+evidence sufficiency, premature commitment, unnecessary questioning, and
+unsupported or unsafe escalation, as well as the clinical plausibility of the
+hand-specified utilities. The extension will also enlarge the risk-stratified
+evaluation sets, particularly the diagnostics high-risk subgroup, which here
+contains only two cases, and report subgroup-specific results with uncertainty
+estimates. Finally, it will select RL checkpoints on a separate validation split
+and reserve an untouched test set for final evaluation, avoiding the optimistic
+selection of the decoupled step-40 checkpoint. These experiments test the
+generality of the present results; neither external benchmarking nor clinician
+review would by itself establish clinical safety.
 
-Beyond this extension, several broader questions remain open. First, RL headroom
+Beyond this extension, several broader questions remain open for us and the wider
+research community. First, RL headroom
 and repairability have not been characterized as functions of SFT strength and
 coverage. A controlled study could train models on increasing amounts of
 well-covered supervised data and evaluate them before and after matched RL, while
@@ -1868,13 +1842,26 @@ trajectory asks about two bleeding risk factors before selecting full treatment
 intensity.
 
 \FloatBarrier
-\section{Additional refill triage and coverage results}
+\section{Additional decoupled, refill triage, and coverage results}
 \label{app:addendum}
 
-The following figures provide additional subgroup results for the refill triage
-and biased SFT experiments. They complement the main results by showing how
+The following figures provide the decoupled GRPO checkpoint trajectory and
+additional results for the refill triage and biased SFT experiments. They complement the main results by showing how
 aggregate support can conceal deterioration in high-risk behaviour or excessive
 information gathering.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.92\textwidth]{figs/dream_diagnostics_trajectory.png}
+\caption{Checkpoint trajectory for decoupled GRPO on diagnostics. Evaluation
+uses the held-out hidden condition and the pure verifier reward. High-risk
+oracle-grade support and high-risk value peak at checkpoint 40, reaching $1.00$
+and $+0.248$, respectively. The same checkpoint also shows increased gathering;
+mean questions approach and then exceed the oracle level of approximately $3.9$.
+The trajectory illustrates the method's central tradeoff between high-risk
+coverage and information burden.}
+\label{fig:dreamtraj}
+\end{figure}
 
 \begin{figure}[ht]
 \centering
@@ -1887,6 +1874,18 @@ result. Both RL policies subsequently reduce high-risk value and move toward
 shorter, under-gathered trajectories, despite preserving high support under
 stochastic sampling.}
 \label{fig:rx4arm}
+\end{figure}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\textwidth]{figs/repair_trajectory.png}
+\caption{Attempted reinforcement learning repair of the biased SFT policy.
+Credit assignment and decoupled GRPO move away from the initialization in
+opposite directions. Credit assignment reduces gathering and loses high-risk
+support; decoupled GRPO increases gathering and damages benign support. Both
+methods reduce the SFT policy's strong aggregate support, and neither restores
+the missing high-risk procedure.}
+\label{fig:reptraj}
 \end{figure}
 
 \begin{figure}[ht]
