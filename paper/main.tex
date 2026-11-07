@@ -364,6 +364,12 @@ direct measurement of premature commitment, unnecessary investigation,
 and high-risk failures. These simplifications permit a more controlled
 study of learning dynamics, although they do not reproduce the clinical
 realism of SDBench.
+AgentClinic is an interactive clinical simulation benchmark in which
+language-model agents gather information from simulated patients and clinical
+tools before making diagnostic decisions \citep{schmidgall2026agentclinic}.
+Whereas AgentClinic evaluates clinical agents in interactive environments, we use
+controlled, deterministic environments with exact adaptive oracles to study how
+RL reward design changes information-gathering behaviour.
 
 This controlled setting represents a simplified analogue of several realistic
 clinical workflows. In refill triage, an agent may need to check symptoms,
@@ -1647,7 +1653,8 @@ An ongoing extension of this study investigates whether these findings generaliz
 to a larger model, an external interactive clinical benchmark, and
 clinician-evaluated trajectories. It will repeat the principal SFT, RL, and
 reward-design comparisons with MedGemma-27B, and evaluate trained policies on an
-independent multi-turn clinical benchmark to test generalization beyond our
+independent multi-turn clinical benchmark, such as AgentClinic
+\citep{schmidgall2026agentclinic}, to test generalization beyond our
 deterministic synthetic environments. A qualified clinician will review sampled
 trajectories blind to training condition, assessing information gathering,
 evidence sufficiency, premature commitment, unnecessary questioning, and
