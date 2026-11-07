@@ -191,6 +191,9 @@ matches. Check whether **SDBench** is publicly available. No exact oracle there,
 transfer: questions asked, premature commitment, accuracy, plus the guarded-report flags. Requires an adapter from
 the benchmark's patient simulator to our ask/commit JSON schema.
 
+Detailed AgentClinic plan (verified capabilities, experiment matrix, interface adapter, splits, pilot):
+[`docs/v2_agentclinic_experiment_plan.md`](../docs/v2_agentclinic_experiment_plan.md).
+
 **Option B — real-data environment (stronger, more work):** build a 4th task from **MIMIC-IV-ED** in the style of
 ED-Copilot: findings = triage vitals/labs, per-test cost, outcome = critical-event label; "oracle" = best policy
 estimated from data. Requires PhysioNet credentialing.

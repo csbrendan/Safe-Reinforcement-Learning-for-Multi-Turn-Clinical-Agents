@@ -52,6 +52,9 @@ Task-1 env passes Gate 1 (BC-gap +0.105 under the recalibrated safety-steep rewa
 No data, weights, logs, or prior results are carried over — see [docs/lessons_learned.md](docs/lessons_learned.md)
 for the conceptual carry-over (why we restructured).
 
+**V2 (in progress):** plan in [V2/PLAN.md](V2/PLAN.md); external-benchmark (AgentClinic) plan in
+[docs/v2_agentclinic_experiment_plan.md](docs/v2_agentclinic_experiment_plan.md).
+
 ## Setup
 Reuses the existing `~/spark1/.venv` (torch / vllm / trl / peft / transformers). The base model is supplied at
 runtime (`--base <path-or-hf-id>`); no weights live in this repo.
