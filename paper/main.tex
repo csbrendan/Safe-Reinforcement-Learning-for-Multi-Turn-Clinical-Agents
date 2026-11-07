@@ -1669,48 +1669,56 @@ work should use paired case-level comparisons, confidence intervals, multiple
 training seeds, and larger high-risk test sets before drawing stronger safety
 conclusions.
 
-An extended version of this study, now in progress, targets three of these
-limitations directly. It repeats the main comparisons at a larger scale with
-MedGemma-27B, evaluates the trained policies on an external interactive clinical
-benchmark rather than only on our synthetic environments, and adds blinded
-clinician review of the sampled trajectories and of the utility assumptions. It
-will also use larger risk-stratified evaluation sets and select checkpoints on a
-separate validation split.
+An ongoing extension of this study addresses several of these limitations; we
+outline it under Future work. The conclusions reported here rest only on the
+experiments presented in this paper.
 
 \paragraph{Future work.}
-The most direct next experiment is a controlled SFT strength and coverage study.
-Models should be trained on increasing amounts of well-covered supervised data,
-then evaluated before and after matched RL. In parallel, high-risk coverage should
-be varied while total SFT quality is held approximately constant. This would
-identify when RL has genuine residual headroom, when it can repair a rare weakness,
-and when it merely reshapes an already strong policy.
+An ongoing extension of this study investigates whether these findings generalize
+to larger models, external interactive clinical benchmarks, and clinician-evaluated
+trajectories. It repeats the main comparisons with MedGemma-27B, evaluates trained
+policies on an external interactive clinical benchmark in addition to our synthetic
+environments, and adds blinded clinician review of sampled trajectories and of the
+utility assumptions. It also uses larger, risk-stratified evaluation sets and
+selects checkpoints on a separate validation split. These experiments are designed
+to test the generality of the present results, not to establish clinical safety.
 
-A second direction is improved reward design. Entropy reduction is useful because
-it is analytic, but it rewards uncertainty reduction rather than the decision
-value of a question. Future rewards could estimate expected regret reduction,
-probability of changing the optimal action, or satisfaction of explicit evidence
-requirements. These alternatives may distinguish clinically decisive questions
-from findings that reduce uncertainty without affecting management.
+Beyond this extension, several broader questions remain open. First, RL headroom
+and repairability have not been characterized as functions of SFT strength and
+coverage. A controlled study could train models on increasing amounts of
+well-covered supervised data and evaluate them before and after matched RL, while
+separately varying high-risk coverage with total SFT quality held approximately
+constant. This would identify when RL has genuine residual headroom, when it can
+repair a rare weakness, and when it merely reshapes an already strong policy.
 
-A third direction is more realistic interaction. Future environments should
-include stochastic patient responses, ambiguous findings, conflicting chart
-information, missing laboratory values, uncertain medication histories, and
-multiple clinically acceptable stopping points. Expert reviewed utilities and
-evidence requirements would be needed before the benchmark could support stronger
-clinical claims.
+Second, entropy reduction is useful because it is analytic, but it rewards
+uncertainty reduction rather than the decision value of a question. Alternative
+rewards could estimate expected regret reduction, the probability of changing the
+optimal action, or satisfaction of explicit evidence-sufficiency requirements.
+Such rewards may better distinguish clinically decisive questions from findings
+that reduce uncertainty without affecting management.
 
-A fourth direction is goal-conditioned decision making. The same patient state may
-require a different operating point depending on whether the objective is to
-minimise missed emergencies, reduce unnecessary escalation, limit patient burden,
-or prepare a clinician handoff. Representing these goals explicitly would allow
-the policy to learn calibrated tradeoffs rather than relying on one fixed utility
-matrix.
+Third, external benchmarks test transfer, but controlled environments remain
+necessary when exact oracles and verifiers are required. A complementary direction
+is to make such environments more realistic while retaining these properties, for
+example through stochastic patient responses, ambiguous findings, conflicting
+chart information, missing laboratory values, uncertain medication histories, and
+multiple clinically acceptable stopping points. Expert-reviewed utilities and
+evidence requirements would be needed before such environments could support
+stronger clinical claims.
+
+Fourth, the same patient state may call for a different operating point depending
+on whether the objective is to minimise missed emergencies, reduce unnecessary
+escalation, limit patient burden, or prepare a clinician handoff. Goal-conditioned
+policies that represent these objectives explicitly could learn calibrated
+tradeoffs rather than relying on one fixed utility matrix.
 
 The long-term goal is a reusable benchmark for clinical multi-turn agents in which
 RL is evaluated as procedure learning. Such a benchmark should measure whether the
 agent requests the findings that matter, stops when enough is known, commits to an
-action supported by the available evidence, and preserves safety on rare high-consequence cases. Aggregate reward should remain part of the evaluation, but it
-should not be the sole criterion for selecting a clinical policy.
+action supported by the available evidence, and preserves safety on rare
+high-consequence cases. Aggregate reward should remain part of the evaluation, but
+it should not be the sole criterion for selecting a clinical policy.
 
 \paragraph{Conclusion.}
 The experiments show that verifiable outcomes alone do not ensure reliable
