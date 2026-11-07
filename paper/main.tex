@@ -705,7 +705,9 @@ All methods use the text-only \texttt{medgemma-4b-it} model
 \citep{saab2025medgemma}. We adapt the model using LoRA
 \citep{hu2022lora}, which limits the number of trainable parameters while preserving
 the same base checkpoint across comparisons. Reinforcement learning uses group
-relative policy optimisation, or GRPO \citep{shao2024deepseekmath}.
+relative policy optimisation, or GRPO \citep{shao2024deepseekmath}. The implementation
+uses PyTorch \citep{paszke2019pytorch}, Hugging Face Transformers
+\citep{wolf2020transformers}, and the GRPO trainer from TRL \citep{vonwerra2020trl}.
 
 Training is fully on policy. For each clinical prompt, the model generates a group
 of candidate multi-turn trajectories, receives a reward for each trajectory, and
@@ -713,7 +715,8 @@ is updated according to relative performance within the group. The same model
 produces both information requests and terminal actions.
 
 We use a disaggregated two-node system. One node performs optimisation, while a
-separate vLLM server generates rollouts from the current policy. Simulator responses
+separate vLLM server generates rollouts from the current policy
+\citep{kwon2023vllm}. Simulator responses
 are inserted between model turns but are excluded from the policy gradient using
 an \texttt{env\_mask}. Consequently, gradients are applied only to tokens generated
 by MedGemma; the model is not trained to imitate the deterministic patient
