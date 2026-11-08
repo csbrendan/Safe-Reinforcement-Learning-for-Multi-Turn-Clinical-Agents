@@ -187,7 +187,7 @@ exploitability) and goes in the paper.
 
 **Option A — interactive benchmark eval (do this):** evaluate base vs trained policies on an open interactive
 clinical benchmark where the agent must ask before diagnosing — **MediQ** and/or **AgentClinic** are the closest
-matches. Check whether **SDBench** is publicly available. No exact oracle there, so report procedure metrics that
+matches, along with **SDBench** (see "Benchmark options and access" below). No exact oracle there, so report procedure metrics that
 transfer: questions asked, premature commitment, accuracy, plus the guarded-report flags. Requires an adapter from
 the benchmark's patient simulator to our ask/commit JSON schema.
 
@@ -204,6 +204,44 @@ estimated from data. Requires PhysioNet credentialing.
 
 **Agustina:** ask which benchmarks / agent systems she already has access to — that decides A vs B and saves
 setup time.
+
+### Benchmark options and access
+
+*Candidates under consideration, not commitments; none has been used for a result yet. Access was checked on
+2026-11-08. Confirm the terms again before publishing anything derived from a dataset.*
+
+| Option | What it evaluates | Open now | Gate or condition | V2 relevance |
+|---|---|---|---|---|
+| [AgentClinic](https://github.com/SamuelSchmidgall/AgentClinic) | Interactive patient interviews, tests and diagnosis | Code (MIT); MedQA and NEJM cases | MIMIC-IV cases: PhysioNet credentialing plus a request to the authors. NEJM text is NEJM copyright, so do not redistribute it. Spec, Lang and tool code are not in the repo | Very high: first pilot |
+| [SDBench](https://github.com/microsoft/sdbench) | Sequential diagnosis and the cost of tests | Code (MIT); 5 synthetic cases, not for reporting performance | NEJM cases: license from NEJM (terms not yet checked). MIMIC cases: PhysioNet credentialing | Very high: closest match to the RL question |
+| [MediQ](https://github.com/stellalisy/mediQ) | Asking follow-up questions before deciding | Code and development data (CC-BY-4.0) | None found. The README does not mention a test set | High |
+| [MedAgentBench](https://github.com/stanfordmlgroup/MedAgentBench) | Agent tool use in a simulated EHR (FHIR) | Code (MIT); task data; Docker FHIR server | No credentialing mentioned. The grader (`refsol.py`) is a separate Stanford Box download | High for tool use; not an interview benchmark |
+| [Medmarks](https://github.com/MedARC-AI/medmarks) | Suite of 30 medical benchmarks, including AgentClinic, MedAgentBench, HealthBench and MedR-Bench | Framework (MIT) | Licenses vary per dataset and some are "not specified". Inclusion does not override a dataset's own terms | High: its Medmarks-T subset has train/test splits for post-training |
+| [HealthBench](https://openai.com/index/healthbench/) | Clinical safety, accuracy, escalation and communication | Reported public | Rubric grading needs inference compute. **Access not confirmed at the source** | High for external safety evaluation |
+| [MedR-Bench](https://www.nature.com/articles/s41467-025-64769-1) | Diagnosis and treatment reasoning on case reports | Reported public; Medmarks lists CC-BY-SA-4.0 | **Access not confirmed at the source** | Medium to high |
+| [MIMIC-ED-Assist / ED-Copilot](https://github.com/cxcscmu/ED-Copilot) | Sequential lab selection and outcome prediction | Code (no license stated) | Needs MIMIC-IV and MIMIC-IV-ED from PhysioNet: credentialing | Medium to high |
+| [MIMIC-IV](https://physionet.org/content/mimiciv/) / [MIMIC-IV-ED](https://physionet.org/content/mimic-iv-ed/) | Real clinical records for building a new evaluation (Option B) | Nothing | PhysioNet credentialing, CITI course, data use agreement | High for realism; more engineering |
+| MedQA, MedMCQA, [MedCalc-Bench](https://huggingface.co/datasets/ncbi/MedCalc-Bench) | Medical knowledge, decision questions and calculations | MedCalc-Bench (CC-BY-SA-4.0). MedQA and MedMCQA reported obtainable | Dataset-specific terms. **MedQA and MedMCQA terms not confirmed** | Supporting baselines; not interactive |
+
+**The PhysioNet gate (class and certificate).** It applies to AgentClinic-MIMIC-IV, SDBench-MIMIC, MIMIC-ED-Assist and
+MIMIC-IV(-ED):
+1. Create a [PhysioNet](https://physionet.org/) account.
+2. Complete the CITI course "Data or Specimens Only Research".
+3. Apply for credentialing, including a reference. Review typically takes 1–2 weeks.
+4. Sign the data use agreement for each dataset.
+5. For AgentClinic-MIMIC-IV only, request the derived cases from the AgentClinic authors.
+
+Access is per person and cannot be shared within a team. The agreement prohibits sending the data through
+third-party APIs, and [PhysioNet's LLM guidance](https://physionet.org/news/post/llm-responsible-use) strongly
+recommends local models, so MIMIC work should run on the local Sparks.
+
+**Suggested order:**
+1. AgentClinic-MedQA, which needs no credentials.
+2. SDBench: start with the code and synthetic cases, then decide on NEJM licensing or MIMIC access.
+3. HealthBench and Medmarks, as independent accuracy and safety measurements that complement the interactive
+   evaluations.
+
+Start PhysioNet credentialing early, even while using public data, because it opens every MIMIC option above.
 
 ## W6 — Clinician validation (Agustina Saenz, MD MPH — role TBD)
 
