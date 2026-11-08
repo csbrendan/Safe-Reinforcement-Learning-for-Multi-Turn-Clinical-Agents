@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/brendan/rl-gains-in-clinical-tasks/framework/procreward/eval_metrics.py", line 85, in <module>
+    main()
+  File "/home/brendan/rl-gains-in-clinical-tasks/framework/procreward/eval_metrics.py", line 64, in main
+    recs = load(args.records, args.cond)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/brendan/rl-gains-in-clinical-tasks/framework/procreward/eval_metrics.py", line 17, in load
+    return [r for r in (json.loads(l) for l in open(path)) if r.get("cond") == cond]
+                                               ^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'results/procreward_pilot/sweep/a0.20_greedy.records.jsonl'

@@ -77,7 +77,7 @@ class RolloutJudge:
             self.stats["api_latency_s"] += time.time() - t0
         if rec["parse_status"] == "ok_retry":
             self.stats["retries"] += 1
-        if rec["parse_status"] == "parse_fail":
+        if rec["parse_status"] in ("parse_fail", "api_fail"):
             self.stats["parse_fail"] += 1
         p = rec["parsed"] or {}
         try:

@@ -1,0 +1,20 @@
+Sequential processing completed at 2026-11-08 20:22:28.259064
+Total cases processed: 2
+Correct diagnoses rate: 0/2
+Model: local-medgemma4b
+Agent: baseline
+Test runner: BatchTestRunner
+Case set: train
+Max turns: 12
+Workers: 1
+Total test requests tracked: 0
+Unique tests requested: 0
+Cost analysis: Enabled
+
+========================================================================
+ACCURACY & COST REPORT  (dataset: synthetic)
+========================================================================
+
+baseline | local-medgemma4b
+  train       acc 0.0% (0/0)
+      ⚠ 2 errored (excluded), incomplete 0/5

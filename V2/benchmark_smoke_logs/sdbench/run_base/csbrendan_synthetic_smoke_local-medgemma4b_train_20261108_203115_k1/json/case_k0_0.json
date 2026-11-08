@@ -1,0 +1,17 @@
+{
+  "timestamp": "20261108_203523",
+  "case_id": "0",
+  "dataset": "synthetic",
+  "case_title": "Case 17-2026: A 58-Year-Old Woman with Recurrent Fever, Progressive Confusion, and Multifocal Cerebral Infarction",
+  "model": "local-medgemma4b",
+  "model_args": {
+    "max_tokens": 400
+  },
+  "evaluation_method": "single",
+  "prompt_versions": "diagnostic_agent:baseline",
+  "case_set": "train",
+  "max_turns": 12,
+  "k": 0,
+  "model_diagnosis": "Error code: 400 - {'error': {'message': 'Conversation roles must alternate user/assistant/user/assistant/...', 'type': 'BadRequestError', 'param': None, 'code': 400}}",
+  "correct": false
+}

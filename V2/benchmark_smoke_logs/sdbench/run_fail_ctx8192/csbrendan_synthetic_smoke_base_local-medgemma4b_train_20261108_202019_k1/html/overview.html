@@ -1,0 +1,547 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SYNTHETIC Diagnostic Results - baseline</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
+        .header { background-color: #2c3e50; color: white; padding: 20px; border-radius: 5px; }
+        .summary { background-color: white; padding: 20px; margin: 20px 0; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .accuracy { font-size: 2em; font-weight: bold; color: #2c3e50; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        .stat-box { text-align: center; padding: 15px; background-color: #ecf0f1; border-radius: 5px; }
+        
+        /* Table styles */
+        .table-container {
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .results-table th {
+            background-color: #34495e;
+            color: white;
+            padding: 12px 8px;
+            text-align: left;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .results-table td {
+            padding: 12px 8px;
+            border-bottom: 1px solid #ecf0f1;
+            vertical-align: top;
+        }
+        .case-row.correct {
+            background-color: #f8fff8;
+        }
+        .case-row.incorrect {
+            background-color: #fff8f8;
+        }
+        .case-row:hover {
+            background-color: #f5f5f5;
+        }
+        .status-cell {
+            text-align: center;
+            font-size: 16px;
+            width: 60px;
+        }
+        .case-id {
+            font-weight: bold;
+            width: 80px;
+        }
+        .case-title {
+            font-weight: bold;
+            min-width: 200px;
+        }
+        .icu-cell {
+            text-align: center;
+            width: 60px;
+            font-size: 11px;
+        }
+        .icu-badge {
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: bold;
+            font-size: 10px;
+        }
+        .icu-badge.yes {
+            background-color: #e74c3c;
+            color: white;
+        }
+        .icu-badge.no {
+            background-color: #95a5a6;
+            color: white;
+        }
+        .diagnosis-cell {
+            max-width: 300px;
+            word-wrap: break-word;
+            white-space: normal;
+            font-size: 13px;
+            line-height: 1.3;
+        }
+        .score-cell {
+            text-align: center;
+            font-weight: bold;
+            width: 100px;
+        }
+        .tests-cell {
+            text-align: center;
+            width: 140px;
+        }
+        .cost-cell {
+            text-align: right;
+            font-family: monospace;
+            width: 100px;
+        }
+        .actions-cell {
+            text-align: center;
+            width: 240px;
+        }
+        .action-btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            margin: 2px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .action-btn:hover {
+            background-color: #2980b9;
+        }
+        .grader-btn {
+            background-color: #9b59b6;
+        }
+        .grader-btn:hover {
+            background-color: #8e44ad;
+        }
+        .runner-btn {
+            background-color: #e67e22;
+        }
+        .runner-btn:hover {
+            background-color: #d35400;
+        }
+        .cost-btn {
+            background-color: #27ae60;
+        }
+        .cost-btn:hover {
+            background-color: #229954;
+        }
+        .cost-true-btn {
+            background-color: #16a085;
+        }
+        .cost-true-btn:hover {
+            background-color: #138d75;
+        }
+        .gatekeeper-btn {
+            background-color: #2c3e50;
+        }
+        .gatekeeper-btn:hover {
+            background-color: #1a252f;
+        }
+        .detail-row {
+            background-color: #f9f9f9;
+        }
+        .detail-container {
+            padding: 20px;
+        }
+        
+        /* Cost Analysis Layout Styles */
+        .cost-grid-single {
+            display: block;
+        }
+        .cost-panel {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            background-color: #f9f9f9;
+        }
+        .cost-panel h5 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 5px;
+        }
+        
+        /* Dialog content styles */
+        .content {
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .content h4 {
+            background-color: #ecf0f1;
+            margin: 0;
+            padding: 10px 15px;
+            border-bottom: 1px solid #ddd;
+        }
+        .dialog-section {
+            padding: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        /* Message styles */
+        .message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            border-left: 3px solid #ddd;
+        }
+        .message.user { background-color: #e3f2fd; border-left-color: #2196f3; }
+        .message.assistant { background-color: #f3e5f5; border-left-color: #9c27b0; }
+        .message.system { background-color: #fff3e0; border-left-color: #ff9800; }
+        .message-role { font-weight: bold; margin-bottom: 5px; text-transform: capitalize; }
+        .message-content { white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 12px; }
+        .tool-calls { background-color: #e8f5e8; padding: 10px; border-radius: 3px; margin: 5px 0; }
+        .tool-call { margin-bottom: 10px; }
+        .tool-name { font-weight: bold; color: #2e7d32; }
+        .tool-args { font-family: 'Courier New', monospace; font-size: 11px; color: #666; }
+        .test-results { background-color: #fff9c4; padding: 10px; border-radius: 3px; margin: 5px 0; }
+        .reasoning { background-color: #f0f8ff; padding: 10px; border-radius: 3px; margin: 10px 0; }
+        .reasoning-label { font-weight: bold; color: #1976d2; margin-bottom: 5px; }
+        .reasoning-content { font-size: 14px; line-height: 1.4; }
+        
+        /* Test Runner Log styles */
+        
+        /* Test Execution styles */
+        .test-execution {
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .test-execution-header {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-bottom: 1px solid #ddd;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .test-reason {
+            font-size: 14px;
+            color: #666;
+            font-weight: normal;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>SYNTHETIC Diagnostic Results</h1>
+        <p>Agent: baseline | Model: local-medgemma4b | Case Set: train</p>
+    </div>
+    
+    <div class="summary">
+        <h2>Overall Performance</h2>
+        <div class="stats">
+            <div class="stat-box">
+                <div class="accuracy">0.0%</div>
+                <div>Accuracy</div>
+            </div>
+            <div class="stat-box">
+                <div class="accuracy">0/2</div>
+                <div>Correct Diagnoses</div>
+            </div>
+            <div class="stat-box">
+                <div class="accuracy">2</div>
+                <div>Total Cases</div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="summary">
+        <h2>Case Results</h2>
+        <div class="table-container">
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        <th>Status</th>
+                        <th>Case ID</th>
+                        <th>Case Title</th>
+                        <th>Model Diagnosis</th>
+                        <th>Actual Diagnosis</th>
+                        <th>Grader Score</th>
+                        <th>Tests (Synthetic/Real)</th>
+                        <th>Cost</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                    <tr class="case-row incorrect">
+                        <td class="status-cell">❌</td>
+                        <td class="case-id">0</td>
+                        <td class="case-title">Case 17-2026: A 58-Year-Old Woman with Recurrent Fever, Progressive Confusion, and Multifocal Cerebral Infarction</td>
+                        <td class="diagnosis-cell">Error code: 400 - {&#x27;error&#x27;: {&#x27;message&#x27;: &quot;This model&#x27;s maximum context length is 8192 tokens. However, you requested 0 output tokens and your prompt contains at least 8193 input tokens, for a total of at least 8193 tokens. Please reduce the length of the input prompt or the number of requested output tokens. (parameter=input_tokens, value=8193)&quot;, &#x27;type&#x27;: &#x27;BadRequestError&#x27;, &#x27;param&#x27;: &#x27;input_tokens&#x27;, &#x27;code&#x27;: 400}}</td>
+                        <td class="diagnosis-cell">Unknown</td>
+                        <td class="score-cell">N/A</td>
+                        <td class="tests-cell">0 (Synthetic: 0, Real: 0)</td>
+                        <td class="cost-cell"><div style="font-size: 0.85em; color: #7f8c8d; margin-bottom: 0;">Agent Cost</div><hr style="margin: 5px 0; border: none; border-top: 1px solid #ddd;"><div style="font-size: 0.85em; color: #7f8c8d;">No true costs computed</div></td>
+                        <td class="actions-cell">
+                            <button class="action-btn agent-btn collapsible" data-original-text="Agent Dialog">Agent Dialog</button>
+                            <button class="action-btn grader-btn collapsible" data-original-text="Grader Dialog">Grader Dialog</button>
+                            <button class="action-btn runner-btn collapsible" data-original-text="Test Runner Log">Test Runner Log</button>
+
+                        </td>
+                    </tr>
+                    <tr class="detail-row" style="display: none;">
+                        <td colspan="9">
+                            <div class="detail-container">
+
+                                <div class="content agent-content" style="display: none;">
+                                    <h4>Agent Dialog (0 messages)</h4>
+                                    <div class="dialog-section">
+
+                        <p>No agent messages recorded for this case.</p>
+
+                                    </div>
+                                </div>
+
+                                <div class="content grader-content" style="display: none;">
+                                    <h4>Grader Dialog (0 messages)</h4>
+                                    <div class="dialog-section">
+
+                        <p>No grader messages recorded for this case.</p>
+
+                                    </div>
+                                </div>
+
+                                <div class="content runner-content" style="display: none;">
+                                    <h4>Test Execution Log (0 tests)</h4>
+                                    <div class="dialog-section">
+
+                        <p>No test execution logs available.</p>
+
+                                    </div>
+                                </div>
+
+                            </div>
+                        </td>
+                    </tr>
+
+                    <tr class="case-row incorrect">
+                        <td class="status-cell">❌</td>
+                        <td class="case-id">1</td>
+                        <td class="case-title">Case 22-2026: A 39-Year-Old Man with Episodic Headache, Palpitations, and Paroxysmal Hypertension</td>
+                        <td class="diagnosis-cell">Error code: 400 - {&#x27;error&#x27;: {&#x27;message&#x27;: &quot;This model&#x27;s maximum context length is 8192 tokens. However, you requested 0 output tokens and your prompt contains at least 8193 input tokens, for a total of at least 8193 tokens. Please reduce the length of the input prompt or the number of requested output tokens. (parameter=input_tokens, value=8193)&quot;, &#x27;type&#x27;: &#x27;BadRequestError&#x27;, &#x27;param&#x27;: &#x27;input_tokens&#x27;, &#x27;code&#x27;: 400}}</td>
+                        <td class="diagnosis-cell">Unknown</td>
+                        <td class="score-cell">N/A</td>
+                        <td class="tests-cell">0 (Synthetic: 0, Real: 0)</td>
+                        <td class="cost-cell"><div style="font-size: 0.85em; color: #7f8c8d; margin-bottom: 0;">Agent Cost</div><hr style="margin: 5px 0; border: none; border-top: 1px solid #ddd;"><div style="font-size: 0.85em; color: #7f8c8d;">No true costs computed</div></td>
+                        <td class="actions-cell">
+                            <button class="action-btn agent-btn collapsible" data-original-text="Agent Dialog">Agent Dialog</button>
+                            <button class="action-btn grader-btn collapsible" data-original-text="Grader Dialog">Grader Dialog</button>
+                            <button class="action-btn runner-btn collapsible" data-original-text="Test Runner Log">Test Runner Log</button>
+
+                        </td>
+                    </tr>
+                    <tr class="detail-row" style="display: none;">
+                        <td colspan="9">
+                            <div class="detail-container">
+
+                                <div class="content agent-content" style="display: none;">
+                                    <h4>Agent Dialog (0 messages)</h4>
+                                    <div class="dialog-section">
+
+                        <p>No agent messages recorded for this case.</p>
+
+                                    </div>
+                                </div>
+
+                                <div class="content grader-content" style="display: none;">
+                                    <h4>Grader Dialog (0 messages)</h4>
+                                    <div class="dialog-section">
+
+                        <p>No grader messages recorded for this case.</p>
+
+                                    </div>
+                                </div>
+
+                                <div class="content runner-content" style="display: none;">
+                                    <h4>Test Execution Log (0 tests)</h4>
+                                    <div class="dialog-section">
+
+                        <p>No test execution logs available.</p>
+
+                                    </div>
+                                </div>
+
+                            </div>
+                        </td>
+                    </tr>
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Helper function to reset all buttons in a row to their original text
+        function resetAllButtons(parentRow) {
+            var allButtons = parentRow.querySelectorAll('.action-btn[data-original-text]');
+            allButtons.forEach(function(btn) {
+                btn.textContent = btn.getAttribute('data-original-text');
+            });
+        }
+
+
+        function toggleDialogContent(button, contentType) {
+            // Find the parent row and the detail row
+            var parentRow = button.closest('tr');
+            var detailRow = parentRow.nextElementSibling;
+
+            if (detailRow && detailRow.classList.contains('detail-row')) {
+                // Show the detail row if hidden
+                if (detailRow.style.display === 'none') {
+                    detailRow.style.display = 'table-row';
+                }
+
+                // For cost buttons with data-method, construct method-specific selector
+                var effectiveContentType = contentType;
+                if ((contentType === 'cost' || contentType === 'cost-true') && button.hasAttribute('data-method')) {
+                    var method = button.getAttribute('data-method');
+                    // Convert method to selector format: unified_cpt_llm -> unified-cpt-llm
+                    var methodClass = method.replace(/_/g, '-');
+                    effectiveContentType = contentType + '-' + methodClass;
+                }
+
+                // Map content types to their selectors
+                var contentMap = {
+                    'agent': '.agent-content',
+                    'grader': '.grader-content',
+                    'gatekeeper': '.gatekeeper-content',
+                    'runner': '.runner-content',
+                    'panel': '.panel-content',
+                    'cost': '.cost-section',
+                    'cost-true': '.cost-true-content',
+                };
+
+                // For method-specific cost content, add to map dynamically
+                if (effectiveContentType.startsWith('cost-') && effectiveContentType !== 'cost-true') {
+                    contentMap[effectiveContentType] = '.cost-content-' + effectiveContentType.substring(5); // Remove 'cost-' prefix
+                }
+                if (effectiveContentType.startsWith('cost-true-')) {
+                    contentMap[effectiveContentType] = '.cost-true-content-' + effectiveContentType.substring(10); // Remove 'cost-true-' prefix
+                }
+
+                // Also find ALL method-specific cost content divs in the detail row to ensure we hide them all
+                var allCostContentDivs = detailRow.querySelectorAll('[class*="cost-content-"], [class*="cost-true-content-"]');
+
+                // Get all content sections from the contentMap
+                var allContents = Object.keys(contentMap).map(function(key) {
+                    return detailRow.querySelector(contentMap[key]);
+                }).filter(function(el) { return el !== null; });
+
+                // Add all method-specific cost divs to allContents
+                allCostContentDivs.forEach(function(div) {
+                    if (allContents.indexOf(div) === -1) {
+                        allContents.push(div);
+                    }
+                });
+
+                // Get the target content
+                var targetContent = detailRow.querySelector(contentMap[effectiveContentType]);
+
+                if (targetContent) {
+                    // Check if content is currently visible
+                    var isCurrentlyVisible = targetContent.style.display !== 'none';
+
+                    // Hide all content sections
+                    allContents.forEach(function(content) {
+                        content.style.display = 'none';
+                    });
+
+                    // Reset all buttons to original text
+                    resetAllButtons(parentRow);
+
+                    // Toggle the target content
+                    if (isCurrentlyVisible) {
+                        // Was visible, now hiding it
+                        targetContent.style.display = 'none';
+                        button.textContent = button.getAttribute('data-original-text');
+                    } else {
+                        // Was hidden, now showing it
+                        targetContent.style.display = 'block';
+                        button.textContent = 'Hide';
+                    }
+
+                    // Check if all contents are hidden, if so hide detail row
+                    var allHidden = allContents.every(function(content) {
+                        return content.style.display === 'none';
+                    });
+
+                    if (allHidden) {
+                        detailRow.style.display = 'none';
+                    }
+                }
+            }
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add event listeners to agent dialog buttons
+            var agentButtons = document.querySelectorAll('.agent-btn');
+            agentButtons.forEach(function(button) {
+                button.addEventListener('click', function() {
+                    toggleDialogContent(this, 'agent');
+                });
+            });
+            
+            // Add event listeners to grader dialog buttons
+            var graderButtons = document.querySelectorAll('.grader-btn');
+            graderButtons.forEach(function(button) {
+                button.addEventListener('click', function() {
+                    toggleDialogContent(this, 'grader');
+                });
+            });
+            
+            // Add event listeners to test runner log buttons
+            var runnerButtons = document.querySelectorAll('.runner-btn');
+            runnerButtons.forEach(function(button) {
+                button.addEventListener('click', function() {
+                    toggleDialogContent(this, 'runner');
+                });
+            });
+            
+            // Add event listeners to cost estimator buttons
+            var costButtons = document.querySelectorAll('.cost-btn');
+            costButtons.forEach(function(button) {
+                button.addEventListener('click', function() {
+                    toggleDialogContent(this, 'cost');
+                });
+            });
+            
+            
+            // Add event listeners to cost estimator true buttons
+            var costTrueButtons = document.querySelectorAll('.cost-true-btn');
+            costTrueButtons.forEach(function(button) {
+                button.addEventListener('click', function() {
+                    toggleDialogContent(this, 'cost-true');
+                });
+            });
+            
+
+            // Add event listeners to gatekeeper dialog buttons
+            var gatekeeperButtons = document.querySelectorAll('.gatekeeper-btn');
+            gatekeeperButtons.forEach(function(button) {
+                button.addEventListener('click', function() {
+                    toggleDialogContent(this, 'gatekeeper');
+                });
+            });
+        });
+    </script>
+</body>
+</html>

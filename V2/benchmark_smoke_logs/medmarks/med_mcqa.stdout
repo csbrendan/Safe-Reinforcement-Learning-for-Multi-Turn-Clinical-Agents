@@ -1,0 +1,12 @@
+Repo card metadata block was not found. Setting CardData to empty.
+Repo card metadata block was not found. Setting CardData to empty.
+2026-11-08 20:38:11 - verifiers.utils.eval_utils - INFO - Automatically determined concurrency=2
+2026-11-08 20:38:11 - verifiers.utils.eval_utils - INFO - Using num_workers=1 env server worker(s), per-worker concurrency: 2 (total 2)
+2026-11-08 20:38:11 - verifiers.serve.client.env_client.ZMQEnvClient - INFO - Waiting for env server med_mcqa (tcp://127.0.0.1:55591) to become healthy (timeout=10m)
+2026-11-08 20:38:12 - verifiers.serve.client.env_client.ZMQEnvClient - INFO - Env server med_mcqa (tcp://127.0.0.1:55591) became healthy (was startup)
+2026-11-08 20:38:12 - verifiers.serve.client.env_client.ZMQEnvClient - INFO - Env server med_mcqa (tcp://127.0.0.1:55591) is healthy
+2026-11-08 20:38:12 - verifiers.envs.environment.SingleTurnEnv - INFO - Saving results to environments/med_mcqa/outputs/evals/med_mcqa--medgemma4b/a300c909
+Processing 5 rollouts:   0%|          | 0/5 [00:00<?, ?it/s, reward=?]Repo card metadata block was not found. Setting CardData to empty.
+Repo card metadata block was not found. Setting CardData to empty.
+Processing 5 rollouts:  20%|██        | 1/5 [00:51<03:27, 51.89s/it, reward=?]Processing 5 rollouts:  20%|██        | 1/5 [00:51<03:27, 51.89s/it, reward=0]Processing 5 rollouts:  40%|████      | 2/5 [01:10<01:37, 32.49s/it, reward=0]Processing 5 rollouts:  40%|████      | 2/5 [01:10<01:37, 32.49s/it, reward=0.5]Processing 5 rollouts:  60%|██████    | 3/5 [01:23<00:47, 23.68s/it, reward=0.5]Processing 5 rollouts:  60%|██████    | 3/5 [01:23<00:47, 23.68s/it, reward=0.667]Processing 5 rollouts:  80%|████████  | 4/5 [01:58<00:27, 27.93s/it, reward=0.667]Processing 5 rollouts:  80%|████████  | 4/5 [01:58<00:27, 27.93s/it, reward=0.75] Processing 5 rollouts: 100%|██████████| 5/5 [02:05<00:00, 20.58s/it, reward=0.75]Processing 5 rollouts: 100%|██████████| 5/5 [02:05<00:00, 20.58s/it, reward=0.8] 2026-11-08 20:40:18 - verifiers.envs.environment.SingleTurnEnv - INFO - Saved final results to environments/med_mcqa/outputs/evals/med_mcqa--medgemma4b/a300c909
+Processing 5 rollouts: 100%|██████████| 5/5 [02:06<00:00, 25.20s/it, reward=0.8]

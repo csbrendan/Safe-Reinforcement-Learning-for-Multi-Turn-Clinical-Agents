@@ -9,7 +9,7 @@ older `docs/` phrasing, and this file reflects where it landed.
 ## The paper
 
 **Title:** *RLVR for Clinical Multi-Turn Agents: When Verifiable Rewards Improve or Degrade Information
-Gathering.* — Author: Brendan P. Murphy (csbrendan@gmail.com). Single-author workshop-style paper.
+Gathering.* — Author: Brendan P. Murphy (cs.brendan@gmail.com). Single-author workshop-style paper.
 
 **Core question.** Clinical decision-making is a multi-turn *information-gathering* process: the agent must
 decide **what to ask, when to stop asking, and which action to commit**. That makes RL with verifiable rewards
@@ -206,9 +206,16 @@ only, folded into the same reward GRPO already consumes.
   venv — activate that one for any run.
 - **Base model:** text-only **`medgemma-4b-it`** (vision tower dropped via `framework.infra.prep_text_base`),
   LoRA adapters. Supplied at runtime via `--base <path-or-hf-id>`; **no weights live in this repo.**
-- **Compute:** disaggregated 2-node GRPO — trainer on node A, vLLM rollout server on node B
-  (`framework/infra/serve_b.sh`, typically `:8001`). `env_mask` excludes simulator tokens from the policy
-  gradient. A 60-step bounded run ≈ 7h; DREAM two-phase ≈ 1.7–2×. GRPO group size 8 rollouts/prompt.
+- **Compute:** disaggregated 2-node GRPO — trainer on node A (`192.168.100.1`), vLLM rollout server on node B
+  (`192.168.100.2`, `framework/infra/serve_b.sh`, typically `:8001`). `env_mask` excludes simulator tokens from
+  the policy gradient. A 60-step bounded run ≈ 7h; DREAM two-phase ≈ 1.7–2×. GRPO group size 8 rollouts/prompt.
+- **⚠️ 2-node NCCL weight-sync gotcha (cost hours):** the trainer↔server NCCL collective only establishes on a
+  **first `init_communicator` against a freshly-started, fully-ready node B server with node A's GPU free**. The
+  *first* training of a session works; the *2nd+* crashes with `NCCL error: unhandled system error` after a
+  server **restart** or an eval→train transition before node A's GPU releases. Run each training as a first-init
+  against a fresh server (free node A GPU → fresh tmux server → wait health 307 + buffer → train directly); do
+  NOT reuse/restart one server across runs. Stuck vLLM procs survive `pkill` (kill by PID; reboot node B if NCCL
+  stays broken). Full writeup + working scripts: `framework/procreward/README.md` (Troubleshooting section).
 - **Data:** cases generated on demand from the simulator — no external corpus, no human labeling. RL trains on
   300 cases/task (hidden, ρ=0, gen seed 12345); held-out eval is a disjoint draw (seed 100), n=60/condition
   (n=200 for the SFT-coverage experiment). SFT warmups: 800 oracle/checklist trajectories (seed 7). The env's

@@ -1,0 +1,103 @@
+Using base Harness config: HarnessConfig(resume=None, max_workers=5, debug=False, result_folder=None, label=None, azure_storage_enabled=False, azure_storage_account_name=None, azure_storage_container_name=None, azure_storage_result_folder=None, dataset='synthetic', agent='baseline', model='gpt-5', model_args={}, k=1, case_set='train', case_id=None, num_cases=-1, case_offset=0, sdbench_config=None)
+Overriding harness config with command line arguments: {'resume': None, 'debug': False, 'result_folder': '/home/brendan/rl-gains-in-clinical-tasks/V2/benchmark_smoke_logs/sdbench/run_base', 'label': 'smoke', 'case_id': None, 'dataset': 'synthetic', 'case_set': 'train', 'num_cases': 2, 'max_workers': 1, 'model': 'local-medgemma4b', 'model_args': {'max_tokens': 400}}
+Using base SDBench config: SDBenchConfig(debug=False, compute_costs=True, compute_actual_workup_costs=False, clinician_cost=300, costing_method='batch_llm_only', costing_parallelism=20, costing_multiprocess=False, costing_source_file_path='910511770-central-hospital-standard-charges-wa-en.xlsx', costing_model='gpt-5-mini', costing_model_args={'openrouter_zdr_only': False}, costing_cache_cosmosdb_enabled=False, costing_cache_cosmosdb_endpoint=None, costing_cache_cosmosdb_database=None, costing_cache_cosmosdb_container=None, costing_cache_use_managed_identity=False, test_runner_enforce_single_turn_type=True, max_turns=70, max_questions_per_turn=None, max_tests_per_turn=None, agent_model_args={}, agent_extra_args={}, gatekeeper_prompt_version='v6_fixed', gatekeeper_model='gpt-5', gatekeeper_model_args={}, gatekeeper_chunk_size=10, judge_prompt_version='v4_reasoning_with_tests', judge_model='gpt-5', judge_model_args={}) for dataset 'synthetic'
+Overriding SDBench config with command line arguments: {'max_turns': 12, 'gatekeeper_model': 'local-aux', 'gatekeeper_model_args': {'local_model_base_url': 'http://192.168.100.2:8101/v1', 'max_tokens': 800, 'extra_body': {'chat_template_kwargs': {'enable_thinking': False}}}, 'judge_model': 'local-aux', 'judge_model_args': {'local_model_base_url': 'http://192.168.100.2:8101/v1', 'max_tokens': 800, 'extra_body': {'chat_template_kwargs': {'enable_thinking': False}}}, 'costing_model': 'local-aux', 'costing_model_args': {'local_model_base_url': 'http://192.168.100.2:8101/v1', 'max_tokens': 800, 'extra_body': {'chat_template_kwargs': {'enable_thinking': False}}}, 'costing_parallelism': 2}
+Run configuration saved to /home/brendan/rl-gains-in-clinical-tasks/V2/benchmark_smoke_logs/sdbench/run_base/csbrendan_synthetic_smoke_local-medgemma4b_train_20261108_203115_k1/run_config.json
+Running with configuration:
+{ 'resume': None,
+  'max_workers': 1,
+  'debug': False,
+  'result_folder': '/home/brendan/rl-gains-in-clinical-tasks/V2/benchmark_smoke_logs/sdbench/run_base',
+  'label': 'smoke',
+  'azure_storage_enabled': False,
+  'azure_storage_account_name': None,
+  'azure_storage_container_name': None,
+  'azure_storage_result_folder': None,
+  'dataset': 'synthetic',
+  'agent': 'baseline',
+  'model': 'local-medgemma4b',
+  'model_args': {'max_tokens': 400},
+  'k': 1,
+  'case_set': 'train',
+  'case_id': None,
+  'num_cases': 2,
+  'case_offset': 0,
+  'sdbench_config': { 'debug': False,
+                      'compute_costs': True,
+                      'compute_actual_workup_costs': False,
+                      'clinician_cost': 300,
+                      'costing_method': 'batch_llm_only',
+                      'costing_parallelism': 2,
+                      'costing_multiprocess': False,
+                      'costing_source_file_path': '910511770-central-hospital-standard-charges-wa-en.xlsx',
+                      'costing_model': 'local-aux',
+                      'costing_model_args': { 'local_model_base_url': 'http://192.168.100.2:8101/v1',
+                                              'max_tokens': 800,
+                                              'extra_body': {'chat_template_kwargs': {'enable_thinking': False}}},
+                      'costing_cache_cosmosdb_enabled': False,
+                      'costing_cache_cosmosdb_endpoint': None,
+                      'costing_cache_cosmosdb_database': None,
+                      'costing_cache_cosmosdb_container': None,
+                      'costing_cache_use_managed_identity': False,
+                      'test_runner_enforce_single_turn_type': True,
+                      'max_turns': 12,
+                      'max_questions_per_turn': None,
+                      'max_tests_per_turn': None,
+                      'agent_model_args': {},
+                      'agent_extra_args': {},
+                      'gatekeeper_prompt_version': 'v6_fixed',
+                      'gatekeeper_model': 'local-aux',
+                      'gatekeeper_model_args': { 'local_model_base_url': 'http://192.168.100.2:8101/v1',
+                                                 'max_tokens': 800,
+                                                 'extra_body': {'chat_template_kwargs': {'enable_thinking': False}}},
+                      'gatekeeper_chunk_size': 10,
+                      'judge_prompt_version': 'v4_reasoning_with_tests',
+                      'judge_model': 'local-aux',
+                      'judge_model_args': { 'local_model_base_url': 'http://192.168.100.2:8101/v1',
+                                            'max_tokens': 800,
+                                            'extra_body': {'chat_template_kwargs': {'enable_thinking': False}}}}}
+Using agent: baseline
+Loaded 5 cases for dataset 'synthetic'
+Loaded 2 case sets for dataset 'synthetic': train (5), all (5)
+Total selected cases: 2
+Total tasks (cases × k): 2
+Completed tasks: 0
+Remaining tasks: 2
+Running 2 tasks
+Num workers: 1
+Using model: local-medgemma4b
+Case set: train
+Max turns: 12
+JSON results will be saved to: /home/brendan/rl-gains-in-clinical-tasks/V2/benchmark_smoke_logs/sdbench/run_base/csbrendan_synthetic_smoke_local-medgemma4b_train_20261108_203115_k1/json
+Processing cases:   0%|          | 0/2 [00:00<?, ?case/s]Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/harness/harness.py", line 240, in _process_single_case
+    result = run_case(config, case, agent_name, model, model_args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/brendan/v2_bench/sdbench/sdbench/harness/harness.py", line 77, in run_case
+    agent_result = agent.run(
+                   ^^^^^^^^^^
+  File "/home/brendan/v2_bench/sdbench/sdbench/agents/baseline.py", line 128, in run
+    response = agent_llm(messages=messages)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/brendan/v2_bench/sdbench/sdbench/models.py", line 437, in create_chat_completion
+    return _chat_completion_with_retry(client, provider_model, messages, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/brendan/v2_bench/sdbench/sdbench/models.py", line 141, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/brendan/v2_bench/sdbench/sdbench/models.py", line 334, in _chat_completion_with_retry
+    response = client.chat.completions.create(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/brendan/v2_bench/sdbench/.venv/lib/python3.12/site-packages/openai/_utils/_utils.py", line 298, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/brendan/v2_bench/sdbench/.venv/lib/python3.12/site-packages/openai/resources/chat/completions/completions.py", line 1251, in create
+    return self._post(
+           ^^^^^^^^^^^
+  File "/home/brendan/v2_bench/sdbench/.venv/lib/python3.12/site-packages/openai/_base_client.py", line 1332, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/brendan/v2_bench/sdbench/.venv/lib/python3.12/site-packages/openai/_base_client.py", line 1105, in request
+    raise self._make_status_error_from_response(err.response) from None
+openai.BadRequestError: Error code: 400 - {'error': {'message': 'Conversation roles must alternate user/assistant/user/assistant/...', 'type': 'BadRequestError', 'param': None, 'code': 400}}
+Processing cases:   0%|          | 0/2 [04:08<?, ?case/s, accuracy=0.0%, last=0:✗]Processing cases:  50%|█████     | 1/2 [04:08<04:08, 248.63s/case, accuracy=0.0%, last=0:✗]                                                                                           Processing cases:  50%|█████     | 1/2 [04:08<04:08, 248.63s/case, accuracy=0.0%, last=0:✗]

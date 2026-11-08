@@ -1,0 +1,10 @@
+# Primary metrics — results/procreward_pilot/sweep/a0.05_checkpoint-10.records.jsonl (hidden, n=1440)
+
+subset                value oracle_grade_rate unsafe_high_rate   premature_rate benign_overtriage_rate     one_ask_rate over_gather_rate   redundant_rate      mean_regret        mean_asks     support_at_k
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+overall               0.248            0.138            0.044            0.635            0.372            0.555            0.168            0.079            0.586             2.87            0.583
+high                   0.15            0.111            0.889            0.833              0.0            0.667            0.056            0.042             0.68             1.92              0.5
+moderate              0.186             0.08              0.0            0.661              0.0             0.55            0.178            0.072            0.605             2.82            0.586
+benign                0.322            0.201              0.0            0.588            0.798            0.548             0.17            0.091            0.558             3.03            0.589
+
+Note: unsafe_high/premature/benign_overtriage/regret are the safety-procedure metrics; support_at_k is a capability/exploration DIAGNOSTIC only.

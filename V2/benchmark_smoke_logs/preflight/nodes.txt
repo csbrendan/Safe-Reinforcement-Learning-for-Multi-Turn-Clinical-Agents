@@ -1,0 +1,54 @@
+# preflight Sun Nov  8 07:11:33 PM UTC 2026
+=== local
+spark-b4e7
+6.17.0-1014-nvidia
+ 19:11:33 up  1:57,  2 users,  load average: 0.00, 0.04, 0.04
+Mem:           121Gi       4.0Gi       115Gi       5.3Mi       3.2Gi       117Gi
+/dev/nvme0n1p2  3.7T  283G  3.3T   8% /
+NVIDIA GB10, 580.126.09, [N/A], [N/A], 0 %
+procs:
+ports:
+error connecting to /tmp/tmux-1000/default (No such file or directory)
+Python 3.12.3
+anthropic                                0.100.0
+datasets                                 4.8.5
+openai                                   2.35.0
+peft                                     0.19.1
+torch                                    2.11.0+cu128
+transformers                             5.8.0
+trl                                      1.5.1
+verifiers                                0.1.12
+vllm                                     0.20.1
+/home/brendan/.local/bin/uv
+/usr/bin/docker
+/usr/bin/git
+/usr/bin/python3
+env
+env.fish
+uv
+uvx
+permission denied while trying to connect to the docker API at unix:///var/run/docker.sock
+=== 192.168.100.2
+spark-04af
+6.17.0-1021-nvidia
+ 11:11:35 up  1:59,  3 users,  load average: 0.07, 0.02, 0.00
+Mem:           121Gi       3.5Gi       117Gi       5.0Mi       2.1Gi       118Gi
+/dev/nvme0n1p2  3.7T   89G  3.4T   3% /
+NVIDIA GB10, 580.159.03, [N/A], [N/A], 0 %
+procs:
+ports:
+error connecting to /tmp/tmux-1000/default (No such file or directory)
+Python 3.12.3
+anthropic                                0.100.0
+datasets                                 4.8.5
+openai                                   2.35.0
+peft                                     0.19.1
+torch                                    2.11.0+cu128
+transformers                             5.8.0
+trl                                      1.5.1
+verifiers                                0.1.12
+vllm                                     0.20.1
+/usr/bin/docker
+/usr/bin/git
+/usr/bin/python3
+permission denied while trying to connect to the docker API at unix:///var/run/docker.sock

@@ -12,7 +12,7 @@ Design constraints (see docs / CLAUDE.md):
 Key is read from the environment (source ~/.secrets/anthropic.env first; see memory).
 """
 from __future__ import annotations
-import json, os, re
+import json, os, re, time
 from pathlib import Path
 
 MODEL = "claude-opus-4-8"
@@ -76,15 +76,25 @@ class TeacherClient:
         self.cache[ck] = rec
         return rec, False
 
-    def _call(self, system, user):
-        raw = ""
-        for attempt in range(2):
+    def _call(self, system, user, max_attempts=6):
+        # Resilient: a transient API/network error (429/529/connection/VPN blip) must NEVER crash a training run.
+        # Retry the API call with exponential backoff; retry JSON-parse failures with a "JSON only" reminder;
+        # if everything is exhausted return None so the caller treats this rollout as unscored (within-group
+        # neutral in reward.assemble) rather than propagating an exception into GRPO.
+        raw, last_exc = "", None
+        for attempt in range(max_attempts):
             u = user if attempt == 0 else user + "\n\nReturn STRICT JSON only — no prose, no code fence."
-            msg = self.client.messages.create(              # NOTE: no temperature (deprecated for opus-4-8)
-                model=self.model, max_tokens=self.max_tokens, system=system,
-                messages=[{"role": "user", "content": u}])
-            raw = "".join(b.text for b in msg.content if getattr(b, "type", None) == "text")
-            obj = extract_json(raw)
-            if obj is not None:
-                return obj, raw, ("ok" if attempt == 0 else "ok_retry")
-        return None, raw, "parse_fail"
+            try:
+                msg = self.client.messages.create(          # NOTE: no temperature (deprecated for opus-4-8)
+                    model=self.model, max_tokens=self.max_tokens, system=system,
+                    messages=[{"role": "user", "content": u}])
+                raw = "".join(b.text for b in msg.content if getattr(b, "type", None) == "text")
+                obj = extract_json(raw)
+                if obj is not None:
+                    return obj, raw, ("ok" if attempt == 0 else "ok_retry")
+                # parsed None -> loop retries immediately with the reminder (no backoff)
+            except Exception as e:                          # anthropic/network error -> back off and retry
+                last_exc = e
+                time.sleep(min(2 ** attempt, 30))
+        return None, (raw or f"<api_error:{type(last_exc).__name__}>" if last_exc else raw), \
+            ("api_fail" if last_exc else "parse_fail")

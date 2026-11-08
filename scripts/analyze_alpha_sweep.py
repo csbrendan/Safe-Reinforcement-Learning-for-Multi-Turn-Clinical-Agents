@@ -14,6 +14,12 @@ from pathlib import Path
 SW = Path("results/procreward_pilot/sweep")
 ALPHAS = ["0.05", "0.10", "0.20"]
 CKPTS = ["checkpoint-10", "checkpoint-20", "final"]
+# alphas whose "final" is NOT a matched 30-step checkpoint (must not be compared as a matched final)
+INCOMPLETE = {"0.20": "INCOMPLETE — crashed@25/30 (API blip); latest saved = checkpoint-20, i.e. a 20-step result"}
+
+
+def alabel(a):
+    return f"α={a}" + (" *(20-step, INCOMPLETE)*" if a in INCOMPLETE else "")
 
 
 def load_metrics(a, ck):
@@ -109,15 +115,20 @@ def main():
     have = {a: load_metrics(a, "final") for a in ALPHAS}
     diag = {a: reward_diag(a) for a in ALPHAS}
     stab = {a: train_stability(a) for a in ALPHAS}
+    hdr = "| metric | " + " | ".join(alabel(a) for a in ALPHAS) + " |"
+    sep = "|---" * (len(ALPHAS) + 1) + "|"
     L = ["# Validation alpha sweep — Claude process-reward GRPO (deephedge, seed 202)\n",
          "3 GRPO runs, identical config (300 cases, 30 steps, group 8, temp 1.0, seed 1), alpha in "
-         "{0.05,0.10,0.20}. Validation seed 202 only; test seed 100 untouched. support@k is a diagnostic.\n"]
+         "{0.05,0.10,0.20}. Validation seed 202 only; test seed 100 untouched. support@k is a diagnostic.\n",
+         "> ⚠️ **α=0.20 is NOT a matched final.** " + INCOMPLETE["0.20"] + ". It is shown as *screening evidence "
+         "only*. Per the prespecified rule: if α=0.20(ckpt-20) is **competitive** with the completed α=0.05/α=0.10 "
+         "finals, a **clean 30-step α=0.20 re-run is required before selecting α**; if **clearly dominated**, it is "
+         "used as screening evidence with the limitation stated.\n"]
 
-    # ---- final-checkpoint comparison, by subgroup ----
-    for grp in ("high", "moderate", "none", "overall"):
-        L.append(f"## Final validation metrics — {grp} subgroup")
-        L.append("| metric | α=0.05 | α=0.10 | α=0.20 |")
-        L.append("|---|---|---|---|")
+    # ---- final comparison, by subgroup (a0.05/a0.10 = 30-step FINAL; a0.20 = 20-step ckpt) ----
+    for grp in ("high", "moderate", "benign", "overall"):
+        L.append(f"## Validation metrics — {grp} subgroup  (α=0.05/0.10 = 30-step final; α=0.20 = 20-step ckpt)")
+        L.append(hdr); L.append(sep)
         keys = PRIMARY + BURDEN if grp in ("high", "overall") else ["value", "mean_asks", "benign_overtriage_rate",
                                                                      "premature_rate", "over_gather_rate", "one_ask_rate"]
         for k in keys:
@@ -126,12 +137,27 @@ def main():
 
     # ---- greedy pass@1 (high) ----
     L.append("## Greedy pass@1 (k=1) high-risk")
-    L.append("| metric | α=0.05 | α=0.10 | α=0.20 |")
-    L.append("|---|---|---|---|")
+    L.append(hdr); L.append(sep)
     gr = {a: load_greedy(a) for a in ALPHAS}
     for k in ("value", "oracle_grade_rate", "unsafe_high_rate", "mean_asks"):
         L.append(f"| high {k} | " + " | ".join(str(fmt(gr[a].get("high") if gr[a] else None, k)) for a in ALPHAS) + " |")
     L.append("")
+
+    # ---- objective selection-rule inputs (reward-hacking scan; NO winner declared here) ----
+    L.append("## Selection-rule inputs (objective; deephedge oracle ≈ 3.9 asks; 1-ask-collapse guard ≥ 0.85)")
+    L.append(hdr); L.append(sep)
+    scan = [("SAFETY high value", "high", "value"), ("SAFETY high unsafe-commit rate", "high", "unsafe_high_rate"),
+            ("SAFETY high premature rate", "high", "premature_rate"),
+            ("BURDEN benign over-triage rate", "benign", "benign_overtriage_rate"),
+            ("BURDEN over-gather rate", "overall", "over_gather_rate"),
+            ("BURDEN 1-ask rate", "overall", "one_ask_rate"), ("BURDEN mean asks", "overall", "mean_asks"),
+            ("AGG overall value", "overall", "value"), ("AGG overall regret", "overall", "mean_regret")]
+    for lbl, grp, k in scan:
+        L.append(f"| {lbl} | " + " | ".join(str(fmt(have[a].get(grp) if have[a] else None, k)) for a in ALPHAS) + " |")
+    L.append("\n_Apply the prespecified rule objectively to these values: (1) reject clear benign over-triage / "
+             "over-gathering / instability / aggregate regression; (2) among survivors prioritize lower unsafe-high "
+             "& premature; (3) overall value only as tiebreaker; (4) prefer smaller α if practically tied. α=0.20 is "
+             "a 20-step screening point — if competitive, require a clean 30-step re-run before selecting._\n")
 
     # ---- checkpoint trajectories (high value / unsafe-high / mean asks) ----
     L.append("## Checkpoint trajectories (val seed 202)")
@@ -192,14 +218,14 @@ def make_plots(have, diag):
     x = range(len(ALPHAS)); labels = [f"α={a}" for a in ALPHAS]
     # risk-subgroup plot: high/mod/benign value + high unsafe rate + mean asks
     fig, ax = plt.subplots(1, 3, figsize=(15, 4))
-    for grp, c in [("high", "crimson"), ("moderate", "orange"), ("none", "green")]:
+    for grp, c in [("high", "crimson"), ("moderate", "orange"), ("benign", "green")]:
         ax[0].plot(x, [have[a].get(grp, {}).get("value") if have[a] else None for a in ALPHAS], "o-", label=grp, color=c)
     ax[0].set_title("analytic value by risk subgroup"); ax[0].set_xticks(x); ax[0].set_xticklabels(labels); ax[0].legend()
     ax[1].plot(x, [have[a].get("high", {}).get("unsafe_high_rate") if have[a] else None for a in ALPHAS], "o-", color="crimson", label="unsafe-high")
     ax[1].plot(x, [have[a].get("high", {}).get("premature_rate") if have[a] else None for a in ALPHAS], "s--", color="darkred", label="premature-high")
-    ax[1].plot(x, [have[a].get("none", {}).get("benign_overtriage_rate") if have[a] else None for a in ALPHAS], "^:", color="green", label="benign over-triage")
+    ax[1].plot(x, [have[a].get("benign", {}).get("benign_overtriage_rate") if have[a] else None for a in ALPHAS], "^:", color="green", label="benign over-triage")
     ax[1].set_title("safety / burden rates"); ax[1].set_xticks(x); ax[1].set_xticklabels(labels); ax[1].legend()
-    for grp, c in [("high", "crimson"), ("moderate", "orange"), ("none", "green"), ("overall", "black")]:
+    for grp, c in [("high", "crimson"), ("moderate", "orange"), ("benign", "green"), ("overall", "black")]:
         ax[2].plot(x, [have[a].get(grp, {}).get("mean_asks") if have[a] else None for a in ALPHAS], "o-", label=grp, color=c)
     ax[2].set_title("mean asks by subgroup"); ax[2].set_xticks(x); ax[2].set_xticklabels(labels); ax[2].legend()
     fig.tight_layout(); fig.savefig(SW / "plot_risk_subgroups.png", dpi=110); plt.close(fig)

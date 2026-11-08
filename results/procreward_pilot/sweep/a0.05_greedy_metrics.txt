@@ -1,0 +1,10 @@
+# Primary metrics — results/procreward_pilot/sweep/a0.05_greedy.records.jsonl (hidden, n=120)
+
+subset                value oracle_grade_rate unsafe_high_rate   premature_rate benign_overtriage_rate     one_ask_rate over_gather_rate   redundant_rate      mean_regret        mean_asks     support_at_k
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+overall               0.273            0.142             0.05            0.642            0.367            0.517             0.15            0.067            0.561              2.8            0.142
+high                  0.165              0.0              1.0              1.0              0.0            0.833              0.0              0.0            0.665             1.17              0.0
+moderate              0.217            0.086              0.0            0.638              0.0              0.5            0.172            0.069            0.573                3            0.086
+benign                0.342            0.214              0.0            0.607            0.786              0.5            0.143            0.071            0.537             2.77            0.214
+
+Note: unsafe_high/premature/benign_overtriage/regret are the safety-procedure metrics; support_at_k is a capability/exploration DIAGNOSTIC only.

@@ -1,0 +1,206 @@
+Using base Harness config: HarnessConfig(resume=None, max_workers=5, debug=False, result_folder=None, label=None, azure_storage_enabled=False, azure_storage_account_name=None, azure_storage_container_name=None, azure_storage_result_folder=None, dataset='synthetic', agent='baseline', model='gpt-5', model_args={}, k=1, case_set='train', case_id=None, num_cases=-1, case_offset=0, sdbench_config=None)
+Overriding harness config with command line arguments: {'resume': None, 'debug': False, 'result_folder': '/home/brendan/rl-gains-in-clinical-tasks/V2/benchmark_smoke_logs/sdbench/run_base', 'label': 'smoke_base', 'case_id': None, 'dataset': 'synthetic', 'case_set': 'train', 'num_cases': 2, 'max_workers': 1, 'model': 'local-medgemma4b'}
+Using base SDBench config: SDBenchConfig(debug=False, compute_costs=True, compute_actual_workup_costs=False, clinician_cost=300, costing_method='batch_llm_only', costing_parallelism=20, costing_multiprocess=False, costing_source_file_path='910511770-central-hospital-standard-charges-wa-en.xlsx', costing_model='gpt-5-mini', costing_model_args={'openrouter_zdr_only': False}, costing_cache_cosmosdb_enabled=False, costing_cache_cosmosdb_endpoint=None, costing_cache_cosmosdb_database=None, costing_cache_cosmosdb_container=None, costing_cache_use_managed_identity=False, test_runner_enforce_single_turn_type=True, max_turns=70, max_questions_per_turn=None, max_tests_per_turn=None, agent_model_args={}, agent_extra_args={}, gatekeeper_prompt_version='v6_fixed', gatekeeper_model='gpt-5', gatekeeper_model_args={}, gatekeeper_chunk_size=10, judge_prompt_version='v4_reasoning_with_tests', judge_model='gpt-5', judge_model_args={}) for dataset 'synthetic'
+Overriding SDBench config with command line arguments: {'max_turns': 12, 'gatekeeper_model': 'local-aux', 'gatekeeper_model_args': {'local_model_base_url': 'http://192.168.100.2:8101/v1', 'extra_body': {'chat_template_kwargs': {'enable_thinking': False}}}, 'judge_model': 'local-aux', 'judge_model_args': {'local_model_base_url': 'http://192.168.100.2:8101/v1', 'extra_body': {'chat_template_kwargs': {'enable_thinking': False}}}, 'costing_model': 'local-aux', 'costing_model_args': {'local_model_base_url': 'http://192.168.100.2:8101/v1', 'extra_body': {'chat_template_kwargs': {'enable_thinking': False}}}, 'costing_parallelism': 2}
+Run configuration saved to /home/brendan/rl-gains-in-clinical-tasks/V2/benchmark_smoke_logs/sdbench/run_base/csbrendan_synthetic_smoke_base_local-medgemma4b_train_20261108_202019_k1/run_config.json
+Running with configuration:
+{ 'resume': None,
+  'max_workers': 1,
+  'debug': False,
+  'result_folder': '/home/brendan/rl-gains-in-clinical-tasks/V2/benchmark_smoke_logs/sdbench/run_base',
+  'label': 'smoke_base',
+  'azure_storage_enabled': False,
+  'azure_storage_account_name': None,
+  'azure_storage_container_name': None,
+  'azure_storage_result_folder': None,
+  'dataset': 'synthetic',
+  'agent': 'baseline',
+  'model': 'local-medgemma4b',
+  'model_args': {},
+  'k': 1,
+  'case_set': 'train',
+  'case_id': None,
+  'num_cases': 2,
+  'case_offset': 0,
+  'sdbench_config': { 'debug': False,
+                      'compute_costs': True,
+                      'compute_actual_workup_costs': False,
+                      'clinician_cost': 300,
+                      'costing_method': 'batch_llm_only',
+                      'costing_parallelism': 2,
+                      'costing_multiprocess': False,
+                      'costing_source_file_path': '910511770-central-hospital-standard-charges-wa-en.xlsx',
+                      'costing_model': 'local-aux',
+                      'costing_model_args': { 'local_model_base_url': 'http://192.168.100.2:8101/v1',
+                                              'extra_body': {'chat_template_kwargs': {'enable_thinking': False}}},
+                      'costing_cache_cosmosdb_enabled': False,
+                      'costing_cache_cosmosdb_endpoint': None,
+                      'costing_cache_cosmosdb_database': None,
+                      'costing_cache_cosmosdb_container': None,
+                      'costing_cache_use_managed_identity': False,
+                      'test_runner_enforce_single_turn_type': True,
+                      'max_turns': 12,
+                      'max_questions_per_turn': None,
+                      'max_tests_per_turn': None,
+                      'agent_model_args': {},
+                      'agent_extra_args': {},
+                      'gatekeeper_prompt_version': 'v6_fixed',
+                      'gatekeeper_model': 'local-aux',
+                      'gatekeeper_model_args': { 'local_model_base_url': 'http://192.168.100.2:8101/v1',
+                                                 'extra_body': {'chat_template_kwargs': {'enable_thinking': False}}},
+                      'gatekeeper_chunk_size': 10,
+                      'judge_prompt_version': 'v4_reasoning_with_tests',
+                      'judge_model': 'local-aux',
+                      'judge_model_args': { 'local_model_base_url': 'http://192.168.100.2:8101/v1',
+                                            'extra_body': {'chat_template_kwargs': {'enable_thinking': False}}}}}
+Using agent: baseline
+Loaded 5 cases for dataset 'synthetic'
+Loaded 2 case sets for dataset 'synthetic': train (5), all (5)
+Total selected cases: 2
+Total tasks (cases × k): 2
+Completed tasks: 0
+Remaining tasks: 2
+Running 2 tasks
+Num workers: 1
+Using model: local-medgemma4b
+Case set: train
+Max turns: 12
+JSON results will be saved to: /home/brendan/rl-gains-in-clinical-tasks/V2/benchmark_smoke_logs/sdbench/run_base/csbrendan_synthetic_smoke_base_local-medgemma4b_train_20261108_202019_k1/json
+Processing cases:   0%|          | 0/2 [00:00<?, ?case/s]Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/harness/harness.py", line 240, in _process_single_case
+    result = run_case(config, case, agent_name, model, model_args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/brendan/v2_bench/sdbench/sdbench/harness/harness.py", line 77, in run_case
+    agent_result = agent.run(
+                   ^^^^^^^^^^
+  File "/home/brendan/v2_bench/sdbench/sdbench/agents/baseline.py", line 89, in run
+    batch_results = test_runner(test_names)
+                    ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/brendan/v2_bench/sdbench/sdbench/gatekeeper.py", line 502, in __call__
+    batch_results = order_tests(
+                    ^^^^^^^^^^^^
+  File "/home/brendan/v2_bench/sdbench/sdbench/gatekeeper.py", line 212, in order_tests
+    _order_tests_chunk(
+  File "/home/brendan/v2_bench/sdbench/sdbench/gatekeeper.py", line 334, in _order_tests_chunk
+    result = create_chat_completion(
+             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/brendan/v2_bench/sdbench/sdbench/models.py", line 437, in create_chat_completion
+    return _chat_completion_with_retry(client, provider_model, messages, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/brendan/v2_bench/sdbench/sdbench/models.py", line 141, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/brendan/v2_bench/sdbench/sdbench/models.py", line 334, in _chat_completion_with_retry
+    response = client.chat.completions.create(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/brendan/v2_bench/sdbench/.venv/lib/python3.12/site-packages/openai/_utils/_utils.py", line 298, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/brendan/v2_bench/sdbench/.venv/lib/python3.12/site-packages/openai/resources/chat/completions/completions.py", line 1251, in create
+    return self._post(
+           ^^^^^^^^^^^
+  File "/home/brendan/v2_bench/sdbench/.venv/lib/python3.12/site-packages/openai/_base_client.py", line 1332, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/brendan/v2_bench/sdbench/.venv/lib/python3.12/site-packages/openai/_base_client.py", line 1105, in request
+    raise self._make_status_error_from_response(err.response) from None
+openai.BadRequestError: Error code: 400 - {'error': {'message': "This model's maximum context length is 8192 tokens. However, you requested 0 output tokens and your prompt contains at least 8193 input tokens, for a total of at least 8193 tokens. Please reduce the length of the input prompt or the number of requested output tokens. (parameter=input_tokens, value=8193)", 'type': 'BadRequestError', 'param': 'input_tokens', 'code': 400}}
+Processing cases:   0%|          | 0/2 [01:19<?, ?case/s, accuracy=0.0%, last=0:✗]Processing cases:  50%|█████     | 1/2 [01:19<01:19, 79.26s/case, accuracy=0.0%, last=0:✗]                                                                                          Processing cases:  50%|█████     | 1/2 [01:19<01:19, 79.26s/case, accuracy=0.0%, last=0:✗]Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/harness/harness.py", line 240, in _process_single_case
+    result = run_case(config, case, agent_name, model, model_args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/brendan/v2_bench/sdbench/sdbench/harness/harness.py", line 77, in run_case
+    agent_result = agent.run(
+                   ^^^^^^^^^^
+  File "/home/brendan/v2_bench/sdbench/sdbench/agents/baseline.py", line 89, in run
+    batch_results = test_runner(test_names)
+                    ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/brendan/v2_bench/sdbench/sdbench/gatekeeper.py", line 502, in __call__
+    batch_results = order_tests(
+                    ^^^^^^^^^^^^
+  File "/home/brendan/v2_bench/sdbench/sdbench/gatekeeper.py", line 212, in order_tests
+    _order_tests_chunk(
+  File "/home/brendan/v2_bench/sdbench/sdbench/gatekeeper.py", line 334, in _order_tests_chunk
+    result = create_chat_completion(
+             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/brendan/v2_bench/sdbench/sdbench/models.py", line 437, in create_chat_completion
+    return _chat_completion_with_retry(client, provider_model, messages, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/brendan/v2_bench/sdbench/sdbench/models.py", line 141, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/brendan/v2_bench/sdbench/sdbench/models.py", line 334, in _chat_completion_with_retry
+    response = client.chat.completions.create(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/brendan/v2_bench/sdbench/.venv/lib/python3.12/site-packages/openai/_utils/_utils.py", line 298, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/brendan/v2_bench/sdbench/.venv/lib/python3.12/site-packages/openai/resources/chat/completions/completions.py", line 1251, in create
+    return self._post(
+           ^^^^^^^^^^^
+  File "/home/brendan/v2_bench/sdbench/.venv/lib/python3.12/site-packages/openai/_base_client.py", line 1332, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/brendan/v2_bench/sdbench/.venv/lib/python3.12/site-packages/openai/_base_client.py", line 1105, in request
+    raise self._make_status_error_from_response(err.response) from None
+openai.BadRequestError: Error code: 400 - {'error': {'message': "This model's maximum context length is 8192 tokens. However, you requested 0 output tokens and your prompt contains at least 8193 input tokens, for a total of at least 8193 tokens. Please reduce the length of the input prompt or the number of requested output tokens. (parameter=input_tokens, value=8193)", 'type': 'BadRequestError', 'param': 'input_tokens', 'code': 400}}
+Processing cases:  50%|█████     | 1/2 [02:08<01:19, 79.26s/case, accuracy=0.0%, last=1:✗]Processing cases: 100%|██████████| 2/2 [02:08<00:00, 61.61s/case, accuracy=0.0%, last=1:✗]                                                                                          Processing cases: 100%|██████████| 2/2 [02:08<00:00, 61.61s/case, accuracy=0.0%, last=1:✗]Processing cases: 100%|██████████| 2/2 [02:08<00:00, 64.25s/case, accuracy=0.0%, last=1:✗]
+Loading prompt gatekeeper_synthetic_tests version v6_fixed from /home/brendan/v2_bench/sdbench/sdbench/prompts/gatekeeper_synthetic_tests/v6_fixed/prompt.yaml
+API error: BadRequestError: Error code: 400 - {'error': {'message': "This model's maximum context length is 8192 tokens. However, you requested 0 output tokens and your prompt contains at least 8193 input tokens, for a total of at least 8193 tokens. Please reduce the length of the input prompt or the number of requested output tokens. (parameter=input_tokens, value=8193)", 'type': 'BadRequestError', 'param': 'input_tokens', 'code': 400}}
+Retrying in 0.56 seconds... (Attempt 1/5)
+API error: BadRequestError: Error code: 400 - {'error': {'message': "This model's maximum context length is 8192 tokens. However, you requested 0 output tokens and your prompt contains at least 8193 input tokens, for a total of at least 8193 tokens. Please reduce the length of the input prompt or the number of requested output tokens. (parameter=input_tokens, value=8193)", 'type': 'BadRequestError', 'param': 'input_tokens', 'code': 400}}
+Retrying in 2.30 seconds... (Attempt 2/5)
+API error: BadRequestError: Error code: 400 - {'error': {'message': "This model's maximum context length is 8192 tokens. However, you requested 0 output tokens and your prompt contains at least 8193 input tokens, for a total of at least 8193 tokens. Please reduce the length of the input prompt or the number of requested output tokens. (parameter=input_tokens, value=8193)", 'type': 'BadRequestError', 'param': 'input_tokens', 'code': 400}}
+Retrying in 5.26 seconds... (Attempt 3/5)
+API error: BadRequestError: Error code: 400 - {'error': {'message': "This model's maximum context length is 8192 tokens. However, you requested 0 output tokens and your prompt contains at least 8193 input tokens, for a total of at least 8193 tokens. Please reduce the length of the input prompt or the number of requested output tokens. (parameter=input_tokens, value=8193)", 'type': 'BadRequestError', 'param': 'input_tokens', 'code': 400}}
+Retrying in 9.80 seconds... (Attempt 4/5)
+API error: BadRequestError: Error code: 400 - {'error': {'message': "This model's maximum context length is 8192 tokens. However, you requested 0 output tokens and your prompt contains at least 8193 input tokens, for a total of at least 8193 tokens. Please reduce the length of the input prompt or the number of requested output tokens. (parameter=input_tokens, value=8193)", 'type': 'BadRequestError', 'param': 'input_tokens', 'code': 400}}
+Retrying in 13.47 seconds... (Attempt 5/5)
+[_process_single_case] Error with case 0: Error code: 400 - {'error': {'message': "This model's maximum context length is 8192 tokens. However, you requested 0 output tokens and your prompt contains at least 8193 input tokens, for a total of at least 8193 tokens. Please reduce the length of the input prompt or the number of requested output tokens. (parameter=input_tokens, value=8193)", 'type': 'BadRequestError', 'param': 'input_tokens', 'code': 400}}
+Error with case 0: Error code: 400 - {'error': {'message': "This model's maximum context length is 8192 tokens. However, you requested 0 output tokens and your prompt contains at least 8193 input tokens, for a total of at least 8193 tokens. Please reduce the length of the input prompt or the number of requested output tokens. (parameter=input_tokens, value=8193)", 'type': 'BadRequestError', 'param': 'input_tokens', 'code': 400}}
+API error: BadRequestError: Error code: 400 - {'error': {'message': "This model's maximum context length is 8192 tokens. However, you requested 0 output tokens and your prompt contains at least 8193 input tokens, for a total of at least 8193 tokens. Please reduce the length of the input prompt or the number of requested output tokens. (parameter=input_tokens, value=8193)", 'type': 'BadRequestError', 'param': 'input_tokens', 'code': 400}}
+Retrying in 0.56 seconds... (Attempt 1/5)
+API error: BadRequestError: Error code: 400 - {'error': {'message': "This model's maximum context length is 8192 tokens. However, you requested 0 output tokens and your prompt contains at least 8193 input tokens, for a total of at least 8193 tokens. Please reduce the length of the input prompt or the number of requested output tokens. (parameter=input_tokens, value=8193)", 'type': 'BadRequestError', 'param': 'input_tokens', 'code': 400}}
+Retrying in 2.86 seconds... (Attempt 2/5)
+API error: BadRequestError: Error code: 400 - {'error': {'message': "This model's maximum context length is 8192 tokens. However, you requested 0 output tokens and your prompt contains at least 8193 input tokens, for a total of at least 8193 tokens. Please reduce the length of the input prompt or the number of requested output tokens. (parameter=input_tokens, value=8193)", 'type': 'BadRequestError', 'param': 'input_tokens', 'code': 400}}
+Retrying in 5.00 seconds... (Attempt 3/5)
+API error: BadRequestError: Error code: 400 - {'error': {'message': "This model's maximum context length is 8192 tokens. However, you requested 0 output tokens and your prompt contains at least 8193 input tokens, for a total of at least 8193 tokens. Please reduce the length of the input prompt or the number of requested output tokens. (parameter=input_tokens, value=8193)", 'type': 'BadRequestError', 'param': 'input_tokens', 'code': 400}}
+Retrying in 8.33 seconds... (Attempt 4/5)
+API error: BadRequestError: Error code: 400 - {'error': {'message': "This model's maximum context length is 8192 tokens. However, you requested 0 output tokens and your prompt contains at least 8193 input tokens, for a total of at least 8193 tokens. Please reduce the length of the input prompt or the number of requested output tokens. (parameter=input_tokens, value=8193)", 'type': 'BadRequestError', 'param': 'input_tokens', 'code': 400}}
+Retrying in 22.45 seconds... (Attempt 5/5)
+[_process_single_case] Error with case 1: Error code: 400 - {'error': {'message': "This model's maximum context length is 8192 tokens. However, you requested 0 output tokens and your prompt contains at least 8193 input tokens, for a total of at least 8193 tokens. Please reduce the length of the input prompt or the number of requested output tokens. (parameter=input_tokens, value=8193)", 'type': 'BadRequestError', 'param': 'input_tokens', 'code': 400}}
+Error with case 1: Error code: 400 - {'error': {'message': "This model's maximum context length is 8192 tokens. However, you requested 0 output tokens and your prompt contains at least 8193 input tokens, for a total of at least 8193 tokens. Please reduce the length of the input prompt or the number of requested output tokens. (parameter=input_tokens, value=8193)", 'type': 'BadRequestError', 'param': 'input_tokens', 'code': 400}}
+Loaded 2 results from JSON files
+Loading original run configuration from 20261108_202019:
+Summary saved to /home/brendan/rl-gains-in-clinical-tasks/V2/benchmark_smoke_logs/sdbench/run_base/csbrendan_synthetic_smoke_base_local-medgemma4b_train_20261108_202019_k1/summary.txt
+
+Summary:
+--------------------------------------------------
+Sequential processing completed at 2026-11-08 20:22:28.259064
+Total cases processed: 2
+Correct diagnoses rate: 0/2
+Model: local-medgemma4b
+Agent: baseline
+Test runner: BatchTestRunner
+Case set: train
+Max turns: 12
+Workers: 1
+Total test requests tracked: 0
+Unique tests requested: 0
+Cost analysis: Enabled
+
+========================================================================
+ACCURACY & COST REPORT  (dataset: synthetic)
+========================================================================
+
+baseline | local-medgemma4b
+  train       acc 0.0% (0/0)
+      ⚠ 2 errored (excluded), incomplete 0/5
+
+--------------------------------------------------
+All processing completed. 0/2 correct diagnoses.
+
+Generating cost estimation for all requested tests...
+No cost analyses found in results.
+
+HTML overview saved to: /home/brendan/rl-gains-in-clinical-tasks/V2/benchmark_smoke_logs/sdbench/run_base/csbrendan_synthetic_smoke_base_local-medgemma4b_train_20261108_202019_k1/html/overview.html

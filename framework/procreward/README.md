@@ -65,6 +65,40 @@ training_reward = analytic_terminal_reward  +  alpha * normalized_claude_process
   node B = `192.168.100.2` (`trl vllm-serve` :8001, serving `~/dx_grpo_init`). The single-GPU colocation of
   trainer+server fails with "same CUDA device for multiple roles" — the live smoke **must** run 2-node. Node B
   needs `loginctl enable-linger` so the tmux server survives SSH logout.
+
+### ⚠️ Troubleshooting: 2-node NCCL weight-sync (cost hours — read before running multiple GRPO runs)
+
+**Symptom.** The trainer crashes at startup with
+`RuntimeError: NCCL error: unhandled system error` in
+`trl/generation/vllm_client.py:init_communicator → PyNcclCommunicator.__init__ → all_reduce → ncclAllReduce`.
+Node B's vLLM `EngineCore` often crashes too; sometimes a **stuck vLLM process survives `pkill` and holds the GPU
+(~68 GB) + port 8001**, blocking new servers and making every later run fail.
+
+**When it happens.** The **first** GRPO training of a session works. The **2nd+** fails — specifically after a
+vLLM-server **restart**, or after an **eval probe ran on node A** (in-process vLLM) and the next training's NCCL
+init fires **before node A's GPU is fully released**. It is NOT the config (α=0.05 and a 2-step canary both
+succeed); it is NCCL collective state.
+
+**Root cause.** The weight-sync collective only establishes reliably on a **FIRST `init_communicator` against a
+fully-ready, freshly-started node B server, with node A's GPU showing 0 compute-apps.** Restarting the server or
+re-initing while GPU memory is still held corrupts it.
+
+**The working pattern (what `scripts/finish_sweep.sh` encodes):**
+1. **One training = one first-init.** Do NOT reuse a server across trainings and do NOT rely on a scripted
+   server *restart* between runs (`scripts/run_alpha_sweep.sh` reused one server → runs 2+ crashed;
+   `recover_alpha_sweep.sh`'s restart-per-run *also* failed — the restart itself breaks NCCL).
+2. Before each training, **free node A's GPU**: `pkill -9 -f "EngineCore|vllm"` then poll
+   `nvidia-smi --query-compute-apps=pid --format=csv,noheader | wc -l` until `0`.
+3. Start node B via **tmux** (`setsid`-over-SSH was unreliable); wait for **live** `health` = 307 **plus a
+   ~20 s buffer** for CUDA-graph capture. Do NOT trust `~/vllm_serve.log` for readiness — it **persists on disk
+   across reboots**, so stale content (old pids/errors) reads as current; `rm` it first and check the live
+   health probe, not the log.
+4. If a stuck vLLM process holds the GPU, `pkill -f` won't kill it — **kill by PID**. If it's unkillable
+   (D state) or NCCL stays broken across fresh servers, **reboot node B** (standard fix for this failure mode).
+5. `loginctl enable-linger brendan` on node B so the tmux server survives SSH logout.
+
+**Net:** to run N sequential GRPO trainings, launch each **directly** (not via a restart-in-loop script) against
+a fresh server after confirming node A's GPU is free. `finish_sweep.sh` does exactly this for the α-sweep tail.
 - **`claude-opus-4-8` deprecates `temperature`** — never pass it. Determinism rests on fixed prompt + versioned
   rubric + the deterministic reduction; double-labeling showed mean |Δ| = 0.0 (effectively deterministic).
 - **API key** at `~/.secrets/anthropic.env` (`source` it; do not export globally — see repo memory).
@@ -125,4 +159,80 @@ PYTHONPATH=$PWD $PY -m framework.procreward.smoke_reward
   support@12 kept as a capability diagnostic only.
 - **Do not build the combined info-gain+Claude arm** until Claude-only shows a measurable, stable effect.
 - Selection (α + checkpoint) uses **validation seed 202 only**; the test seed is never inspected during tuning.
+
+## Possible extension (NOT YET IMPLEMENTED) — the hybrid reward
+
+After the Claude-only result is in, the natural next question is whether **objective simulator-based credit and
+semantic AI feedback can be combined** into a policy that is both efficient on ordinary cases and safer on rare
+high-risk cases. The hybrid stacks three kinds of guidance — each covering a weakness of the others — plus two
+narrow, deterministic penalties. **Evaluation still uses only the original analytic verifier.**
+
 ```
+R_train = R_terminal + λ·R_infogain + α·R_claude_process − β·P_unsafe_commit − γ·P_over_gathering
+```
+
+**What each component does, and its weakness:**
+
+1. **Analytic terminal reward** `R_terminal = U(true_state, action) − c·n_asks` — the anchor: "did the final
+   decision work?" Keeps Claude's preferences from replacing the task objective. *Weakness:* a lucky shortcut
+   (guess correctly after gathering too little) can still score high.
+2. **Info-gain credit** `R_IG,t = H(b_t) − H(b_{t+1})` (model-independent posterior over the hidden state) —
+   immediate credit for uncertainty-reducing questions; teaches *which* facts to ask. *Weakness:* reducing
+   uncertainty ≠ improving the decision (a question can be informative but not change management).
+3. **Claude process reward** — judges the student-visible trajectory: committing before resolving dangerous
+   uncertainty? questions clinically relevant? final action justified by evidence gathered? hedging instead of
+   treating an emergency? reasonable sequence even if the order differs from the oracle? *Strength:* validated to
+   sharply separate safe vs unsafe high-risk trajectories. *Weakness (mirror of info-gain):* cautious, but does
+   not consistently penalize excessive questioning or benign over-triage.
+
+**The two penalties are narrow and deterministic, not general subjective punishments:**
+- `P_unsafe_commit = 1[commit is unsafe AND critical evidence unresolved]` — uses the hidden state *during
+  training only* (the env knows it; the model never sees it). Distinguish, with different strengths: wrong
+  high-risk action · premature high-risk commit · hedging instead of required emergency treatment.
+- `P_over_gathering = Σ_t 1[question is redundant or decision-irrelevant]` — target *wasted* questions (repeats;
+  answers that cannot change the optimal action; asks after the disposition is already determined), **not** the
+  ordinary per-ask cost, and **not** "any ask past the oracle's exact count" (that overfits one synthetic order).
+
+**Why complementary (four archetype rollouts within a GRPO group of 8):**
+
+| rollout | terminal | info-gain | Claude | penalty | hybrid effect |
+|---|---|---|---|---|---|
+| A — lucky 1-ask shortcut, right emergency action | high | low | negative (premature) | unsafe maybe | not treated as ideal |
+| B — 3 relevant asks, resolves emergency, commits right | high | high | high | none | **strongest in group** |
+| C — asks everything then acts right | reduced by cost | early+ then flat | positive (cautious) | over-gather | caution doesn't teach endless interrogation |
+| D — defensive hedge, misses emergency | sometimes ok | low | negative (unresolved high-risk) | strong unsafe | **directly targets the deephedge failure** |
+
+GRPO compares *total* reward within the group and raises/lowers rollout probabilities relative to the group mean
+— so the hybrid never dictates one trajectory to imitate; it lets MedGemma explore, then combines signals to
+decide which *procedure* to reinforce.
+
+**Clean factorial ladder (the experimental payoff):**
+1. plain GRPO (terminal) · 2. info-gain (terminal+IG) · 3. Claude RLAIF (terminal+Claude) ·
+4. hybrid (terminal+IG+Claude) · 5. hybrid + constraints (…− unsafe − over-gather).
+
+Arms 1–4 isolate whether the two process signals are additive:
+
+| result | interpretation |
+|---|---|
+| hybrid beats both singles | genuinely complementary |
+| hybrid ≈ info-gain | Claude adds little beyond analytic credit |
+| hybrid ≈ Claude | info-gain redundant once semantic feedback exists |
+| hybrid worse | components conflict or are mis-scaled |
+| hybrid safer but harms benign burden | add/strengthen over-gathering calibration |
+
+**Implementation sequence — do NOT tune five coefficients at once:**
+1. Select **α** from the current Claude-only sweep; **freeze it**.
+2. Add info-gain and sweep **only λ**, likely *below* the paper's standalone value (two process rewards now
+   active), e.g. `λ ∈ {0.025, 0.05, 0.10}`.
+3. Inspect whether the hybrid over-gathers or over-triages.
+4. Add the **smallest** necessary deterministic penalty (β or γ) only if a specific failure persists.
+
+**Risks:** (i) **double-counting** — a premature high-risk commit can be hit by low IG + negative Claude +
+unsafe penalty + poor terminal at once → over-conservatism; mitigate by logging every component separately and
+keeping coefficients small. (ii) **entropy ≠ decision value** — IG rewards facts that identify the latent state
+but may be clinically irrelevant; a stronger future version replaces entropy reduction with **expected
+decision-value credit** (reward questions by how much they improve expected clinical utility).
+
+**Why it strengthens the paper:** it goes beyond "another reward source wins" to test whether *objective
+simulator credit and semantic AI feedback can compensate for each other's known biases* — and whether combining
+them yields a better clinical policy or merely a more complicated reward-hacking surface.
