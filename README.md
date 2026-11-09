@@ -114,12 +114,14 @@ Exact settings for every reported run, and any caveats about them, are recorded 
 
 ## Ongoing work
 
-An extension of this study is in progress. It tests whether the findings generalize to MedGemma-27B, to an
-external interactive clinical benchmark (AgentClinic is the leading candidate), and to clinician-reviewed
-trajectories. It also adds larger risk-stratified evaluation sets and checkpoint selection on a separate
-validation split.
+An extension of this study is planned. It first tests whether RL improves held-out performance when trained on an
+established clinical simulator with MedGemma-27B (SDBench is the preferred candidate, pending access and feasibility
+checks). It then evaluates those models on an independent simulator (AgentClinic is the preferred candidate) and
+replicates the original experiments at 27B. It also adds larger risk-stratified evaluation sets, checkpoint selection
+on a separate validation split, and clinician-reviewed trajectories.
 
-See [`V2/PLAN.md`](V2/PLAN.md) and [`V2/agentclinic_experiment_plan.md`](V2/agentclinic_experiment_plan.md).
+See [`V2/PLAN.md`](V2/PLAN.md), [`V2/agentclinic_experiment_plan.md`](V2/agentclinic_experiment_plan.md) and
+[`paper/v2-extension/MANUSCRIPT_PLAN.md`](paper/v2-extension/MANUSCRIPT_PLAN.md).
 
 ## Citation
 

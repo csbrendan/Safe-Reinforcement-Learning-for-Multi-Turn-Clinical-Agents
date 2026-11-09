@@ -1,35 +1,195 @@
 # V2 plan — from arXiv preprint to journal article
 
-*Created 2026-11-01; research strategy expanded 2026-11-08. Status: proposed plan. No V2 training has started. External-benchmark smoke
-tests are done except the V1 stop-token check; see [`benchmark_smoke_report.md`](benchmark_smoke_report.md). v1 (arXiv preprint, submitted 2026-11-07) is a separate track and is NOT
-blocked by anything here.*
+*Created 2026-11-01; research strategy expanded 2026-11-08 and reorganized 2026-11-09. Status: proposed plan. No V2
+training has started, and every experiment below is proposed, not completed. External-benchmark smoke tests are done
+except the V1 stop-token check; see [`benchmark_smoke_report.md`](benchmark_smoke_report.md). v1 (arXiv preprint,
+submitted 2026-11-07) is a separate track and is NOT blocked by anything here.*
 
 ## Goal
 
 Turn the current paper into a journal-grade article (style reference: Nature Machine Intelligence) by fixing every
-major weakness of v1, accepting extra cloud spend to compress the timeline. Post the result as arXiv **v2** and
-submit to a journal.
+major weakness of v1, accepting extra cloud spend to compress the timeline, and submit the result to a journal. V1
+stays frozen as a citable preprint. Whether V2 is an expanded version of that paper or a separate one is an open
+decision; see [`../paper/v2-extension/MANUSCRIPT_PLAN.md`](../paper/v2-extension/MANUSCRIPT_PLAN.md).
 
 The thesis stays the same — *RL for clinical multi-turn agents must be evaluated as procedure learning; verifiable
 outcome rewards are not enough* — but v2 must back it with adequately powered, scaled, externally checked, and
 clinician-validated evidence.
 
-## V2 research strategy (expanded 2026-11-08)
+## V2 research strategy (reorganized 2026-11-09)
 
 *This is a proposed research plan, not a commitment to a particular simulator. It organizes the workstreams below
-(W0–W7) and adds W8; it does not replace them.*
+(W0–W8); it does not replace them.*
 
-**Scientific objectives.** V2 extends V1 along two axes, kept as **distinct experimental questions** so any change
-can be attributed to the right cause:
+**Objective.** V1 used MedGemma-4B and three controlled synthetic environments to study whether outcome-only GRPO
+learns reliable gather-then-commit procedures, and whether process-aware rewards improve information gathering. V2
+tests whether those findings extend to a larger model (MedGemma-27B), an established and independently developed
+multi-turn clinical simulator, conventional train/validation/test evaluation, and independent out-of-distribution
+simulators.
 
-1. **Model scaling:** do our reward-design findings generalize from 4B to 27B? (Experiment A: same simulators, bigger
-   model.)
-2. **Environment realism:** do those findings persist in richer clinical simulations and transfer to independent
-   benchmarks? (Experiments B and C: different environments.)
+**The primary objective is in-distribution.** First establish whether GRPO, particularly credit-assignment GRPO,
+produces measurable improvements on held-out cases from the same realistic simulator used for training. Emphasize
+cross-simulator generalization only after that. V2 must not depend on behavior transferring between two very different
+simulator interfaces.
 
-Do not change model size and environment in the same comparison until each effect has been measured separately.
+### The experiments
 
-### Experiment A: controlled replication at 27B (W1, W2, W4; W3 if VOI credit wins)
+| Experiment | Purpose | Model | Environment | Role | Workstreams |
+|---|---|---|---|---|---|
+| **A** | In-distribution RL on an established simulator | 27B | SDBench preferred, pending checks | **Primary** | W8 |
+| **B** | Validate the training environment before scaling | 4B | Same as A | Prerequisite to A | W8 |
+| **C** | Out-of-distribution cross-simulator evaluation | Checkpoints from A | AgentClinic preferred | Secondary | W5, W6 |
+| **D** | Controlled 27B replication of V1 | 27B | V1's three simulators | Separate replication | W1, W2, W4; W3 if VOI credit wins |
+
+**Labels changed on 2026-11-09.** In commits before this date, "Experiment A" meant the 27B replication (now **D**),
+"Experiment B" meant richer-environment RL (now **A** and **B**), and "Experiment C" meant external evaluation (still
+**C**, now out-of-distribution).
+
+**Keep the factors separable.** Model scale, environment realism and cross-simulator generalization must not be
+confounded in one comparison.
+
+| Factor | Valid comparison | Not valid |
+|---|---|---|
+| Model scale, exact rewards | 4B vs 27B on V1's simulators (D) | V1's 4B results vs A's 27B results |
+| Environment realism | Whether the same mechanisms appear in D and A, both at 27B | Comparing reward values between them, since the scales and provenance differ |
+| Scale inside the benchmark | Only if a matched, adequately powered 4B arm is run | Treating B's bounded pilot as a scale comparison |
+| Generalization | The same checkpoints, in-distribution vs OOD (A vs C) | Calling an interface failure a failed decision procedure |
+
+### Hypotheses
+
+Freeze each primary endpoint and threshold before opening the relevant test set.
+
+| ID | Tier | Hypothesis (on untouched test cases, without shaping) |
+|---|---|---|
+| **A1** | **Primary, in-distribution** | From the same SFT initialization, credit-assignment GRPO improves the information-gathering procedure over outcome-only GRPO (less premature commitment, more relevant gathering) without reducing diagnostic accuracy or raising cost beyond a pre-registered margin |
+| **A2** | **Primary, in-distribution** | At least one GRPO arm beats SFT-only on the pre-registered cost-adjusted diagnostic endpoint, and the gain comes from gathering rather than from output formatting |
+| **A3** | **Primary, in-distribution** | Outcome-only GRPO can raise aggregate score while worsening procedure or difficult/high-risk performance. This is V1's central negative result, tested in a realistic setting |
+| C1 | Secondary, OOD | Without further training, A's process-aware checkpoints keep a procedure advantage over outcome-only checkpoints on the independent simulator |
+| C2 | Secondary, OOD | Any such advantage also improves decision quality, not only gathering volume |
+| C3 | Secondary, OOD | With matched interface adaptation, the advantage is recoverable where zero-shot transfer failed on format |
+| D1 | Replication | The V1 pattern persists at 27B on the original simulators: outcome-only GRPO lowers high-risk value or gathering compared with base, and credit-assignment GRPO does not |
+
+**How the tiers relate:**
+- A negative C does not invalidate a successful, well-controlled A. It is informative in its own right.
+- A negative A is also reported. C can then describe behavior, but it can't claim that a demonstrated in-distribution
+  gain transferred.
+- D stands regardless of A and C, because it keeps exact rewards and oracles.
+
+### Experiment A: in-distribution RL on an established simulator (W8)
+
+**Preferred candidate: Microsoft's SDBench, pending access and technical feasibility.** It supports sequential
+questioning, test ordering, cost-sensitive decisions, diagnostic evaluation and documented dataset partitions. A
+train/test split does not make it suitable for RL training. It has to pass the [go/no-go
+criteria](#gono-go-criteria-for-the-rl-training-simulator) first. MediQ, AgentClinic, Medmarks-T and others are
+[alternatives](#alternatives-if-sdbench-is-inaccessible-or-unsuitable).
+
+**Arms, under matched training and evaluation conditions:**
+1. MedGemma-27B base.
+2. MedGemma-27B SFT-only.
+3. MedGemma-27B SFT + outcome-only GRPO.
+4. MedGemma-27B SFT + credit-assignment GRPO.
+
+Optional: decoupled exploration/exploitation GRPO, if feasibility and experimental headroom justify it.
+
+**Design constraints:**
+- **Same initialization.** For the primary causal comparison, all RL arms start from the same SFT adapter. V1's main
+  diagnostics RL arms started from base, so A is not a direct replication of them.
+- **SFT is fixed before RL.** V1 showed that a saturated SFT can leave no headroom. Measure the SFT's support and
+  estimated headroom first. If it is saturated, report the comparison as inconclusive rather than weakening the SFT
+  after the fact.
+- **SFT demonstrations are unsolved.** V1 used oracle trajectories, and SDBench has no oracle. The source must be
+  defined and must use training cases only.
+- **Partitions:** training cases for SFT and RL, validation for hyperparameters and checkpoint selection, test evaluated
+  once per final model. Report the validation-selected and final checkpoints (W2). Seeds: at least 3, and 5 if budget
+  allows.
+
+**No exact oracle.** SDBench does not provide V1's analytic oracle. Information gain, evidence sufficiency and process
+credit may need approximate, clinician-reviewed or model-based estimators. Claims must say which one was used. Don't
+call a model-graded reward "verifiable", and don't compare its values with V1's.
+
+| Reward component | Provenance | Status or risk |
+|---|---|---|
+| Turn and test counts, repeated-request detection | **Deterministic** | Direct from the transcript |
+| Cost | **Mixed:** $300 per visit is fixed; tests map to CPT codes through a language model, then to a price table | Deterministic only if the mapping is cached |
+| Diagnostic score | **Learned judgment:** LLM judge with a physician-authored 5-point rubric; ≥4 counts as correct | Noise, bias and gaming must be measured |
+| Test matched a real case result (`is_synthetic`) | **Learned judgment:** set by the gatekeeper LLM | The agent isn't shown this flag, so it could inform a reward; accuracy is unmeasured |
+| Approximate information gain or evidence sufficiency | **Learned or clinician-derived** | V1's exact posterior isn't available; validate against clinician ratings (W6). Our Claude process-reward sweep was negative, so treat learned judges cautiously |
+
+**Process rewards must not expose ground truth.** Rewards may use hidden case information, but nothing derived from the
+diagnosis, judge output or process score may enter the policy's prompt. The gatekeeper reads the full case, including
+the diagnosis, so its replies need a leak audit. Shaping stays in the training rollout only, and evaluation stays
+unshaped.
+
+**Evaluation.** Use the simulator's untouched test partition, with the same rubric for every model and no process
+shaping. Measure:
+- diagnostic accuracy and appropriate final decisions;
+- diagnostic testing and investigation cost;
+- information-gathering quality and relevance;
+- number of questions and tests;
+- premature commitment;
+- unnecessary investigations;
+- high-risk or difficult-case performance;
+- aggregate versus subgroup performance;
+- persistence across training seeds.
+
+SDBench has no risk labels. Define high-risk and difficult cases in advance using blinded clinician labels (W6), not
+from any arm's results.
+
+**Limits of the partitions:**
+- **Test sets are small.** A single proportion at n=71 (MIMIC test) has a 95% CI half-width of up to about ±12 points,
+  and n=56 (NEJM test) about ±13. Paired per-case analysis helps, but subgroups will be smaller still.
+- **Published results pool validation and test.** Our protocol selects checkpoints on validation, so our test numbers
+  won't match the published pooled protocol. Pooling validation with test after selecting on it would bias the result.
+- **Possible power option (open decision):** select checkpoints on a fixed subset of validation and add the rest to the
+  final held-out set. Report the official test partition separately. Decide this before any evaluation.
+
+### Experiment B: validate with 4B before scaling to 27B (W8)
+
+Before expensive 27B training:
+- Implement and smoke-test the selected environment with MedGemma-4B.
+- Confirm valid multi-turn conversations, stop-token handling, proper rollout token masking (`env_mask`), stable rewards
+  and nonzero reward variance.
+- Verify that training changes the policy, not just output formatting.
+- Run a bounded SFT vs outcome-only GRPO vs credit-assignment GRPO pilot.
+- Measure initial policy support and attainable headroom where possible.
+- Inspect trajectories for shortcut behavior, reward exploitation and premature commitment.
+
+Proceed to 27B only after the training environment is technically validated. The pilot uses training cases, with
+validation for checks. **It never uses the test partition.** Pilot details and pass criteria are in
+[W8](#w8--training-simulator-selection-and-pilot-experiments-a-and-b).
+
+### Experiment C: out-of-distribution cross-simulator evaluation (W5, W6)
+
+**Central question:** does process-aware RL learned in one clinical environment improve information gathering and
+decision quality in another, independently developed environment?
+
+- **Preferred candidate:** AgentClinic, using a strictly untouched evaluation subset. MediQ and MedAgentBench are
+  possibilities where task and interface compatibility are reasonable.
+- **Design:** the same checkpoints from A, with no additional training on external test cases.
+- **Report two conditions, clearly separated:**
+  1. **Zero-shot transfer:** no adaptation of any kind.
+  2. **Optional matched interface adaptation:** identical for every arm, using no external test cases. Keep the overwrite
+     controls in [`agentclinic_experiment_plan.md`](agentclinic_experiment_plan.md) §4.
+- **Attribution:** control for prompt and interface differences. Keep the format-only control and valid-action reporting,
+  and report interface failures separately from diagnostic errors. An interface failure isn't definitive evidence that
+  the learned procedure failed.
+- **Measures:** diagnostic performance, information-gathering quality, premature commitment, question burden and
+  high-risk behavior. Benchmarks without risk labels need clinician acuity labels first (W6).
+
+**Keeping the evaluation subset untouched:**
+- Freeze AgentClinic case IDs before any further use. It ships no splits.
+- Exclude or mask the 27 of 215 MedQA-extended cases that leak the diagnosis.
+- Keep cases already seen in smoke tests (extended MedQA 0, 3 and 4, and any others in the logs) out of the test subset.
+- Tune the harness, judge and prompts on validation cases only.
+- If AgentClinic becomes the training simulator, it can't also be the OOD test. Choose another OOD target.
+- Check source overlap between the two simulators. If both are MIMIC-derived, independence isn't established, because
+  the same patients may appear in both. AgentClinic-MedQA avoids this problem, but its MedQA source may have been in the
+  base model's training data, so compare arm differences rather than absolute accuracy.
+
+### Experiment D: controlled 27B replication of V1 (W1, W2, W4; W3 if VOI credit wins)
+
+Determines whether V1's reward-design effects persist at larger parameter scale while retaining exact analytic rewards
+and oracles.
 
 - Replicate the key V1 experiments with MedGemma-27B on the original three simulators: refill triage, diagnostics
   and titration.
@@ -45,52 +205,56 @@ Do not change model size and environment in the same comparison until each effec
   - V1's main diagnostics RL arms started from base, and no matched SFT-only arm exists at 4B
     (see `V2/agentclinic_experiment_plan.md` §4). Define the SFT-only arm before training, and train a 4B match
     if the 4B-vs-27B comparison needs one.
-  - Decide the stop-token configuration before training (see "Dependencies"), and use the same configuration for
-    both scales.
+  - Resolve the V1 stop-token uncertainty first, decide the configuration before training (see "Dependencies"), and use
+    the same configuration for both scales.
 
-### Experiment B: RL training in a richer clinical environment (W8, new)
+### Unified V1 + V2 paper strategy
 
-- Investigate **SDBench and MediQ as candidates** for multi-turn RL training. Neither is a working RL training
-  environment today, and neither has been selected.
-- Prototype and validate the selected environment with **MedGemma-4B before committing to expensive 27B training**.
-- Compare SFT-only, outcome-only RL and process-aware RL under matched conditions.
-- Details and feasibility criteria: [W8](#w8--richer-environment-rl-training-experiment-b).
+Full notes: [`../paper/v2-extension/MANUSCRIPT_PLAN.md`](../paper/v2-extension/MANUSCRIPT_PLAN.md).
 
-### Experiment C: independent external evaluation (W5, W6)
+**Central thesis:** improving a clinical agent's final reward does not necessarily improve the sequential procedure it
+uses to gather evidence. Process-aware RL may improve that procedure, but its effectiveness depends on task headroom,
+initialization, reward design, model scale and environment complexity.
 
-- Evaluate trained models on held-out AgentClinic cases and other suitable benchmarks identified in the smoke tests.
-- **Measures:** diagnostic performance, information-gathering quality, premature commitment, question burden and
-  high-risk behavior. Benchmarks without risk labels need clinician acuity labels first (W6).
-- **Separation:** external evaluation cases stay out of all training data. If a benchmark is also a training candidate
-  under Experiment B, its evaluation split must be disjoint from anything used in training or prompt tuning.
-- **Attribution:** account for interface and task differences, so poor transfer isn't mistaken for failed reasoning.
-  Keep the format-only control and valid-action reporting from `V2/agentclinic_experiment_plan.md` §4, and
-  report interface failures separately from diagnostic errors.
+- **Part I, mechanistic understanding (existing V1):** MedGemma-4B on three controlled simulators with exact oracles.
+- **Part II, realistic benchmark training (new; Experiments A and B):** MedGemma-27B on a recognized simulator.
+- **Part III, external generalization (new; Experiment C):** trained models on an independent simulator, with positive
+  and negative results reported.
+
+D supports Part I by testing it at scale. V1 remains a frozen, citable preprint. A combined paper isn't assumed to be
+better than a separate V2 paper, and the plan's notes set out when each is preferable. Disclose the relationship to V1
+and distinguish existing results from new ones, to avoid duplicative publication.
 
 ### Implementation priorities
 
-These steps may overlap where appropriate.
+Some activities can run in parallel. All are proposed.
 
-1. Finish the external benchmark smoke tests currently underway.
-2. Assess SDBench and MediQ specifically for RL training feasibility.
-3. Validate the 27B Azure infrastructure and training pipeline.
-4. Run the controlled 27B replication (Experiment A).
-5. Prototype richer-environment RL at 4B (Experiment B).
-6. Proceed to richer-environment 27B training **only if** the 4B pilot demonstrates feasibility.
-7. Conduct independent external evaluations (Experiment C).
+1. Complete V1 stop-token and evaluation audits.
+2. Verify SDBench dataset access, licensing, splits and RL compatibility.
+3. Compare alternative training simulators if SDBench is not feasible.
+4. Build and validate a multi-turn GRPO training adapter at 4B (Experiment B).
+5. Validate MedGemma-27B training infrastructure, including Ray and Azure.
+6. Run a controlled 27B benchmark experiment with matched SFT and GRPO arms (Experiment A).
+7. Perform independent OOD evaluation on AgentClinic (Experiment C).
+8. Replicate key V1 findings at 27B under controlled conditions (Experiment D).
+9. Incorporate results into the expanded paper, including clinician-reviewed trajectory analysis.
+
+**Can run in parallel:** steps 2 and 3 (paperwork and reading), PhysioNet credentialing, the Azure quota request, W6
+materials, and the AgentClinic harness pilot on validation cases.
 
 ### Milestones and dependencies
 
 | Milestone | Depends on | Done when |
 |---|---|---|
-| M1: smoke tests complete | — | `V2/benchmark_smoke_report.md` written, with the stop-token effect on V1 measured |
-| M2: stop-token decision | M1 | Configuration chosen and recorded for Experiments A, B and C |
-| M3: training-environment decision | M1 | SDBench and MediQ scored against the W8 criteria: one selected, or both rejected |
-| M4: 27B pipeline validated | Azure quota; 27B checkpoint and license check; M2 | W4 pilot measures memory fit, seconds per step, weight-sync time and real cost |
-| M5: Experiment A core | M4; W1 stratified sets; W2 validation split | Diagnostics arms complete; decision on extending to titration and refill |
-| M6: Experiment B 4B pilot | M2; M3 | W8 pilot criteria pass or fail, reported either way |
-| M7: Experiment B at 27B (conditional) | M4; M6 passes; budget approval | Matched arms complete, or formally skipped |
-| M8: Experiment C | Trained checkpoints; frozen evaluation splits; W6 labels for high-risk metrics | Held-out results reported per benchmark, with interface failures separated |
+| M1: V1 audits complete | — | Stop-token effect on V1 measured with V1's own evaluation code; any correction decision recorded |
+| M2: stop-token decision | M1 | Configuration chosen and recorded for all experiments |
+| M3: training simulator decision | Access answers; go/no-go checks | One simulator selected against the criteria below, or all rejected |
+| M4: 4B pilot (Experiment B) | M2; M3 | W8 pilot criteria pass or fail, reported either way |
+| M5: 27B pipeline validated | Azure quota; 27B checkpoint and license check; M2; data-location decision for gated cases | W4 pilot measures memory fit, seconds per step, weight-sync time and real cost |
+| M6: Experiment A | M4 passes; M5; budget approval; endpoints frozen; clinician labels | Matched arms evaluated once on test, or formally skipped |
+| M7: Experiment C | M6 checkpoints; frozen evaluation subset; validated judge; W6 labels for high-risk metrics | Zero-shot and any adapted results reported, with interface failures separated |
+| M8: Experiment D | M5; W1 stratified sets; W2 validation split | Diagnostics arms complete; decision on extending to titration and refill |
+| M9: manuscript | M6–M8 as completed; W6 review | Unified-or-separate decision made and manuscript drafted |
 
 ### Infrastructure: confirmed vs proposed
 
@@ -103,23 +267,90 @@ These steps may overlap where appropriate.
 | Azure 8×H100 quota, Ray cluster | **Proposed**, not validated | W0, W4 pilot |
 | MedGemma-27B checkpoint and license | **Proposed**, not verified | W4 |
 | 27B fit, speed and cost | **Unmeasured** estimates | W4 pilot replaces them |
-| SDBench or MediQ as RL training environments | **Proposed**, not validated | W8 |
+| SDBench software with local models | **Confirmed** on 5 synthetic cases only | Smoke report; not a performance result |
+| SDBench, or an alternative, as an RL training environment | **Proposed**, not validated | Go/no-go criteria, W8 |
+| 27B training on gated cases in Azure | **Unresolved conflict** | See "Dependencies" |
 
 ### Dependencies
 
 - **Stop-token configuration.** Our text-only MedGemma `generation_config.json`, and the rollout inits copied from it,
   stop only at token 1, not at `<end_of_turn>` (106). A replication needs an explicit choice: keep V1's behavior for
-  comparability, fix it, or run both. Make the choice after the smoke-test measurement, not before.
+  comparability, fix it, or run both. Make the choice after the V1 measurement, not before. V1 results shouldn't be used
+  as the foundation for V2 comparisons until this is resolved.
 - **Base-model comparability.** Compare 4B and 27B on the same stratified sets (see "How V2 combines results across
   scales").
 - **Reward provenance.** Every result reports whether its reward came from an exact verifier or a model-based judgment.
+- **Gated data and compute location.** This plan runs 27B on Azure, and earlier notes say MIMIC work should stay on the
+  local Sparks. Those conflict if Experiment A trains on `mimic`. PhysioNet's guidance prohibits sending data to third
+  parties, and allows a cloud service only if zero retention, no training use and no human review can be fully verified.
+  Resolve this before M5. The options are written confirmation that our Azure setup complies, running gated work locally
+  (27B would be far slower), or using a dataset whose terms allow it.
+- **Environment models for gated data.** SDBench's official configurations use external GPT-5 or o4-mini models, which
+  is unlikely to be acceptable for `mimic`. Local replacements would make scores unofficial and need their own
+  validation against published gatekeeper and judge behavior.
+- **Public repo.** This repo is public. MIMIC-derived text and NEJM case text must never be committed, including in logs
+  and traces, and may not leave the people and systems the license covers. Confirm whether adapters trained on gated
+  cases can be released before training them. PhysioNet's guidance page doesn't address derived weights.
+
+## Go/no-go criteria for the RL training simulator
+
+*Proposed starting thresholds. Freeze them before the checks run. Apply the same table to every candidate. Thresholds
+may be revised only before results are seen, with the reason recorded.*
+
+**Stage 1: desk check. No gated data needed.**
+
+| # | Criterion | Go if | SDBench status (2026-11-09) |
+|---|---|---|---|
+| G1 | Access and terms | Written confirmation for the person running the work that the license covers storage on our machines, the chosen compute location, model training and keeping the resulting weights | **Open.** NEJM: terms unknown. MIMIC: credentialing required; the dataset page doesn't address training |
+| G2 | Training supply | ≥150 training-only cases. V1 consumed 240 prompts in a 60-step run (4 prompts × 8 rollouts per step) from a 300-case pool | MIMIC: **163 train, a narrow pass.** NEJM: **unconfirmed.** The paper gives 248 validation + 56 hidden test = all 304 cases and no training count, while SDBench's site describes a train split |
+| G3 | Split integrity | Case IDs frozen and hashed; SFT, RL and prompt tuning cannot load test cases; no patient or case overlap across splits | Not checked. Harness separates case sets by name. MIMIC's validation set was used for gatekeeper development, though not for agents |
+| G4 | Test power | Pre-registered minimum detectable paired difference is achievable | MIMIC 71 test; NEJM 56 test. **Marginal;** see "Limits of the partitions" |
+
+**Stage 2: environment check, before any training. Uses training cases only, once access exists.** Software checks may
+use the 5 synthetic cases, but those can't produce results.
+
+| # | Criterion | Go if | SDBench status |
+|---|---|---|---|
+| G5 | Repeatable rollouts | With fixed local models, temperature 0 and fixed seed where supported, the same request returns the same result ≥95% of the time, or results are cached per case and normalized request so all arms see the same world | Not measured. Temperature passes through model arguments; I found no seed setting or gatekeeper result cache |
+| G6 | Judge reliability | Same trajectory re-scored: binary agreement ≥95%. Against clinician or adjudicated labels on ≥50 cases: κ ≥0.70 | Not measured. Paper reports κ 0.70 and 0.87 with its o3 judge. Our local judge gave a false positive at 4/5 |
+| G7 | Cost stability | Same test maps to the same cost in ≥99% of repeats after caching | Not measured |
+| G8 | Reward variation | Reward varies within rollout groups for the init policy: `frac_reward_zero_std` ≤0.5 | Not measured |
+| G9 | Benefit from gathering | Estimated, cost-adjusted gap between a no-gathering commit and adaptive gathering ≥0.10 on the normalized reward (the Gate 1 analogue, labeled as an estimate). No fixed strategy, such as ordering everything, is near best | Not measured |
+| G10 | Latent support | Init policy reaches top-tier score in ≥1 of 12 rollouts on ≥10% of cases, adaptively rather than blindly (the Gate 2 analogue) | Not measured |
+| G11 | Reward exploitation | Scripted shortcuts don't score as well as genuine reference trajectories: hedged lists of diagnoses, generic or paraphrased labels, immediate commit, asking the gatekeeper for the diagnosis, instructions aimed at the judge, cheap test spam | Not measured. Hedging resistance is a specific concern |
+| G12 | No ground-truth exposure | Audit of ≥500 gatekeeper replies finds no diagnosis leak after adjudication; policy prompts contain no reward or judge content | Paper reports 0 leaks in 508 responses with o4-mini. **Must be redone for any local gatekeeper** |
+| G13 | Rollout throughput | A 60-step 4B run projects to ≤72 h at the measured rate, and its cost is approved | **At risk.** A V1-sized run is 1,920 episodes. At smoke-test rates of 3.5–9.5 min per case, serially, that is about 5–13 days, compared with V1's ≈7 h. Concurrency and shorter turns may help; both are unmeasured |
+
+**Decision rule:**
+- **G1, G3, G6 and G12 are hard requirements** and can't be waived.
+- Failing another criterion is a no-go, unless a pre-specified change fixes it and the check passes on rerun.
+- Stage 1 failure means moving to an alternative before spending engineering time.
+- Passing all this only permits the Experiment B pilot. Like V1's gates, these are negative screens and don't show that
+  RL will help or be safe.
+
+### Alternatives if SDBench is inaccessible or unsuitable
+
+Candidates are chosen by the same criteria, before results are seen. Don't switch environments after seeing test
+results.
+
+| Candidate | Attraction | Known problems | Status |
+|---|---|---|---|
+| **AgentClinic** | Public MedQA cases, interactive; our harness works | No splits, no cost model, only 188 non-leaking extended MedQA cases. Training cases would have to be generated from MedQA-train. Using it here removes the preferred OOD test | Smoke-tested for evaluation; not RL |
+| **MediQ** | CC-BY-4.0; explicitly about asking follow-up questions | README refers only to a development set; no train or test split stated; no costs known | Not yet run |
+| **Medmarks-T** | Described as training-capable, with train/test splits; built on `verifiers` | Experimental. No environment or config in our clone uses that name. The large training splits we can see are mostly single-response tasks, which don't test gathering | Not tested |
+| **MedAgentBench** | Multi-step EHR tool use, MIT code | Different task from an interview. Needs Docker (no permission here), and the grader is a separate download | Not tested |
+
+**If no candidate passes:** report that, and keep Experiment D plus an external evaluation of the existing V1 checkpoints
+on AgentClinic. Do not substitute a materially different environment under the same claim.
 
 ## Keeping V2 easy to identify
 
 Best effort. The aim is that readers can spot V2 work easily, without duplicating code or adding structure.
 
 - **V1 paper:** the arXiv submission is tagged `arxiv-v1`. Don't edit `paper/main.tex`, `paper/figs/`, `paper/main.pdf` or
-  `paper/arxiv_submission_v1.zip`. The V2 manuscript lives in [`paper/v2-extension/`](../paper/v2-extension/).
+  `paper/arxiv_submission_v1.zip`. **One authorized exception (2026-11-09):** Brendan asked for an AI-assistance
+  disclosure to be added for an arXiv replacement. It is in `paper/main.tex` and `paper/arxiv_replacement_disclosure.zip`,
+  with no other changes; the tag still holds the original. The V2 manuscript lives in [`paper/v2-extension/`](../paper/v2-extension/).
 - **V2 docs and wholly new experiments:** keep them under `V2/`, or use a `v2_` prefix when they belong elsewhere (for
   example `scripts/v2_*`, `results/v2_*`, `checkpoints/v2_*`).
 - **Shared code:** update `framework/` and `tasks/` directly when needed, with no copies or parallel versions. Keep V1
@@ -168,6 +399,9 @@ safety problem"):
 
 ## How V2 combines results across scales
 
+*Written for the 4B-to-27B replication, now Experiment D. Overall paper structure is in
+[`../paper/v2-extension/MANUSCRIPT_PLAN.md`](../paper/v2-extension/MANUSCRIPT_PLAN.md).*
+
 Organize by **question**, with scale as a factor — not by hardware (hardware is one sentence in Methods).
 - **4B = full mechanism study:** all three tasks, λ sweep, SFT experiments, VOI-credit arm.
 - **27B = replication of the headline:** diagnostics plain vs credit (± VOI), 3 seeds; one Results subsection,
@@ -202,7 +436,7 @@ PhysioNet approvals, and learning Ray. **Realistic: ~4–5 weeks with Azure for 
 | 2 | Decoupled GRPO headline is the **step-40 ckpt chosen on the test set** (final ckpt: high val +0.158, supp 0.50, asks 5.03) | W2 selection hygiene |
 | 3 | Credit-assignment still **under-gathers** (~2.1 asks vs oracle ~3.8; 1.1–1.5 on high-risk) — "less bad", not "learned the procedure" | W3 decision-value credit |
 | 4 | One small model (MedGemma-4B) — "small-model RL artifact?" | W4 scale (27B) |
-| 5 | Synthetic toy simulators only | W5 external benchmark / real data |
+| 5 | Synthetic toy simulators only | W8 in-distribution training on an established simulator (Experiments A, B); W5 OOD evaluation (Experiment C) |
 | 6 | Utility matrices + audit labels never clinically validated | W6 clinician validation |
 | 7 | Missing literature (reward hacking, MediQ, ED-Copilot, VOI/active feature acquisition); claims broader than evidence | W7 writing |
 | — | Infra: fragile 2-node NCCL weight sync; user wants to learn Ray | W0 Ray on Azure |
@@ -284,7 +518,7 @@ entropy credit (paired CI). Failure is still reportable ("decision-aware credit 
   only if a multimodal variant is the one available.
 - **Original scope (2026-11-01):** diagnostics only, plain vs entropy credit (+ VOI credit if W3 wins), **3 seeds
   each**, stratified eval. Do not port refill/titration/repair to 27B.
-- **Expanded scope (2026-11-08, Experiment A):** the three original simulators with base, SFT-only, plain and credit
+- **Expanded scope (2026-11-08, now Experiment D):** the three original simulators with base, SFT-only, plain and credit
   arms. To stage the spend, the original diagnostics grid plus an SFT-only arm is the **core**; titration and refill
   are an **extension**, committed only after the pilot measures cost and the core reports. Biased-SFT repair stays out
   of the 27B scope.
@@ -308,6 +542,9 @@ matches, along with **SDBench** (see "Benchmark options and access" below). No e
 transfer: questions asked, premature commitment, accuracy, plus the guarded-report flags. Requires an adapter from
 the benchmark's patient simulator to our ask/commit JSON schema.
 
+**Under the 2026-11-09 strategy,** Option A's trained-checkpoint evaluation is Experiment C, and AgentClinic is its
+preferred target. A pilot with existing 4B checkpoints stays useful for validating the harness, on validation cases only.
+
 Detailed AgentClinic plan (verified capabilities, experiment matrix, interface adapter, splits, pilot):
 [`agentclinic_experiment_plan.md`](agentclinic_experiment_plan.md).
 
@@ -329,8 +566,8 @@ setup time.
 
 | Option | What it evaluates | Open now | Gate or condition | V2 relevance |
 |---|---|---|---|---|
-| [AgentClinic](https://github.com/SamuelSchmidgall/AgentClinic) | Interactive patient interviews, tests and diagnosis | Code (MIT); MedQA and NEJM cases | MIMIC-IV cases: PhysioNet credentialing plus a request to the authors. NEJM text is NEJM copyright, so do not redistribute it. Spec, Lang and tool code are not in the repo | Very high: first pilot |
-| [SDBench](https://github.com/microsoft/sdbench) | Sequential diagnosis and the cost of tests | Code (MIT); 5 synthetic cases, not for reporting performance | NEJM cases: license from NEJM (terms not yet checked). MIMIC cases: PhysioNet credentialing | Very high: closest match to the RL question |
+| [AgentClinic](https://github.com/SamuelSchmidgall/AgentClinic) | Interactive patient interviews, tests and diagnosis | Code (MIT); MedQA and NEJM cases | MIMIC-IV cases: PhysioNet credentialing plus a request to the authors. NEJM text is NEJM copyright, so do not redistribute it. Spec, Lang and tool code are not in the repo | Very high: first evaluation pilot; preferred OOD test (Experiment C) |
+| [SDBench](https://github.com/microsoft/sdbench) | Sequential diagnosis and the cost of tests | Code (MIT); 5 synthetic cases, not for reporting performance | NEJM cases: license from NEJM (terms not yet checked). MIMIC cases: PhysioNet credentialing | Very high: preferred training simulator (Experiment A), pending go/no-go |
 | [MediQ](https://github.com/stellalisy/mediQ) | Asking follow-up questions before deciding | Code and development data (CC-BY-4.0) | None found. The README does not mention a test set | High |
 | [MedAgentBench](https://github.com/stanfordmlgroup/MedAgentBench) | Agent tool use in a simulated EHR (FHIR) | Code (MIT); task data; Docker FHIR server | No credentialing mentioned. The grader (`refsol.py`) is a separate Stanford Box download | High for tool use; not an interview benchmark |
 | [Medmarks](https://github.com/MedARC-AI/medmarks) | Suite of 30 medical benchmarks, including AgentClinic, MedAgentBench, HealthBench and MedR-Bench | Framework (MIT) | Licenses vary per dataset and some are "not specified". Inclusion does not override a dataset's own terms | High: its Medmarks-T subset has train/test splits for post-training |
@@ -352,7 +589,7 @@ Access is per person and cannot be shared within a team. The agreement prohibits
 third-party APIs, and [PhysioNet's LLM guidance](https://physionet.org/news/post/llm-responsible-use) strongly
 recommends local models, so MIMIC work should run on the local Sparks.
 
-**Suggested order:**
+**Suggested order for evaluation pilots** (the training-simulator order is under "Implementation priorities"):
 1. AgentClinic-MedQA, which needs no credentials.
 2. SDBench: start with the code and synthetic cases, then decide on NEJM licensing or MIMIC access.
 3. HealthBench and Medmarks, as independent accuracy and safety measurements that complement the interactive
@@ -360,7 +597,10 @@ recommends local models, so MIMIC work should run on the local Sparks.
 
 Start PhysioNet credentialing early, even while using public data, because it opens every MIMIC option above.
 
-## W6 — Clinician validation (Agustina Saenz, MD MPH — role TBD)
+## W6 — Clinician validation (Agustina Saenz, MD MPH)
+
+*Experiments A and C add two clinician tasks: blinded acuity or difficulty labels, and validating any approximate process
+measure. Her V2 role still needs confirming; she is a co-author on V1.*
 
 1. **Utility & finding review:** she reviews the three utility matrices, finding definitions, and per-ask cost for
    clinical plausibility; record changes she'd make. (If changes are large, rerun Gate 1 — CPU only.)
@@ -369,7 +609,7 @@ Start PhysioNet credentialing early, even while using public data, because it op
 3. **Agreement analysis:** Cohen's κ between her labels and the automated guarded report. High agreement
    validates the paper's central evaluation tool; disagreements become a findings section.
 
-Her credit (author vs acknowledged clinical reviewer) is **her call — do not list her as an author until decided**.
+Her V2 credit is **her call — do not list her as a V2 author until decided**. (V1 lists her as a co-author.)
 
 ## W7 — Writing & literature
 
@@ -382,29 +622,32 @@ Her credit (author vs acknowledged clinical reviewer) is **her call — do not l
 - Decide whether the Claude process-reward α-sweep (negative; see `framework/procreward/`) goes in as a
   supplementary "learned judge vs analytic credit" result.
 
-## W8 — Richer-environment RL training (Experiment B)
+## W8 — Training simulator selection and pilot (Experiments A and B)
 
-**Status: proposed, feasibility not established.** SDBench and MediQ remain candidates pending technical validation.
-Neither has been run as an RL training environment, and being selected is not assumed.
+**Status: proposed, feasibility not established.** SDBench is the preferred candidate pending the [go/no-go
+criteria](#gono-go-criteria-for-the-rl-training-simulator). No candidate has been run as an RL training environment, and
+being selected is not assumed.
 
-**Feasibility criteria, assessed for each candidate:**
+**What we know so far (from reading code and docs, and from smoke tests on synthetic cases, not from RL use):**
 
-| Criterion | Question |
-|---|---|
-| Repeatable interactions | Can the same case replay with controlled variance across arms and seeds? |
-| Hidden clinical state | Is there a latent state the agent must uncover, or only case text an LLM reads from? |
-| Question and test costs | Are costs native and usable as a per-step reward, or added by us? |
-| Reliable rewards | How much does the reward vary across judge runs, and does it agree with clinician review? |
-| Efficient GRPO rollouts | Rollout latency and throughput with LLM-in-the-loop calls, compared with V1's ≈7 h per 60 steps |
-| Case supply and access | Enough cases for disjoint train, validation and test splits, with terms that permit training? |
-| Realism gain | Is it meaningfully more clinically realistic than V1's simulators, and in what specific ways? |
+- **SDBench access:** MIT-licensed code with a gatekeeper, judge and cost estimator. Only 5 synthetic cases are public,
+  in a `train` split, and they are explicitly not for reporting performance, which is too few to train on.
+- **SDBench partitions:**
 
-**What we know so far (from reading code and docs, not from RL use):**
+  | Dataset | Access | Train | Validation | Test | Source |
+  |---|---|---|---|---|---|
+  | `mimic` | PhysioNet credentialed, DUA | 163 | 254 | 71 | PhysioNet dataset page |
+  | `nejm` | License from NEJM; terms unknown | Not confirmed | 248 | 56 | Paper (304 cases total) |
 
-- **SDBench:** MIT-licensed code with a gatekeeper, judge and cost estimator. The gatekeeper and judge are LLMs, and
-  the gatekeeper may synthesize a result when a case lacks one. Only 5 synthetic cases are public, and they are
-  explicitly not for reporting performance, which is too few to train on. NEJM cases need a license (whether it permits
-  training is unknown) and MIMIC cases need PhysioNet credentialing with local-only inference.
+  The paper's counts leave no training cases, while SDBench's site describes a train split, so confirm the NEJM count
+  when access exists. Published results pool validation and test, and MIMIC's validation set was used to develop its
+  gatekeeper.
+- **Our access:** Agustina Saenz holds PhysioNet and NEJM licenses (reported 2026-11-08). PhysioNet access is per person
+  and can't be shared with Brendan. Confirm whether her NEJM license covers the SDBench dataset, Brendan's use and model
+  training. Nothing gated has been retrieved.
+- **SDBench environment models:** the gatekeeper and judge are LLMs, and the gatekeeper may synthesize a result when a
+  case lacks one. The agent isn't told which results are synthetic. The paper used o4-mini and o3; the repo's configs use
+  GPT-5 and o4-mini.
 - **MediQ:** CC-BY-4.0 code and development data with a patient system and an expert skeleton. Not yet run. The README
   mentions no test set, and the default patient calls a model.
 
@@ -415,15 +658,17 @@ also unavailable without an explicit state model, so a process reward here would
 say so. Gate 1 cannot be computed analytically without a utility model; estimate headroom empirically and label it an
 estimate.
 
-**4B pilot before any 27B training.** Bounded (≤20 GRPO steps per arm) on Sparks, with fixed environment models and
-disjoint splits. Arms under matched conditions: SFT-only, outcome-only RL, process-aware RL.
+**4B pilot before any 27B training (Experiment B).** Bounded (≤20 GRPO steps per arm) on Sparks, with fixed environment
+models and disjoint splits. Arms under matched conditions: SFT-only, outcome-only RL, process-aware RL. Spark 1's
+stability risk applies, so write results incrementally.
 
-**Pilot passes only if:** rollouts complete reliably; the reward is stable on repeated scoring of the same trajectory;
-KL moves (≳1e-3) with non-degenerate rollout diversity; and projected 60-step cost is acceptable. The thresholds are
-pre-registered before the pilot runs.
+**Pilot passes only if:** rollouts complete reliably, with valid turns and correct stop-token handling; simulator tokens
+are masked from the gradient; the reward is stable on repeated scoring of the same trajectory; KL moves (≳1e-3) with
+non-degenerate rollout diversity; behavior changes beyond output formatting; a trajectory audit finds no unaddressed
+reward exploit; and projected cost is acceptable. The thresholds are pre-registered before the pilot runs. A 20-step
+pilot tests feasibility. It can't establish which arm is better.
 
-**Stop condition.** If neither candidate passes, report that and keep Experiments A and C. Do not substitute a
-materially different environment under the same claim.
+**Stop condition.** See "If no candidate passes" under the go/no-go criteria.
 
 ---
 
@@ -440,13 +685,13 @@ reality check").*
 | 3 | W3 4B arms; W4 27B pilot run; W5 benchmark adapter; W6 materials sent to Agustina |
 | 4–5 | W4 full 27B grid; W5 benchmark evals; W6 ratings back → κ analysis |
 | 6–7 | Analysis, figures, rewrite (W7) |
-| 8 | Internal review → arXiv v2 + journal submission |
+| 8 | Internal review → journal submission, plus an arXiv posting chosen under `paper/v2-extension/MANUSCRIPT_PLAN.md` |
 
-**Mapping to the expanded strategy (2026-11-08).** The table above remains the baseline sketch. Experiment A maps to
-weeks 1–5 (W1, W2, W4). Experiment C maps to weeks 3–5 (W5, W6). W8 is additional and overlaps from week 1
-(feasibility assessment) through weeks 3–5 (4B pilot). Conditional 27B training under Experiment B, plus the Experiment
-A extension to titration and refill, would extend the timeline beyond the "~4–5 weeks" estimate. Re-estimate after the
-27B pilot and the W8 decision.
+**Mapping to the reorganized strategy (2026-11-09).** The table above remains the baseline sketch, and it predates the
+priority order under "Implementation priorities", which now governs. Experiment D maps to the W1, W2 and W4 rows.
+Experiment C maps to the W5 and W6 rows. Experiments A and B are additional. Simulator access alone may take weeks
+(PhysioNet review typically takes 1–2 weeks, and NEJM's response time is unknown), and rollouts may be slow, so the
+"~4–5 weeks" estimate no longer covers the full plan. Re-estimate after the go/no-go decision and the 27B pilot.
 
 ## Budget (rough — get real quotes)
 
@@ -461,16 +706,16 @@ the W4 pilot before committing.
 | Idle/debugging overhead (Ray setup, failed runs) | budget +30% |
 | **Total** | **roughly $3–8k** |
 
-**Expanded-strategy estimate (2026-11-08, order of magnitude, derived from the table above and not measured).** The W4
+**Expanded-strategy estimate (updated 2026-11-09, order of magnitude, derived from the table above and not measured).** The W4
 row implies roughly $330–670 per 27B run.
 
 | item | scope | estimate |
 |---|---|---|
-| Experiment A core | Diagnostics: 6 GRPO runs + 1 SFT, plus evals | ~$2–6k (the W4 row) |
-| Experiment A extension | Titration and refill: 12 GRPO runs + 2 SFT, 3 seeds | ~$5–9k additional |
-| Experiment B feasibility + 4B pilot | Local Sparks | No cloud spend, if environment models run locally |
-| Experiment B at 27B | Conditional on pilot | **Not estimated.** LLM-in-the-loop rollouts should cost several times a V1 run; the pilot measures it |
+| Experiment B: go/no-go checks + 4B pilot | Local Sparks | No cloud spend, if environment models run locally. A NEJM license fee, if any, is unknown |
+| Experiment A at 27B | Conditional on pilot: base, SFT, 2 GRPO arms × ≥3 seeds | **Not estimated.** LLM-in-the-loop rollouts should cost several times a V1 run; the pilot measures it. Gated data may rule out Azure |
 | Experiment C | Local Sparks; 27B checkpoints evaluated locally or on Azure | Low hundreds of $ (the W5 row) |
+| Experiment D core | Diagnostics: 6 GRPO runs + 1 SFT, plus evals | ~$2–6k (the W4 row) |
+| Experiment D extension | Titration and refill: 12 GRPO runs + 2 SFT, 3 seeds | ~$5–9k additional |
 
 The full expansion would exceed both the $3–8k total above and Brendan's ~$1–2k comfort level for 27B. Each step past
 the pilot therefore needs his explicit approval, and fallbacks include fewer seeds or a smaller extension. External
@@ -484,13 +729,17 @@ decides whether the full grid fits that; if not, cut to 2 seeds/arm or drop the 
 ## Open decisions (Brendan)
 
 - [ ] W5: Option A only, or A + B? (depends on Agustina's access)
-- [ ] Experiment A: approve the titration and refill extension after the core (cost above)?
-- [ ] Experiment A: define the SFT-only arm, and whether to train a matched 4B SFT-only arm
+- [ ] Experiment D: approve the titration and refill extension after the core (cost above)?
+- [ ] Experiment D: define the SFT-only arm, and whether to train a matched 4B SFT-only arm
+- [ ] Experiment A: source of SFT demonstrations, given that SDBench has no oracle
+- [ ] Experiment A: official test partition only, or also a larger held-out set taken from validation?
+- [ ] Gated data: who runs it (Brendan's PhysioNet credentialing, or Agustina), and may it run on Azure?
+- [ ] Unified expanded paper or separate V2 paper (see `paper/v2-extension/MANUSCRIPT_PLAN.md`)
 - [ ] Stop-token configuration for V2 training and evaluation (after the smoke-test measurement)
-- [ ] Experiment B: select SDBench, MediQ or neither after the W8 feasibility assessment
-- [ ] Experiment B: approve 27B training if the 4B pilot passes
+- [ ] Select SDBench, an alternative or no training simulator after the go/no-go checks
+- [ ] Experiment A: approve 27B training if the 4B pilot passes
 - [ ] W4: include the VOI-credit arm at 27B, or only plain vs entropy credit?
 - [ ] W0 step 5: port to a Ray-native RL framework, or keep TRL + Ray job orchestration?
-- [ ] Agustina's role (author vs clinical reviewer)
+- [ ] Agustina's V2 role (V1 lists her as a co-author)
 - [ ] Target journal(s) for submission (leaning TMLR; ML4H/CHIL alternatives; NMI only if W5/W6 are striking)
 - [ ] arXiv endorser identified (Agustina, if eligible)

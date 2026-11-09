@@ -3,6 +3,8 @@
 *Drafted 2026-11-07. Planning only: nothing has been trained, installed, or downloaded beyond a read-only
 clone of the AgentClinic repository. This expands workstream **W5, Option A** of [`V2/PLAN.md`](PLAN.md).*
 
+*Update 2026-11-09: AgentClinic is now the preferred out-of-distribution target for checkpoints from the plan's Experiment A (see Experiment C). The P1–P2 pilot still validates the harness, on validation cases only. The §6 split must be redone before use, because it predates the finding that 27 extended MedQA cases leak the diagnosis and cases used in smoke tests must stay out of the test subset.*
+
 **How to read this document.** Every statement is tagged as one of:
 - **[VERIFIED]**: checked against the AgentClinic code, the paper, or our own repository.
 - **[PROPOSED]**: an experiment or design we intend to run.

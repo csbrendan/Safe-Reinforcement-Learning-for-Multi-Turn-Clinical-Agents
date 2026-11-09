@@ -247,7 +247,7 @@ Whichever stop setting is chosen, resolve the V1 question first, because it deci
 
 1. **Check Spark 1 airflow and power, then resolve the V1 stop-token question** with `stop_token_v1_support_probe.sh`, ideally running it on Spark 2 after copying the base model and adapters. If Spark 2 is fine under the same load, that points toward Spark 1 itself. Hold any V1 correction decision until then.
 2. Decide whether to approve about $1–2 per arm for the official HealthBench grader.
-3. Start PhysioNet credentialing and ask NEJM about SDBench terms, including whether they permit training. Those are the plan's Experiment B dependencies.
+3. Start PhysioNet credentialing and ask NEJM about SDBench terms, including whether they permit training. Those are dependencies of the plan's Experiment A (called Experiment B when this report was written).
 4. Assess MediQ next. It wasn't part of this campaign and remains an untested candidate.
 5. Build the AgentClinic pilot from the steps above.
 

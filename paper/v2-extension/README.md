@@ -4,6 +4,8 @@ Working draft of the V2 journal extension. It started as an unmodified copy of t
 
 **Edit the manuscript here, not in the parent `paper/` folder.** `paper/main.tex`, `paper/figs/`, `paper/main.pdf` and `paper/arxiv_submission_v1.zip` are the frozen v1 record.
 
+Structure and publication strategy, including when a separate paper would be better: [`MANUSCRIPT_PLAN.md`](MANUSCRIPT_PLAN.md).
+
 Build from this folder (paths are relative):
 
 ```bash
