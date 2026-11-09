@@ -1,0 +1,342 @@
+Using base Harness config: HarnessConfig(resume=None, max_workers=5, debug=False, result_folder=None, label=None, azure_storage_enabled=False, azure_storage_account_name=None, azure_storage_container_name=None, azure_storage_result_folder=None, dataset='synthetic', agent='baseline', model='gpt-5', model_args={}, k=1, case_set='train', case_id=None, num_cases=-1, case_offset=0, sdbench_config=None)
+Overriding harness config with command line arguments: {'resume': None, 'debug': False, 'result_folder': '/home/brendan/rl-gains-in-clinical-tasks/V2/benchmark_smoke_logs/sdbench/run_credit_tmpl_case1', 'label': 'smoke', 'case_id': ['1'], 'dataset': 'synthetic', 'case_set': 'train', 'max_workers': 1, 'model': 'local-credit_s1', 'model_args': {'max_tokens': 400}}
+Using base SDBench config: SDBenchConfig(debug=False, compute_costs=True, compute_actual_workup_costs=False, clinician_cost=300, costing_method='batch_llm_only', costing_parallelism=20, costing_multiprocess=False, costing_source_file_path='910511770-central-hospital-standard-charges-wa-en.xlsx', costing_model='gpt-5-mini', costing_model_args={'openrouter_zdr_only': False}, costing_cache_cosmosdb_enabled=False, costing_cache_cosmosdb_endpoint=None, costing_cache_cosmosdb_database=None, costing_cache_cosmosdb_container=None, costing_cache_use_managed_identity=False, test_runner_enforce_single_turn_type=True, max_turns=70, max_questions_per_turn=None, max_tests_per_turn=None, agent_model_args={}, agent_extra_args={}, gatekeeper_prompt_version='v6_fixed', gatekeeper_model='gpt-5', gatekeeper_model_args={}, gatekeeper_chunk_size=10, judge_prompt_version='v4_reasoning_with_tests', judge_model='gpt-5', judge_model_args={}) for dataset 'synthetic'
+Overriding SDBench config with command line arguments: {'max_turns': 12, 'gatekeeper_model': 'local-aux', 'gatekeeper_model_args': {'local_model_base_url': 'http://192.168.100.2:8101/v1', 'max_tokens': 800, 'extra_body': {'chat_template_kwargs': {'enable_thinking': False}}}, 'judge_model': 'local-aux', 'judge_model_args': {'local_model_base_url': 'http://192.168.100.2:8101/v1', 'max_tokens': 800, 'extra_body': {'chat_template_kwargs': {'enable_thinking': False}}}, 'costing_model': 'local-aux', 'costing_model_args': {'local_model_base_url': 'http://192.168.100.2:8101/v1', 'max_tokens': 800, 'extra_body': {'chat_template_kwargs': {'enable_thinking': False}}}, 'costing_parallelism': 2}
+Run configuration saved to /home/brendan/rl-gains-in-clinical-tasks/V2/benchmark_smoke_logs/sdbench/run_credit_tmpl_case1/csbrendan_synthetic_smoke_local-credit_s1_train_20261108_210437_k1/run_config.json
+Running with configuration:
+{ 'resume': None,
+  'max_workers': 1,
+  'debug': False,
+  'result_folder': '/home/brendan/rl-gains-in-clinical-tasks/V2/benchmark_smoke_logs/sdbench/run_credit_tmpl_case1',
+  'label': 'smoke',
+  'azure_storage_enabled': False,
+  'azure_storage_account_name': None,
+  'azure_storage_container_name': None,
+  'azure_storage_result_folder': None,
+  'dataset': 'synthetic',
+  'agent': 'baseline',
+  'model': 'local-credit_s1',
+  'model_args': {'max_tokens': 400},
+  'k': 1,
+  'case_set': 'train',
+  'case_id': ['1'],
+  'num_cases': -1,
+  'case_offset': 0,
+  'sdbench_config': { 'debug': False,
+                      'compute_costs': True,
+                      'compute_actual_workup_costs': False,
+                      'clinician_cost': 300,
+                      'costing_method': 'batch_llm_only',
+                      'costing_parallelism': 2,
+                      'costing_multiprocess': False,
+                      'costing_source_file_path': '910511770-central-hospital-standard-charges-wa-en.xlsx',
+                      'costing_model': 'local-aux',
+                      'costing_model_args': { 'local_model_base_url': 'http://192.168.100.2:8101/v1',
+                                              'max_tokens': 800,
+                                              'extra_body': {'chat_template_kwargs': {'enable_thinking': False}}},
+                      'costing_cache_cosmosdb_enabled': False,
+                      'costing_cache_cosmosdb_endpoint': None,
+                      'costing_cache_cosmosdb_database': None,
+                      'costing_cache_cosmosdb_container': None,
+                      'costing_cache_use_managed_identity': False,
+                      'test_runner_enforce_single_turn_type': True,
+                      'max_turns': 12,
+                      'max_questions_per_turn': None,
+                      'max_tests_per_turn': None,
+                      'agent_model_args': {},
+                      'agent_extra_args': {},
+                      'gatekeeper_prompt_version': 'v6_fixed',
+                      'gatekeeper_model': 'local-aux',
+                      'gatekeeper_model_args': { 'local_model_base_url': 'http://192.168.100.2:8101/v1',
+                                                 'max_tokens': 800,
+                                                 'extra_body': {'chat_template_kwargs': {'enable_thinking': False}}},
+                      'gatekeeper_chunk_size': 10,
+                      'judge_prompt_version': 'v4_reasoning_with_tests',
+                      'judge_model': 'local-aux',
+                      'judge_model_args': { 'local_model_base_url': 'http://192.168.100.2:8101/v1',
+                                            'max_tokens': 800,
+                                            'extra_body': {'chat_template_kwargs': {'enable_thinking': False}}}}}
+Using agent: baseline
+Loaded 5 cases for dataset 'synthetic'
+Loaded 2 case sets for dataset 'synthetic': train (5), all (5)
+Filtering to specific case IDs: ['1']
+Total selected cases: 1
+Total tasks (cases × k): 1
+Completed tasks: 0
+Remaining tasks: 1
+Running 1 tasks
+Num workers: 1
+Using model: local-credit_s1
+Case set: train
+Max turns: 12
+JSON results will be saved to: /home/brendan/rl-gains-in-clinical-tasks/V2/benchmark_smoke_logs/sdbench/run_credit_tmpl_case1/csbrendan_synthetic_smoke_local-credit_s1_train_20261108_210437_k1/json
+Processing cases:   0%|          | 0/1 [00:00<?, ?case/s]Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/costing/cache.py", line 26, in get_cached_cost
+    return get_cache(config).get(config, test_name)
+           ^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in __hash__
+TypeError: unhashable type: 'dict'
+Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/costing/cache.py", line 26, in get_cached_cost
+    return get_cache(config).get(config, test_name)
+           ^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in __hash__
+TypeError: unhashable type: 'dict'
+Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/costing/cache.py", line 26, in get_cached_cost
+    return get_cache(config).get(config, test_name)
+           ^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in __hash__
+TypeError: unhashable type: 'dict'
+Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/costing/cache.py", line 26, in get_cached_cost
+    return get_cache(config).get(config, test_name)
+           ^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in __hash__
+TypeError: unhashable type: 'dict'
+Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/costing/cache.py", line 26, in get_cached_cost
+    return get_cache(config).get(config, test_name)
+           ^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in __hash__
+TypeError: unhashable type: 'dict'
+Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/costing/cache.py", line 26, in get_cached_cost
+    return get_cache(config).get(config, test_name)
+           ^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in __hash__
+TypeError: unhashable type: 'dict'
+Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/costing/cache.py", line 26, in get_cached_cost
+    return get_cache(config).get(config, test_name)
+           ^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in __hash__
+TypeError: unhashable type: 'dict'
+Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/costing/cache.py", line 26, in get_cached_cost
+    return get_cache(config).get(config, test_name)
+           ^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in __hash__
+TypeError: unhashable type: 'dict'
+Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/costing/cache.py", line 26, in get_cached_cost
+    return get_cache(config).get(config, test_name)
+           ^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in __hash__
+TypeError: unhashable type: 'dict'
+Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/costing/cache.py", line 26, in get_cached_cost
+    return get_cache(config).get(config, test_name)
+           ^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in __hash__
+TypeError: unhashable type: 'dict'
+Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/costing/cache.py", line 26, in get_cached_cost
+    return get_cache(config).get(config, test_name)
+           ^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in __hash__
+TypeError: unhashable type: 'dict'
+Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/costing/cache.py", line 26, in get_cached_cost
+    return get_cache(config).get(config, test_name)
+           ^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in __hash__
+TypeError: unhashable type: 'dict'
+Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/costing/cache.py", line 26, in get_cached_cost
+    return get_cache(config).get(config, test_name)
+           ^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in __hash__
+TypeError: unhashable type: 'dict'
+Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/costing/cache.py", line 26, in get_cached_cost
+    return get_cache(config).get(config, test_name)
+           ^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in __hash__
+TypeError: unhashable type: 'dict'
+Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/costing/cache.py", line 26, in get_cached_cost
+    return get_cache(config).get(config, test_name)
+           ^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in __hash__
+TypeError: unhashable type: 'dict'
+Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/costing/cache.py", line 36, in set_cached_cost
+    get_cache(config).set(config, test_name, cost_estimate)
+    ^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in __hash__
+TypeError: unhashable type: 'dict'
+Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/costing/cache.py", line 36, in set_cached_cost
+    get_cache(config).set(config, test_name, cost_estimate)
+    ^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in __hash__
+TypeError: unhashable type: 'dict'
+Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/costing/cache.py", line 36, in set_cached_cost
+    get_cache(config).set(config, test_name, cost_estimate)
+    ^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in __hash__
+TypeError: unhashable type: 'dict'
+Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/costing/cache.py", line 36, in set_cached_cost
+    get_cache(config).set(config, test_name, cost_estimate)
+    ^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in __hash__
+TypeError: unhashable type: 'dict'
+Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/costing/cache.py", line 36, in set_cached_cost
+    get_cache(config).set(config, test_name, cost_estimate)
+    ^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in __hash__
+TypeError: unhashable type: 'dict'
+Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/costing/cache.py", line 36, in set_cached_cost
+    get_cache(config).set(config, test_name, cost_estimate)
+    ^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in __hash__
+TypeError: unhashable type: 'dict'
+Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/costing/cache.py", line 36, in set_cached_cost
+    get_cache(config).set(config, test_name, cost_estimate)
+    ^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in __hash__
+TypeError: unhashable type: 'dict'
+Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/costing/cache.py", line 36, in set_cached_cost
+    get_cache(config).set(config, test_name, cost_estimate)
+    ^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in __hash__
+TypeError: unhashable type: 'dict'
+Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/costing/cache.py", line 36, in set_cached_cost
+    get_cache(config).set(config, test_name, cost_estimate)
+    ^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in __hash__
+TypeError: unhashable type: 'dict'
+Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/costing/cache.py", line 36, in set_cached_cost
+    get_cache(config).set(config, test_name, cost_estimate)
+    ^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in __hash__
+TypeError: unhashable type: 'dict'
+Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/costing/cache.py", line 36, in set_cached_cost
+    get_cache(config).set(config, test_name, cost_estimate)
+    ^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in __hash__
+TypeError: unhashable type: 'dict'
+Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/costing/cache.py", line 36, in set_cached_cost
+    get_cache(config).set(config, test_name, cost_estimate)
+    ^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in __hash__
+TypeError: unhashable type: 'dict'
+Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/costing/cache.py", line 36, in set_cached_cost
+    get_cache(config).set(config, test_name, cost_estimate)
+    ^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in __hash__
+TypeError: unhashable type: 'dict'
+Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/costing/cache.py", line 36, in set_cached_cost
+    get_cache(config).set(config, test_name, cost_estimate)
+    ^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in __hash__
+TypeError: unhashable type: 'dict'
+Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/costing/cache.py", line 36, in set_cached_cost
+    get_cache(config).set(config, test_name, cost_estimate)
+    ^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in __hash__
+TypeError: unhashable type: 'dict'
+Processing cases:   0%|          | 0/1 [09:29<?, ?case/s, accuracy=0.0%, last=1:✗, avg_cost=$2060]Processing cases: 100%|██████████| 1/1 [09:29<00:00, 569.58s/case, accuracy=0.0%, last=1:✗, avg_cost=$2060]Processing cases: 100%|██████████| 1/1 [09:29<00:00, 569.58s/case, accuracy=0.0%, last=1:✗, avg_cost=$2060]
+Loading prompt gatekeeper_synthetic_tests version v6_fixed from /home/brendan/v2_bench/sdbench/sdbench/prompts/gatekeeper_synthetic_tests/v6_fixed/prompt.yaml
+Loading prompt check_diagnosis version v4_reasoning_with_tests from /home/brendan/v2_bench/sdbench/sdbench/prompts/check_diagnosis/v4_reasoning_with_tests/prompt.yaml
+Error accessing cache: unhashable type: 'dict'
+Error accessing cache: unhashable type: 'dict'
+Error accessing cache: unhashable type: 'dict'
+Error accessing cache: unhashable type: 'dict'
+Error accessing cache: unhashable type: 'dict'
+Error accessing cache: unhashable type: 'dict'
+Error accessing cache: unhashable type: 'dict'
+Error accessing cache: unhashable type: 'dict'
+Error accessing cache: unhashable type: 'dict'
+Error accessing cache: unhashable type: 'dict'
+Error accessing cache: unhashable type: 'dict'
+Error accessing cache: unhashable type: 'dict'
+Error accessing cache: unhashable type: 'dict'
+Error accessing cache: unhashable type: 'dict'
+Error accessing cache: unhashable type: 'dict'
+Error setting cache: unhashable type: 'dict'
+Error setting cache: unhashable type: 'dict'
+Error setting cache: unhashable type: 'dict'
+Error setting cache: unhashable type: 'dict'
+Error setting cache: unhashable type: 'dict'
+Error setting cache: unhashable type: 'dict'
+Error setting cache: unhashable type: 'dict'
+Error setting cache: unhashable type: 'dict'
+Error setting cache: unhashable type: 'dict'
+Error setting cache: unhashable type: 'dict'
+Error setting cache: unhashable type: 'dict'
+Error setting cache: unhashable type: 'dict'
+Error setting cache: unhashable type: 'dict'
+Error setting cache: unhashable type: 'dict'
+Error setting cache: unhashable type: 'dict'
+Loaded 1 results from JSON files
+Loading original run configuration from 20261108_210437:
+Summary saved to /home/brendan/rl-gains-in-clinical-tasks/V2/benchmark_smoke_logs/sdbench/run_credit_tmpl_case1/csbrendan_synthetic_smoke_local-credit_s1_train_20261108_210437_k1/summary.txt
+
+Summary:
+--------------------------------------------------
+Sequential processing completed at 2026-11-08 21:14:06.601250
+Total cases processed: 1
+Correct diagnoses rate: 0/1
+Model: local-credit_s1
+Agent: baseline
+Test runner: BatchTestRunner
+Case set: train
+Max turns: 12
+Workers: 1
+Total test requests tracked: 36
+Unique tests requested: 36
+Cost analysis: Enabled
+
+========================================================================
+ACCURACY & COST REPORT  (dataset: synthetic)
+========================================================================
+
+baseline | local-credit_s1
+  train       acc 0.0% (0/1)
+      cost[batch_llm_only] mean $2060.00  total $2060.00
+      ⚠ incomplete 1/5
+
+--------------------------------------------------
+All processing completed. 0/1 correct diagnoses.
+
+Generating cost estimation for all requested tests...
+
+============================================================
+AGGREGATE COST SUMMARY (BatchLLM)
+============================================================
+Cases with cost analysis: 1
+Total unique tests across all cases: 36
+Total test requests across all cases: 36
+Costed tests: 15
+Test pricing methods - CPT: 0, LLM: 15, Failed: 0
+Total clinician visits across all cases: 2
+
+Cost Analysis:
+  Aggregate cost - Tests only: $1,460
+  Aggregate cost - Clinician visits: $600
+  Aggregate total cost: $2,060
+
+  Per-Case Averages:
+    Average total cost per case: $2,060
+    Average test cost per case: $1,460
+    Average visit cost per case: $600
+    Average visits per case: 2.00
+============================================================
+Individual case cost analyses are saved in each case's JSON file.
+
+HTML overview saved to: /home/brendan/rl-gains-in-clinical-tasks/V2/benchmark_smoke_logs/sdbench/run_credit_tmpl_case1/csbrendan_synthetic_smoke_local-credit_s1_train_20261108_210437_k1/html/overview.html

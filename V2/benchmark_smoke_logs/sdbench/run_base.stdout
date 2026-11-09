@@ -100,4 +100,145 @@ JSON results will be saved to: /home/brendan/rl-gains-in-clinical-tasks/V2/bench
   File "/home/brendan/v2_bench/sdbench/.venv/lib/python3.12/site-packages/openai/_base_client.py", line 1105, in request
     raise self._make_status_error_from_response(err.response) from None
 openai.BadRequestError: Error code: 400 - {'error': {'message': 'Conversation roles must alternate user/assistant/user/assistant/...', 'type': 'BadRequestError', 'param': None, 'code': 400}}
-Processing cases:   0%|          | 0/2 [04:08<?, ?case/s, accuracy=0.0%, last=0:✗]Processing cases:  50%|█████     | 1/2 [04:08<04:08, 248.63s/case, accuracy=0.0%, last=0:✗]                                                                                           Processing cases:  50%|█████     | 1/2 [04:08<04:08, 248.63s/case, accuracy=0.0%, last=0:✗]
+Processing cases:   0%|          | 0/2 [04:08<?, ?case/s, accuracy=0.0%, last=0:✗]Processing cases:  50%|█████     | 1/2 [04:08<04:08, 248.63s/case, accuracy=0.0%, last=0:✗]                                                                                           Processing cases:  50%|█████     | 1/2 [04:08<04:08, 248.63s/case, accuracy=0.0%, last=0:✗]Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/costing/cache.py", line 26, in get_cached_cost
+    return get_cache(config).get(config, test_name)
+           ^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in __hash__
+TypeError: unhashable type: 'dict'
+Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/costing/cache.py", line 26, in get_cached_cost
+    return get_cache(config).get(config, test_name)
+           ^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in __hash__
+TypeError: unhashable type: 'dict'
+Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/costing/cache.py", line 26, in get_cached_cost
+    return get_cache(config).get(config, test_name)
+           ^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in __hash__
+TypeError: unhashable type: 'dict'
+Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/costing/cache.py", line 26, in get_cached_cost
+    return get_cache(config).get(config, test_name)
+           ^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in __hash__
+TypeError: unhashable type: 'dict'
+Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/costing/cache.py", line 26, in get_cached_cost
+    return get_cache(config).get(config, test_name)
+           ^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in __hash__
+TypeError: unhashable type: 'dict'
+Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/costing/cache.py", line 36, in set_cached_cost
+    get_cache(config).set(config, test_name, cost_estimate)
+    ^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in __hash__
+TypeError: unhashable type: 'dict'
+Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/costing/cache.py", line 36, in set_cached_cost
+    get_cache(config).set(config, test_name, cost_estimate)
+    ^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in __hash__
+TypeError: unhashable type: 'dict'
+Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/costing/cache.py", line 36, in set_cached_cost
+    get_cache(config).set(config, test_name, cost_estimate)
+    ^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in __hash__
+TypeError: unhashable type: 'dict'
+Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/costing/cache.py", line 36, in set_cached_cost
+    get_cache(config).set(config, test_name, cost_estimate)
+    ^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in __hash__
+TypeError: unhashable type: 'dict'
+Traceback (most recent call last):
+  File "/home/brendan/v2_bench/sdbench/sdbench/costing/cache.py", line 36, in set_cached_cost
+    get_cache(config).set(config, test_name, cost_estimate)
+    ^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in __hash__
+TypeError: unhashable type: 'dict'
+Processing cases:  50%|█████     | 1/2 [10:55<04:08, 248.63s/case, accuracy=50.0%, last=1:✓, avg_cost=$1605]Processing cases: 100%|██████████| 2/2 [10:55<00:00, 341.76s/case, accuracy=50.0%, last=1:✓, avg_cost=$1605]Processing cases: 100%|██████████| 2/2 [10:55<00:00, 327.79s/case, accuracy=50.0%, last=1:✓, avg_cost=$1605]
+API error: BadRequestError: Error code: 400 - {'error': {'message': 'Conversation roles must alternate user/assistant/user/assistant/...', 'type': 'BadRequestError', 'param': None, 'code': 400}}
+Retrying in 0.92 seconds... (Attempt 1/5)
+API error: BadRequestError: Error code: 400 - {'error': {'message': 'Conversation roles must alternate user/assistant/user/assistant/...', 'type': 'BadRequestError', 'param': None, 'code': 400}}
+Retrying in 1.71 seconds... (Attempt 2/5)
+API error: BadRequestError: Error code: 400 - {'error': {'message': 'Conversation roles must alternate user/assistant/user/assistant/...', 'type': 'BadRequestError', 'param': None, 'code': 400}}
+Retrying in 2.37 seconds... (Attempt 3/5)
+API error: BadRequestError: Error code: 400 - {'error': {'message': 'Conversation roles must alternate user/assistant/user/assistant/...', 'type': 'BadRequestError', 'param': None, 'code': 400}}
+Retrying in 7.18 seconds... (Attempt 4/5)
+API error: BadRequestError: Error code: 400 - {'error': {'message': 'Conversation roles must alternate user/assistant/user/assistant/...', 'type': 'BadRequestError', 'param': None, 'code': 400}}
+Retrying in 18.48 seconds... (Attempt 5/5)
+[_process_single_case] Error with case 0: Error code: 400 - {'error': {'message': 'Conversation roles must alternate user/assistant/user/assistant/...', 'type': 'BadRequestError', 'param': None, 'code': 400}}
+Error with case 0: Error code: 400 - {'error': {'message': 'Conversation roles must alternate user/assistant/user/assistant/...', 'type': 'BadRequestError', 'param': None, 'code': 400}}
+Loading prompt gatekeeper_synthetic_tests version v6_fixed from /home/brendan/v2_bench/sdbench/sdbench/prompts/gatekeeper_synthetic_tests/v6_fixed/prompt.yaml
+Loading prompt check_diagnosis version v4_reasoning_with_tests from /home/brendan/v2_bench/sdbench/sdbench/prompts/check_diagnosis/v4_reasoning_with_tests/prompt.yaml
+Error accessing cache: unhashable type: 'dict'
+Error accessing cache: unhashable type: 'dict'
+Error accessing cache: unhashable type: 'dict'
+Error accessing cache: unhashable type: 'dict'
+Error accessing cache: unhashable type: 'dict'
+Error setting cache: unhashable type: 'dict'
+Error setting cache: unhashable type: 'dict'
+Error setting cache: unhashable type: 'dict'
+Error setting cache: unhashable type: 'dict'
+Error setting cache: unhashable type: 'dict'
+Loaded 2 results from JSON files
+Loading original run configuration from 20261108_203115:
+Summary saved to /home/brendan/rl-gains-in-clinical-tasks/V2/benchmark_smoke_logs/sdbench/run_base/csbrendan_synthetic_smoke_local-medgemma4b_train_20261108_203115_k1/summary.txt
+
+Summary:
+--------------------------------------------------
+Sequential processing completed at 2026-11-08 20:42:10.736439
+Total cases processed: 2
+Correct diagnoses rate: 1/2
+Model: local-medgemma4b
+Agent: baseline
+Test runner: BatchTestRunner
+Case set: train
+Max turns: 12
+Workers: 1
+Total test requests tracked: 25
+Unique tests requested: 19
+Cost analysis: Enabled
+
+========================================================================
+ACCURACY & COST REPORT  (dataset: synthetic)
+========================================================================
+
+baseline | local-medgemma4b
+  train       acc 100.0% (1/1)
+      cost[batch_llm_only] mean $1605.00  total $1605.00
+      ⚠ 1 errored (excluded), incomplete 1/5
+
+--------------------------------------------------
+All processing completed. 1/2 correct diagnoses.
+
+Generating cost estimation for all requested tests...
+
+============================================================
+AGGREGATE COST SUMMARY (BatchLLM)
+============================================================
+Cases with cost analysis: 1
+Total unique tests across all cases: 19
+Total test requests across all cases: 25
+Costed tests: 5
+Test pricing methods - CPT: 0, LLM: 5, Failed: 0
+Total clinician visits across all cases: 2
+
+Cost Analysis:
+  Aggregate cost - Tests only: $1,005
+  Aggregate cost - Clinician visits: $600
+  Aggregate total cost: $1,605
+
+  Per-Case Averages:
+    Average total cost per case: $1,605
+    Average test cost per case: $1,005
+    Average visit cost per case: $600
+    Average visits per case: 2.00
+============================================================
+Individual case cost analyses are saved in each case's JSON file.
+
+HTML overview saved to: /home/brendan/rl-gains-in-clinical-tasks/V2/benchmark_smoke_logs/sdbench/run_base/csbrendan_synthetic_smoke_local-medgemma4b_train_20261108_203115_k1/html/overview.html

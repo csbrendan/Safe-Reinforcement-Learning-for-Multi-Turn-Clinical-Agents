@@ -1,0 +1,21 @@
+Sequential processing completed at 2026-11-08 21:14:06.601250
+Total cases processed: 1
+Correct diagnoses rate: 0/1
+Model: local-credit_s1
+Agent: baseline
+Test runner: BatchTestRunner
+Case set: train
+Max turns: 12
+Workers: 1
+Total test requests tracked: 36
+Unique tests requested: 36
+Cost analysis: Enabled
+
+========================================================================
+ACCURACY & COST REPORT  (dataset: synthetic)
+========================================================================
+
+baseline | local-credit_s1
+  train       acc 0.0% (0/1)
+      cost[batch_llm_only] mean $2060.00  total $2060.00
+      ⚠ incomplete 1/5

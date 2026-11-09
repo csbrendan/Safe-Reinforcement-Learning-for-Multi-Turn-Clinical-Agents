@@ -1,0 +1,23 @@
+arm | stop | n | commit | valid | asks | <=1 ask | reward | oracle-grade | none R | mod R | high R (n=2 cases) | high oracle | high asks | tok/turn
+plain_s1 False 60 0.933 0.85 1.9 0.733 0.302 0.117 0.46 0.205 0.17 0.0 1.0 200.0
+plain_s1 True 60 0.8 0.8 3.967 0.517 0.26 0.033 0.207 0.299 0.17 0.0 1.0 27.6
+credit_s1 False 60 0.917 0.9 1.0 1.0 0.446 0.3 0.45 0.459 0.17 0.0 1.0 200.0
+credit_s1 True 60 0.817 0.817 3.717 0.517 0.307 0.117 0.227 0.368 0.17 0.0 1.0 25.7
+medgemma4b False 60 0.683 0.683 4.8 0.5 0.227 0.117 0.433 0.096 0.155 0.0 1.5 200.0
+medgemma4b True 60 0.667 0.667 5.033 0.517 0.222 0.033 0.181 0.251 0.17 0.0 1.0 26.5
+medgemma4b stop-nostop reward (-0.006, -0.105, 0.094)
+medgemma4b stop-nostop asks (0.233, -0.683, 1.2)
+medgemma4b stop-nostop oracle_grade (-0.083, -0.183, 0.017)
+medgemma4b stop-nostop commit (-0.017, -0.117, 0.067)
+plain_s1 stop-nostop reward (-0.042, -0.145, 0.06)
+plain_s1 stop-nostop asks (2.067, 1.167, 3.05)
+plain_s1 stop-nostop oracle_grade (-0.083, -0.183, 0.0)
+plain_s1 stop-nostop commit (-0.133, -0.25, -0.033)
+credit_s1 stop-nostop reward (-0.138, -0.249, -0.03)
+credit_s1 stop-nostop asks (2.717, 1.7, 3.767)
+credit_s1 stop-nostop oracle_grade (-0.183, -0.3, -0.05)
+credit_s1 stop-nostop commit (-0.1, -0.2, 0.0)
+credit-plain stop= False reward (0.144, 0.051, 0.242)
+credit-plain stop= False asks (-0.9, -1.567, -0.367)
+credit-plain stop= True reward (0.047, 0.011, 0.091)
+credit-plain stop= True asks (-0.25, -0.583, -0.033)

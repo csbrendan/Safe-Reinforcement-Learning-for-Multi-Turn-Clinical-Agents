@@ -88,11 +88,12 @@ def run_case(idx, case, a):
                "action": "diagnosis" if "DIAGNOSIS READY" in txt else "test" if "REQUEST TEST" in txt else "question"}
         turns.append(rec)
         if rec["action"] == "diagnosis":
-            m = re.search(r"DIAGNOSIS READY:\s*\[?(.*?)\]?\s*$", txt, re.S); stated = (m.group(1) if m else txt).strip()
+            m = re.search(r"DIAGNOSIS READY:\s*\[?(.*?)\]?\s*$", txt, re.S); stated = (m.group(1) if m else "").strip()
             j = chat(a.aux_url, a.aux_model, MOD_SYS, "\nHere is the correct diagnosis: " + dx + "\n Here was the doctor dialogue: " + txt + "\nAre these the same?",
                      16, e_stop, None, thinking_off=a.aux_family == "qwen")
             result = {"stated": stated[:200], "judge_raw": j["text"].strip(), "judge_yes": clean_env(j["text"]).lower().startswith("yes"), "judge_secs": j["secs"]}
-            outcome = "diagnosed"; break
+            # A reply cut off at "DIAGNOSIS READY" with no diagnosis is an invalid commit, not a diagnosis.
+            outcome = "diagnosed" if m and stated else "invalid_commit"; break
         if rec["action"] == "test":
             er = chat(a.aux_url, a.aux_model, meas_sys(info), "\nHere is a history of the dialogue: " + m_hist + "\n Here was the doctor measurement request: " + txt,
                       a.env_max_tokens, e_stop, env_stop, thinking_off=a.aux_family == "qwen")

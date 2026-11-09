@@ -1,0 +1,1 @@
+medqa--medgemma4b: n=5 avg_reward=0.4 errors=0 truncated=1 rewards=[0.0, 0.0, 1.0, 0.0, 1.0] answers=['B', 'D', 'B', 'D', 'B'] time_ms=None

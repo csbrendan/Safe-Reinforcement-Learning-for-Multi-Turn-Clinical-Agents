@@ -1,0 +1,3 @@
+medqa n=2 metadata_keys=['env_id', 'env_args', 'model', 'base_url', 'num_examples', 'rollouts_per_example', 'sampling_args', 'time', 'avg_reward', 'avg_metrics', 'avg_error', 'pass_at_k']
+ex=1 reward=0.0 answer='D' chars=2096 tail='m of ototoxicity, the most probable answer is the one that involves the generation of free radicals.\n\n<answer>C</answer>' stop=max_turns_reached
+ex=0 reward=0.0 answer='B' chars=2273 tail=' the correct next action is to disclose the error to the patient and put it in the operative report.\n\n<answer>A</answer>' stop=max_turns_reached

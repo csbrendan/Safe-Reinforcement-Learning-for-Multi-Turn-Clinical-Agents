@@ -1,0 +1,72 @@
+Using base Harness config: HarnessConfig(resume=None, max_workers=5, debug=False, result_folder=None, label=None, azure_storage_enabled=False, azure_storage_account_name=None, azure_storage_container_name=None, azure_storage_result_folder=None, dataset='synthetic', agent='baseline', model='gpt-5', model_args={}, k=1, case_set='train', case_id=None, num_cases=-1, case_offset=0, sdbench_config=None)
+Overriding harness config with command line arguments: {'resume': None, 'debug': False, 'result_folder': '/home/brendan/rl-gains-in-clinical-tasks/V2/benchmark_smoke_logs/sdbench/run_credit', 'label': 'smoke', 'case_id': None, 'dataset': 'synthetic', 'case_set': 'train', 'num_cases': 1, 'max_workers': 1, 'model': 'local-credit_s1', 'model_args': {'max_tokens': 400}}
+Using base SDBench config: SDBenchConfig(debug=False, compute_costs=True, compute_actual_workup_costs=False, clinician_cost=300, costing_method='batch_llm_only', costing_parallelism=20, costing_multiprocess=False, costing_source_file_path='910511770-central-hospital-standard-charges-wa-en.xlsx', costing_model='gpt-5-mini', costing_model_args={'openrouter_zdr_only': False}, costing_cache_cosmosdb_enabled=False, costing_cache_cosmosdb_endpoint=None, costing_cache_cosmosdb_database=None, costing_cache_cosmosdb_container=None, costing_cache_use_managed_identity=False, test_runner_enforce_single_turn_type=True, max_turns=70, max_questions_per_turn=None, max_tests_per_turn=None, agent_model_args={}, agent_extra_args={}, gatekeeper_prompt_version='v6_fixed', gatekeeper_model='gpt-5', gatekeeper_model_args={}, gatekeeper_chunk_size=10, judge_prompt_version='v4_reasoning_with_tests', judge_model='gpt-5', judge_model_args={}) for dataset 'synthetic'
+Overriding SDBench config with command line arguments: {'max_turns': 12, 'gatekeeper_model': 'local-aux', 'gatekeeper_model_args': {'local_model_base_url': 'http://192.168.100.2:8101/v1', 'max_tokens': 800, 'extra_body': {'chat_template_kwargs': {'enable_thinking': False}}}, 'judge_model': 'local-aux', 'judge_model_args': {'local_model_base_url': 'http://192.168.100.2:8101/v1', 'max_tokens': 800, 'extra_body': {'chat_template_kwargs': {'enable_thinking': False}}}, 'costing_model': 'local-aux', 'costing_model_args': {'local_model_base_url': 'http://192.168.100.2:8101/v1', 'max_tokens': 800, 'extra_body': {'chat_template_kwargs': {'enable_thinking': False}}}, 'costing_parallelism': 2}
+Run configuration saved to /home/brendan/rl-gains-in-clinical-tasks/V2/benchmark_smoke_logs/sdbench/run_credit/csbrendan_synthetic_smoke_local-credit_s1_train_20261108_204211_k1/run_config.json
+Running with configuration:
+{ 'resume': None,
+  'max_workers': 1,
+  'debug': False,
+  'result_folder': '/home/brendan/rl-gains-in-clinical-tasks/V2/benchmark_smoke_logs/sdbench/run_credit',
+  'label': 'smoke',
+  'azure_storage_enabled': False,
+  'azure_storage_account_name': None,
+  'azure_storage_container_name': None,
+  'azure_storage_result_folder': None,
+  'dataset': 'synthetic',
+  'agent': 'baseline',
+  'model': 'local-credit_s1',
+  'model_args': {'max_tokens': 400},
+  'k': 1,
+  'case_set': 'train',
+  'case_id': None,
+  'num_cases': 1,
+  'case_offset': 0,
+  'sdbench_config': { 'debug': False,
+                      'compute_costs': True,
+                      'compute_actual_workup_costs': False,
+                      'clinician_cost': 300,
+                      'costing_method': 'batch_llm_only',
+                      'costing_parallelism': 2,
+                      'costing_multiprocess': False,
+                      'costing_source_file_path': '910511770-central-hospital-standard-charges-wa-en.xlsx',
+                      'costing_model': 'local-aux',
+                      'costing_model_args': { 'local_model_base_url': 'http://192.168.100.2:8101/v1',
+                                              'max_tokens': 800,
+                                              'extra_body': {'chat_template_kwargs': {'enable_thinking': False}}},
+                      'costing_cache_cosmosdb_enabled': False,
+                      'costing_cache_cosmosdb_endpoint': None,
+                      'costing_cache_cosmosdb_database': None,
+                      'costing_cache_cosmosdb_container': None,
+                      'costing_cache_use_managed_identity': False,
+                      'test_runner_enforce_single_turn_type': True,
+                      'max_turns': 12,
+                      'max_questions_per_turn': None,
+                      'max_tests_per_turn': None,
+                      'agent_model_args': {},
+                      'agent_extra_args': {},
+                      'gatekeeper_prompt_version': 'v6_fixed',
+                      'gatekeeper_model': 'local-aux',
+                      'gatekeeper_model_args': { 'local_model_base_url': 'http://192.168.100.2:8101/v1',
+                                                 'max_tokens': 800,
+                                                 'extra_body': {'chat_template_kwargs': {'enable_thinking': False}}},
+                      'gatekeeper_chunk_size': 10,
+                      'judge_prompt_version': 'v4_reasoning_with_tests',
+                      'judge_model': 'local-aux',
+                      'judge_model_args': { 'local_model_base_url': 'http://192.168.100.2:8101/v1',
+                                            'max_tokens': 800,
+                                            'extra_body': {'chat_template_kwargs': {'enable_thinking': False}}}}}
+Using agent: baseline
+Loaded 5 cases for dataset 'synthetic'
+Loaded 2 case sets for dataset 'synthetic': train (5), all (5)
+Total selected cases: 1
+Total tasks (cases × k): 1
+Completed tasks: 0
+Remaining tasks: 1
+Running 1 tasks
+Num workers: 1
+Using model: local-credit_s1
+Case set: train
+Max turns: 12
+JSON results will be saved to: /home/brendan/rl-gains-in-clinical-tasks/V2/benchmark_smoke_logs/sdbench/run_credit/csbrendan_synthetic_smoke_local-credit_s1_train_20261108_204211_k1/json
+Processing cases:   0%|          | 0/1 [00:00<?, ?case/s]

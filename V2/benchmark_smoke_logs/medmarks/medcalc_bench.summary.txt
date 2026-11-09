@@ -1,0 +1,5 @@
+medcalc_bench n=4 metadata_keys=['env_id', 'env_args', 'model', 'base_url', 'num_examples', 'rollouts_per_example', 'sampling_args', 'time', 'avg_reward', 'avg_metrics', 'avg_error', 'pass_at_k']
+ex=0 reward=0.0 answer='25.2381' chars=974 tail='e nearest whole number:** The creatinine clearance is approximately 79 mL/min.\n\nAnswer:\n```xml\n<answer>\n79\n</answer>\n```' stop=max_turns_reached
+ex=1 reward=0.0 answer='38.0' chars=1192 tail='o Nearest Whole Number:** The creatinine clearance is approximately 69 mL/min.\n\nAnswer:\n```xml\n<answer>\n69\n</answer>\n```' stop=max_turns_reached
+ex=2 reward=0.0 answer='57.68059' chars=909 tail='ine Clearance to mL/min:** The calculated value is already in mL/min.\n\nFinal Answer:\n```xml\n<answer>\n382.4\n</answer>\n```' stop=max_turns_reached
+ex=3 reward=0.0 answer='106.19185' chars=943 tail='57.6\n    Creatinine Clearance = 5361 / 57.6\n    Creatinine Clearance = 92.9 mL/min\n\nFinal Answer:\n\n<answer>92.9</answer>' stop=max_turns_reached

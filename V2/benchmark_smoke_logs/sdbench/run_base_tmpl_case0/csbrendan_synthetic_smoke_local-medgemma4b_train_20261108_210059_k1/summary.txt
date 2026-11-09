@@ -1,0 +1,21 @@
+Sequential processing completed at 2026-11-08 21:04:36.709826
+Total cases processed: 1
+Correct diagnoses rate: 0/1
+Model: local-medgemma4b
+Agent: baseline
+Test runner: BatchTestRunner
+Case set: train
+Max turns: 12
+Workers: 1
+Total test requests tracked: 0
+Unique tests requested: 0
+Cost analysis: Enabled
+
+========================================================================
+ACCURACY & COST REPORT  (dataset: synthetic)
+========================================================================
+
+baseline | local-medgemma4b
+  train       acc 0.0% (0/1)
+      cost[batch_llm_only] mean $300.00  total $300.00
+      ⚠ incomplete 1/5

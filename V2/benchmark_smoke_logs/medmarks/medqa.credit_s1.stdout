@@ -1,0 +1,8 @@
+2026-11-08 20:51:45 - verifiers.utils.eval_utils - INFO - Automatically determined concurrency=2
+2026-11-08 20:51:45 - verifiers.utils.eval_utils - INFO - Using num_workers=1 env server worker(s), per-worker concurrency: 2 (total 2)
+2026-11-08 20:51:45 - verifiers.serve.client.env_client.ZMQEnvClient - INFO - Waiting for env server medqa (tcp://127.0.0.1:59261) to become healthy (timeout=10m)
+2026-11-08 20:51:46 - verifiers.serve.client.env_client.ZMQEnvClient - INFO - Env server medqa (tcp://127.0.0.1:59261) became healthy (was startup)
+2026-11-08 20:51:46 - verifiers.serve.client.env_client.ZMQEnvClient - INFO - Env server medqa (tcp://127.0.0.1:59261) is healthy
+2026-11-08 20:51:46 - verifiers.envs.environment.SingleTurnEnv - INFO - Saving results to environments/medqa/outputs/evals/medqa--credit_s1/f5ca6a4f
+Processing 3 rollouts:   0%|          | 0/3 [00:00<?, ?it/s, reward=?]Processing 3 rollouts:  33%|███▎      | 1/3 [01:22<02:45, 82.88s/it, reward=?]Processing 3 rollouts:  33%|███▎      | 1/3 [01:22<02:45, 82.88s/it, reward=0]Processing 3 rollouts:  67%|██████▋   | 2/3 [01:33<00:40, 40.40s/it, reward=0]Processing 3 rollouts:  67%|██████▋   | 2/3 [01:33<00:40, 40.40s/it, reward=0]Processing 3 rollouts: 100%|██████████| 3/3 [01:56<00:00, 32.36s/it, reward=0]Processing 3 rollouts: 100%|██████████| 3/3 [01:56<00:00, 32.36s/it, reward=0]2026-11-08 20:53:43 - verifiers.envs.environment.SingleTurnEnv - INFO - Saved final results to environments/medqa/outputs/evals/medqa--credit_s1/f5ca6a4f
+Processing 3 rollouts: 100%|██████████| 3/3 [01:56<00:00, 38.78s/it, reward=0]

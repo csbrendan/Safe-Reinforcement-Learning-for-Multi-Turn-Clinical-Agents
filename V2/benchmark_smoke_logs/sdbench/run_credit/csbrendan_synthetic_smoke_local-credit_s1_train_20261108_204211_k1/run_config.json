@@ -1,0 +1,77 @@
+{
+  "resume": null,
+  "max_workers": 1,
+  "debug": false,
+  "result_folder": "/home/brendan/rl-gains-in-clinical-tasks/V2/benchmark_smoke_logs/sdbench/run_credit",
+  "label": "smoke",
+  "azure_storage_enabled": false,
+  "azure_storage_account_name": null,
+  "azure_storage_container_name": null,
+  "azure_storage_result_folder": null,
+  "dataset": "synthetic",
+  "agent": "baseline",
+  "model": "local-credit_s1",
+  "model_args": {
+    "max_tokens": 400
+  },
+  "k": 1,
+  "case_set": "train",
+  "case_id": null,
+  "num_cases": 1,
+  "case_offset": 0,
+  "sdbench_config": {
+    "debug": false,
+    "compute_costs": true,
+    "compute_actual_workup_costs": false,
+    "clinician_cost": 300,
+    "costing_method": "batch_llm_only",
+    "costing_parallelism": 2,
+    "costing_multiprocess": false,
+    "costing_source_file_path": "910511770-central-hospital-standard-charges-wa-en.xlsx",
+    "costing_model": "local-aux",
+    "costing_model_args": {
+      "local_model_base_url": "http://192.168.100.2:8101/v1",
+      "max_tokens": 800,
+      "extra_body": {
+        "chat_template_kwargs": {
+          "enable_thinking": false
+        }
+      }
+    },
+    "costing_cache_cosmosdb_enabled": false,
+    "costing_cache_cosmosdb_endpoint": null,
+    "costing_cache_cosmosdb_database": null,
+    "costing_cache_cosmosdb_container": null,
+    "costing_cache_use_managed_identity": false,
+    "test_runner_enforce_single_turn_type": true,
+    "max_turns": 12,
+    "max_questions_per_turn": null,
+    "max_tests_per_turn": null,
+    "agent_model_args": {},
+    "agent_extra_args": {},
+    "gatekeeper_prompt_version": "v6_fixed",
+    "gatekeeper_model": "local-aux",
+    "gatekeeper_model_args": {
+      "local_model_base_url": "http://192.168.100.2:8101/v1",
+      "max_tokens": 800,
+      "extra_body": {
+        "chat_template_kwargs": {
+          "enable_thinking": false
+        }
+      }
+    },
+    "gatekeeper_chunk_size": 10,
+    "judge_prompt_version": "v4_reasoning_with_tests",
+    "judge_model": "local-aux",
+    "judge_model_args": {
+      "local_model_base_url": "http://192.168.100.2:8101/v1",
+      "max_tokens": 800,
+      "extra_body": {
+        "chat_template_kwargs": {
+          "enable_thinking": false
+        }
+      }
+    }
+  },
+  "timestamp": "20261108_204211"
+}

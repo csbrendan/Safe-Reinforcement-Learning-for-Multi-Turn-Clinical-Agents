@@ -1,0 +1,14 @@
+risk counts per condition Counter({'moderate': 35, 'none': 20, 'high': 5})
+arm | stop | n | commit | asks | <=1 ask | reward | oracle-grade | mod reward | high reward | tok/turn
+medgemma4b False 60 0.833 4.467 0.5 0.292 0.217 0.286 0.328 200.0
+medgemma4b True 60 0.75 4.85 0.45 0.415 0.317 0.561 0.37 26.9
+plain_s1 False 60 0.95 1.65 0.85 0.27 0.3 0.19 0.37 200.0
+plain_s1 True 60 0.8 4.183 0.45 0.463 0.333 0.636 0.37 27.5
+medgemma4b stop-minus-nostop reward 0.123 95%CI 0.008 0.242 n 60
+medgemma4b stop-minus-nostop asks 0.383 95%CI -0.633 1.433 n 60
+medgemma4b stop-minus-nostop oracle_grade 0.1 95%CI -0.017 0.217 n 60
+medgemma4b stop-minus-nostop commit -0.083 95%CI -0.2 0.033 n 60
+plain_s1 stop-minus-nostop reward 0.193 95%CI 0.063 0.325 n 60
+plain_s1 stop-minus-nostop asks 2.533 95%CI 1.667 3.467 n 60
+plain_s1 stop-minus-nostop oracle_grade 0.033 95%CI -0.083 0.15 n 60
+plain_s1 stop-minus-nostop commit -0.15 95%CI -0.25 -0.067 n 60

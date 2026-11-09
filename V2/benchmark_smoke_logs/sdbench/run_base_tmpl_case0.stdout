@@ -1,0 +1,131 @@
+Using base Harness config: HarnessConfig(resume=None, max_workers=5, debug=False, result_folder=None, label=None, azure_storage_enabled=False, azure_storage_account_name=None, azure_storage_container_name=None, azure_storage_result_folder=None, dataset='synthetic', agent='baseline', model='gpt-5', model_args={}, k=1, case_set='train', case_id=None, num_cases=-1, case_offset=0, sdbench_config=None)
+Overriding harness config with command line arguments: {'resume': None, 'debug': False, 'result_folder': '/home/brendan/rl-gains-in-clinical-tasks/V2/benchmark_smoke_logs/sdbench/run_base_tmpl_case0', 'label': 'smoke', 'case_id': ['0'], 'dataset': 'synthetic', 'case_set': 'train', 'max_workers': 1, 'model': 'local-medgemma4b', 'model_args': {'max_tokens': 400}}
+Using base SDBench config: SDBenchConfig(debug=False, compute_costs=True, compute_actual_workup_costs=False, clinician_cost=300, costing_method='batch_llm_only', costing_parallelism=20, costing_multiprocess=False, costing_source_file_path='910511770-central-hospital-standard-charges-wa-en.xlsx', costing_model='gpt-5-mini', costing_model_args={'openrouter_zdr_only': False}, costing_cache_cosmosdb_enabled=False, costing_cache_cosmosdb_endpoint=None, costing_cache_cosmosdb_database=None, costing_cache_cosmosdb_container=None, costing_cache_use_managed_identity=False, test_runner_enforce_single_turn_type=True, max_turns=70, max_questions_per_turn=None, max_tests_per_turn=None, agent_model_args={}, agent_extra_args={}, gatekeeper_prompt_version='v6_fixed', gatekeeper_model='gpt-5', gatekeeper_model_args={}, gatekeeper_chunk_size=10, judge_prompt_version='v4_reasoning_with_tests', judge_model='gpt-5', judge_model_args={}) for dataset 'synthetic'
+Overriding SDBench config with command line arguments: {'max_turns': 12, 'gatekeeper_model': 'local-aux', 'gatekeeper_model_args': {'local_model_base_url': 'http://192.168.100.2:8101/v1', 'max_tokens': 800, 'extra_body': {'chat_template_kwargs': {'enable_thinking': False}}}, 'judge_model': 'local-aux', 'judge_model_args': {'local_model_base_url': 'http://192.168.100.2:8101/v1', 'max_tokens': 800, 'extra_body': {'chat_template_kwargs': {'enable_thinking': False}}}, 'costing_model': 'local-aux', 'costing_model_args': {'local_model_base_url': 'http://192.168.100.2:8101/v1', 'max_tokens': 800, 'extra_body': {'chat_template_kwargs': {'enable_thinking': False}}}, 'costing_parallelism': 2}
+Run configuration saved to /home/brendan/rl-gains-in-clinical-tasks/V2/benchmark_smoke_logs/sdbench/run_base_tmpl_case0/csbrendan_synthetic_smoke_local-medgemma4b_train_20261108_210059_k1/run_config.json
+Running with configuration:
+{ 'resume': None,
+  'max_workers': 1,
+  'debug': False,
+  'result_folder': '/home/brendan/rl-gains-in-clinical-tasks/V2/benchmark_smoke_logs/sdbench/run_base_tmpl_case0',
+  'label': 'smoke',
+  'azure_storage_enabled': False,
+  'azure_storage_account_name': None,
+  'azure_storage_container_name': None,
+  'azure_storage_result_folder': None,
+  'dataset': 'synthetic',
+  'agent': 'baseline',
+  'model': 'local-medgemma4b',
+  'model_args': {'max_tokens': 400},
+  'k': 1,
+  'case_set': 'train',
+  'case_id': ['0'],
+  'num_cases': -1,
+  'case_offset': 0,
+  'sdbench_config': { 'debug': False,
+                      'compute_costs': True,
+                      'compute_actual_workup_costs': False,
+                      'clinician_cost': 300,
+                      'costing_method': 'batch_llm_only',
+                      'costing_parallelism': 2,
+                      'costing_multiprocess': False,
+                      'costing_source_file_path': '910511770-central-hospital-standard-charges-wa-en.xlsx',
+                      'costing_model': 'local-aux',
+                      'costing_model_args': { 'local_model_base_url': 'http://192.168.100.2:8101/v1',
+                                              'max_tokens': 800,
+                                              'extra_body': {'chat_template_kwargs': {'enable_thinking': False}}},
+                      'costing_cache_cosmosdb_enabled': False,
+                      'costing_cache_cosmosdb_endpoint': None,
+                      'costing_cache_cosmosdb_database': None,
+                      'costing_cache_cosmosdb_container': None,
+                      'costing_cache_use_managed_identity': False,
+                      'test_runner_enforce_single_turn_type': True,
+                      'max_turns': 12,
+                      'max_questions_per_turn': None,
+                      'max_tests_per_turn': None,
+                      'agent_model_args': {},
+                      'agent_extra_args': {},
+                      'gatekeeper_prompt_version': 'v6_fixed',
+                      'gatekeeper_model': 'local-aux',
+                      'gatekeeper_model_args': { 'local_model_base_url': 'http://192.168.100.2:8101/v1',
+                                                 'max_tokens': 800,
+                                                 'extra_body': {'chat_template_kwargs': {'enable_thinking': False}}},
+                      'gatekeeper_chunk_size': 10,
+                      'judge_prompt_version': 'v4_reasoning_with_tests',
+                      'judge_model': 'local-aux',
+                      'judge_model_args': { 'local_model_base_url': 'http://192.168.100.2:8101/v1',
+                                            'max_tokens': 800,
+                                            'extra_body': {'chat_template_kwargs': {'enable_thinking': False}}}}}
+Using agent: baseline
+Loaded 5 cases for dataset 'synthetic'
+Loaded 2 case sets for dataset 'synthetic': train (5), all (5)
+Filtering to specific case IDs: ['0']
+Total selected cases: 1
+Total tasks (cases × k): 1
+Completed tasks: 0
+Remaining tasks: 1
+Running 1 tasks
+Num workers: 1
+Using model: local-medgemma4b
+Case set: train
+Max turns: 12
+JSON results will be saved to: /home/brendan/rl-gains-in-clinical-tasks/V2/benchmark_smoke_logs/sdbench/run_base_tmpl_case0/csbrendan_synthetic_smoke_local-medgemma4b_train_20261108_210059_k1/json
+Processing cases:   0%|          | 0/1 [00:00<?, ?case/s]Processing cases:   0%|          | 0/1 [03:37<?, ?case/s, accuracy=0.0%, last=0:✗, avg_cost=$300]Processing cases: 100%|██████████| 1/1 [03:37<00:00, 217.56s/case, accuracy=0.0%, last=0:✗, avg_cost=$300]Processing cases: 100%|██████████| 1/1 [03:37<00:00, 217.56s/case, accuracy=0.0%, last=0:✗, avg_cost=$300]
+Loading prompt check_diagnosis version v4_reasoning_with_tests from /home/brendan/v2_bench/sdbench/sdbench/prompts/check_diagnosis/v4_reasoning_with_tests/prompt.yaml
+Loaded 1 results from JSON files
+Loading original run configuration from 20261108_210059:
+Summary saved to /home/brendan/rl-gains-in-clinical-tasks/V2/benchmark_smoke_logs/sdbench/run_base_tmpl_case0/csbrendan_synthetic_smoke_local-medgemma4b_train_20261108_210059_k1/summary.txt
+
+Summary:
+--------------------------------------------------
+Sequential processing completed at 2026-11-08 21:04:36.709826
+Total cases processed: 1
+Correct diagnoses rate: 0/1
+Model: local-medgemma4b
+Agent: baseline
+Test runner: BatchTestRunner
+Case set: train
+Max turns: 12
+Workers: 1
+Total test requests tracked: 0
+Unique tests requested: 0
+Cost analysis: Enabled
+
+========================================================================
+ACCURACY & COST REPORT  (dataset: synthetic)
+========================================================================
+
+baseline | local-medgemma4b
+  train       acc 0.0% (0/1)
+      cost[batch_llm_only] mean $300.00  total $300.00
+      ⚠ incomplete 1/5
+
+--------------------------------------------------
+All processing completed. 0/1 correct diagnoses.
+
+Generating cost estimation for all requested tests...
+
+============================================================
+AGGREGATE COST SUMMARY (BatchLLM)
+============================================================
+Cases with cost analysis: 1
+Total unique tests across all cases: 0
+Total test requests across all cases: 0
+Costed tests: 0
+Test pricing methods - CPT: 0, LLM: 0, Failed: 0
+Total clinician visits across all cases: 1
+
+Cost Analysis:
+  Aggregate cost - Tests only: $0
+  Aggregate cost - Clinician visits: $300
+  Aggregate total cost: $300
+
+  Per-Case Averages:
+    Average total cost per case: $300
+    Average test cost per case: $0
+    Average visit cost per case: $300
+    Average visits per case: 1.00
+============================================================
+Individual case cost analyses are saved in each case's JSON file.
+
+HTML overview saved to: /home/brendan/rl-gains-in-clinical-tasks/V2/benchmark_smoke_logs/sdbench/run_base_tmpl_case0/csbrendan_synthetic_smoke_local-medgemma4b_train_20261108_210059_k1/html/overview.html

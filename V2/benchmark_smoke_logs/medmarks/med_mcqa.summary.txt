@@ -1,0 +1,6 @@
+med_mcqa n=5 metadata_keys=['env_id', 'env_args', 'model', 'base_url', 'num_examples', 'rollouts_per_example', 'sampling_args', 'time', 'avg_reward', 'avg_metrics', 'avg_error', 'pass_at_k']
+ex=0 reward=1.0 answer='A' chars=1735 tail='in unmyelinated fibers.\n\nTherefore, the statement that is not true for myelinated nerve fibers is A.\n\n<answer>A</answer>' stop=max_turns_reached
+ex=1 reward=0.0 answer='A' chars=1264 tail=' filtered out of the capillaries in the glomerulus.\n\nTherefore, the statement that is not true is D.\n\n<answer>D</answer>' stop=max_turns_reached
+ex=2 reward=1.0 answer='C' chars=1596 tail='ith Down syndrome, the most accurate and definitive test is amniocentesis with chromosomal analysis.\n\n<answer>C</answer>' stop=max_turns_reached
+ex=3 reward=1.0 answer='C' chars=309 tail='om the axon terminals back towards the cell body (retrograde transport).\n\nTherefore, the answer is C.\n<answer>C</answer>' stop=max_turns_reached
+ex=4 reward=1.0 answer='A' chars=1531 tail='gluconeogenesis, and ketogenesis, the exception is glycogen synthesis, which is promoted by insulin.\n\n<answer>A</answer>' stop=max_turns_reached

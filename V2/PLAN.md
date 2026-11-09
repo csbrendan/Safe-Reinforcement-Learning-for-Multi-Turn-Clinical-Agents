@@ -1,7 +1,7 @@
 # V2 plan — from arXiv preprint to journal article
 
-*Created 2026-11-01; research strategy expanded 2026-11-08. Status: proposed plan. No V2 training has started; only
-external-benchmark smoke tests are underway. v1 (arXiv preprint, submitted 2026-11-07) is a separate track and is NOT
+*Created 2026-11-01; research strategy expanded 2026-11-08. Status: proposed plan. No V2 training has started. External-benchmark smoke
+tests are done except the V1 stop-token check; see [`benchmark_smoke_report.md`](benchmark_smoke_report.md). v1 (arXiv preprint, submitted 2026-11-07) is a separate track and is NOT
 blocked by anything here.*
 
 ## Goal
@@ -98,8 +98,8 @@ These steps may overlap where appropriate.
 |---|---|---|
 | Two DGX Sparks reachable; vLLM 0.20.1 on both; adapters load | **Confirmed** (2026-11-08) | Smoke-test preflight |
 | 4B doctor on Spark 1 with separate auxiliary model on Spark 2 | **Confirmed** for bounded AgentClinic runs | Smoke tests; not yet run at evaluation scale |
-| MedGemma's `<end_of_turn>` not stopping generation under our text-only `generation_config` | **Confirmed** on the test server; server-level fix verified | Effect on V1 results **not yet measured** |
-| Spark 1 stability under sustained vLLM load | **Open risk** | Two abrupt ends on 2026-11-08 with no shutdown record; cause unknown |
+| MedGemma's `<end_of_turn>` not stopping generation under our text-only `generation_config` | **Confirmed** on the test server; server-level fix verified | Effect on V1 results **unresolved**; see [smoke report](benchmark_smoke_report.md) |
+| Spark 1 stability under sustained vLLM load | **Open risk** | Three abrupt ends on 2026-11-08 and 11-09 with no shutdown record; cause unknown |
 | Azure 8×H100 quota, Ray cluster | **Proposed**, not validated | W0, W4 pilot |
 | MedGemma-27B checkpoint and license | **Proposed**, not verified | W4 |
 | 27B fit, speed and cost | **Unmeasured** estimates | W4 pilot replaces them |

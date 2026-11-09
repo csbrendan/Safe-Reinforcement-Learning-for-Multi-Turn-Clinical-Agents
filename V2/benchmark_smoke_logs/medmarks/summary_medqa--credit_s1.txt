@@ -1,0 +1,1 @@
+medqa--credit_s1: n=3 avg_reward=0.0 errors=0 truncated=1 rewards=[0.0, 0.0, 0.0] answers=['B', 'D', 'B'] time_ms=None

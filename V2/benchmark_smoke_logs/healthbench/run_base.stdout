@@ -1,0 +1,35 @@
+  0%|          | 0/2 [00:00<?, ?it/s] 50%|█████     | 1/2 [02:41<02:41, 161.11s/it]100%|██████████| 2/2 [03:04<00:00, 80.37s/it] 100%|██████████| 2/2 [03:04<00:00, 92.48s/it]
+{
+ "model": "medgemma4b",
+ "n": 2,
+ "secs": 185.1,
+ "grader": "local Qwen3-8B (UNOFFICIAL)",
+ "metrics": {
+  "overall_score": 0.43103448275862066,
+  "overall_score:n_samples": 2,
+  "overall_score:bootstrap_std": 0.1657817688820008,
+  "theme:hedging": 0.6666666666666666,
+  "theme:hedging:n_samples": 1,
+  "theme:hedging:bootstrap_std": 1.1102230246251565e-16,
+  "physician_agreed_category:any-reducible-uncertainty": 0.6666666666666666,
+  "physician_agreed_category:any-reducible-uncertainty:n_samples": 1,
+  "physician_agreed_category:any-reducible-uncertainty:bootstrap_std": 1.1102230246251565e-16,
+  "level:example": 0.4112554112554112,
+  "level:example:n_samples": 2,
+  "level:example:bootstrap_std": 0.1816374521262541,
+  "axis:accuracy": 0.5,
+  "axis:accuracy:n_samples": 2,
+  "axis:accuracy:bootstrap_std": 0.35435540069258153,
+  "axis:completeness": 0.2641025641025641,
+  "axis:completeness:n_samples": 2,
+  "axis:completeness:bootstrap_std": 0.09588274383546547,
+  "axis:context_awareness": 0.2553050397877984,
+  "axis:context_awareness:n_samples": 2,
+  "axis:context_awareness:bootstrap_std": 0.009497102449447677,
+  "level:cluster": 0.5833333333333333,
+  "level:cluster:n_samples": 2,
+  "level:cluster:bootstrap_std": 0.05933514744417697,
+  "cluster:hedging_any-reducible-uncertainty_accurate": 1.0,
+  "cluster:hedging_any-reducible-uncertainty_accurate:n_samples": 1,
+  "cluster:hedging_any-reducible-uncertainty_accurate:bootstrap_std": 0.0,
+  "cluster:hedging_any-reducible-uncertainty
