@@ -1,6 +1,7 @@
 # V2 plan — from arXiv preprint to journal article
 
-*Created 2026-11-01; research strategy expanded 2026-11-08 and reorganized 2026-11-09. Status: proposed plan. No V2
+*Created 2026-11-01; research strategy expanded 2026-11-08 and reorganized 2026-11-09; compute, infrastructure and budget
+revised 2026-11-09. Status: proposed plan. No V2
 training has started, and every experiment below is proposed, not completed. External-benchmark smoke tests are done
 except the V1 stop-token check; see [`benchmark_smoke_report.md`](benchmark_smoke_report.md). v1 (arXiv preprint,
 submitted 2026-11-07) is a separate track and is NOT blocked by anything here.*
@@ -8,7 +9,7 @@ submitted 2026-11-07) is a separate track and is NOT blocked by anything here.*
 ## Goal
 
 Turn the current paper into a journal-grade article (style reference: Nature Machine Intelligence) by fixing every
-major weakness of v1, accepting extra cloud spend to compress the timeline, and submit the result to a journal. V1
+major weakness of v1, within a hard ceiling of $10,000 in incremental spending, and submit the result to a journal. V1
 stays frozen as a citable preprint. Whether V2 is an expanded version of that paper or a separate one is an open
 decision; see [`../paper/v2-extension/MANUSCRIPT_PLAN.md`](../paper/v2-extension/MANUSCRIPT_PLAN.md).
 
@@ -229,18 +230,26 @@ and distinguish existing results from new ones, to avoid duplicative publication
 
 Some activities can run in parallel. All are proposed.
 
-1. Complete V1 stop-token and evaluation audits.
-2. Verify SDBench dataset access, licensing, splits and RL compatibility.
-3. Compare alternative training simulators if SDBench is not feasible.
-4. Build and validate a multi-turn GRPO training adapter at 4B (Experiment B).
-5. Validate MedGemma-27B training infrastructure, including Ray and Azure.
-6. Run a controlled 27B benchmark experiment with matched SFT and GRPO arms (Experiment A).
-7. Perform independent OOD evaluation on AgentClinic (Experiment C).
-8. Replicate key V1 findings at 27B under controlled conditions (Experiment D).
-9. Incorporate results into the expanded paper, including clinician-reviewed trajectory analysis.
+*Revised 2026-11-09 for the compute strategy. The Sparks come first, and cloud is used only if measured costs justify it.*
 
-**Can run in parallel:** steps 2 and 3 (paperwork and reading), PhysioNet credentialing, the Azure quota request, W6
-materials, and the AgentClinic harness pilot on validation cases.
+1. Resolve the V1 stop-token evaluation issue.
+2. Validate the selected external simulator and its train/validation/test splits. This includes the SDBench access
+   checks and the alternatives.
+3. Run the initial 4B multi-turn GRPO pilot locally (Experiment B).
+4. Benchmark Ray orchestration and local 27B inference.
+5. Test local 27B LoRA-GRPO feasibility.
+6. Benchmark affordable cloud training alternatives, if necessary.
+7. Run the main 27B in-distribution SFT/GRPO comparisons (Experiment A).
+8. Run independent OOD evaluations on the Sparks (Experiment C).
+9. Expand with additional seeds or reward methods only as the budget permits.
+
+**Experiment D** isn't in this order. Its simulators are deterministic and cheap to roll out, so it can train on the
+Sparks once step 5 has measured local 27B speed. Schedule it then, within the training cap. Writing the paper, including
+clinician-reviewed trajectory analysis, follows the results.
+
+**Can run in parallel:** steps 2 and 4; PhysioNet credentialing and NEJM inquiries; W6 materials; and the AgentClinic
+harness pilot on validation cases. A cloud quota request has no cost and can be filed early, but no cloud GPU is
+provisioned before BC1.
 
 ### Milestones and dependencies
 
@@ -250,8 +259,8 @@ materials, and the AgentClinic harness pilot on validation cases.
 | M2: stop-token decision | M1 | Configuration chosen and recorded for all experiments |
 | M3: training simulator decision | Access answers; go/no-go checks | One simulator selected against the criteria below, or all rejected |
 | M4: 4B pilot (Experiment B) | M2; M3 | W8 pilot criteria pass or fail, reported either way |
-| M5: 27B pipeline validated | Azure quota; 27B checkpoint and license check; M2; data-location decision for gated cases | W4 pilot measures memory fit, seconds per step, weight-sync time and real cost |
-| M6: Experiment A | M4 passes; M5; budget approval; endpoints frozen; clinician labels | Matched arms evaluated once on test, or formally skipped |
+| M5: 27B pipeline validated | 27B checkpoint and license check; M2; Ray benchmark; data-location decision for gated cases | Local 27B pilot (and the BC1 cloud pilot, if needed) measures memory fit, seconds per step, rollout throughput, sync time and cost per step |
+| M6: Experiment A | Scaling criteria S1–S9; BC2 budget checkpoint; clinician labels | Matched arms evaluated once on test, or formally skipped |
 | M7: Experiment C | M6 checkpoints; frozen evaluation subset; validated judge; W6 labels for high-risk metrics | Zero-shot and any adapted results reported, with interface failures separated |
 | M8: Experiment D | M5; W1 stratified sets; W2 validation split | Diagnostics arms complete; decision on extending to titration and refill |
 | M9: manuscript | M6–M8 as completed; W6 review | Unified-or-separate decision made and manuscript drafted |
@@ -264,12 +273,12 @@ materials, and the AgentClinic harness pilot on validation cases.
 | 4B doctor on Spark 1 with separate auxiliary model on Spark 2 | **Confirmed** for bounded AgentClinic runs | Smoke tests; not yet run at evaluation scale |
 | MedGemma's `<end_of_turn>` not stopping generation under our text-only `generation_config` | **Confirmed** on the test server; server-level fix verified | Effect on V1 results **unresolved**; see [smoke report](benchmark_smoke_report.md) |
 | Spark 1 stability under sustained vLLM load | **Open risk** | Three abrupt ends on 2026-11-08 and 11-09 with no shutdown record; cause unknown |
-| Azure 8×H100 quota, Ray cluster | **Proposed**, not validated | W0, W4 pilot |
+| Cloud GPUs (1× or 2× H100 candidates); Ray | **Proposed.** No quotes; Ray not installed | "Compute, infrastructure and budget" |
 | MedGemma-27B checkpoint and license | **Proposed**, not verified | W4 |
-| 27B fit, speed and cost | **Unmeasured** estimates | W4 pilot replaces them |
+| 27B fit, speed and cost, on Sparks or cloud | **Unmeasured** estimates | Local pilot, then BC1 if needed |
 | SDBench software with local models | **Confirmed** on 5 synthetic cases only | Smoke report; not a performance result |
 | SDBench, or an alternative, as an RL training environment | **Proposed**, not validated | Go/no-go criteria, W8 |
-| 27B training on gated cases in Azure | **Unresolved conflict** | See "Dependencies" |
+| 27B training on gated cases in the cloud | **Unresolved** | See "Dependencies" |
 
 ### Dependencies
 
@@ -280,11 +289,11 @@ materials, and the AgentClinic harness pilot on validation cases.
 - **Base-model comparability.** Compare 4B and 27B on the same stratified sets (see "How V2 combines results across
   scales").
 - **Reward provenance.** Every result reports whether its reward came from an exact verifier or a model-based judgment.
-- **Gated data and compute location.** This plan runs 27B on Azure, and earlier notes say MIMIC work should stay on the
-  local Sparks. Those conflict if Experiment A trains on `mimic`. PhysioNet's guidance prohibits sending data to third
-  parties, and allows a cloud service only if zero retention, no training use and no human review can be fully verified.
-  Resolve this before M5. The options are written confirmation that our Azure setup complies, running gated work locally
-  (27B would be far slower), or using a dataset whose terms allow it.
+- **Gated data and compute location.** The Sparks are now the default for training and evaluation, which suits gated
+  data. The conflict returns if 27B training on `mimic` or NEJM cases moves to the cloud. PhysioNet's guidance prohibits
+  sending data to third parties, and allows a cloud service only if zero retention, no training use and no human review
+  can be fully verified. Resolve this before any cloud training on gated cases. The options are written confirmation that
+  the cloud setup complies, keeping gated training local, or using a dataset whose terms allow it.
 - **Environment models for gated data.** SDBench's official configurations use external GPT-5 or o4-mini models, which
   is unlikely to be acceptable for `mimic`. Local replacements would make scores unofficial and need their own
   validation against published gatekeeper and judge behavior.
@@ -343,6 +352,289 @@ results.
 **If no candidate passes:** report that, and keep Experiment D plus an external evaluation of the existing V1 checkpoints
 on AgentClinic. Do not substitute a materially different environment under the same claim.
 
+## Compute, infrastructure and budget (revised 2026-11-09)
+
+*Infrastructure and budgeting only. The research objectives, hypotheses and benchmark plans above are unchanged. Every
+dollar figure is a provisional allocation or an estimate, not a price quote. Every throughput figure for 27B is
+unmeasured until the pilots below run.*
+
+### Hard budget ceiling
+
+**Total incremental V2 spending must stay below $10,000 USD.** This ceiling covers:
+- cloud GPU training and inference;
+- external LLM API calls for patient simulators or judges;
+- benchmark grading;
+- infrastructure pilots, debugging and failed experiments;
+- storage, networking and other cloud costs.
+
+**Excluded:** the two DGX Sparks, which we already own. Their electricity and running costs aren't zero. Estimate and log
+them separately. Whether they count against the ceiling is an open decision, and they don't count by default.
+
+**Target $5,000–$7,000 of planned spending,** leaving $3,000–$5,000 for contingencies and additional experiments.
+
+| Category | Provisional cap |
+|---|---|
+| 27B LoRA-GRPO training (Experiments A and D) | $4,000 |
+| 27B SFT and initial evaluations | $1,000 |
+| Benchmark grading and external judge APIs | $1,000 |
+| Infrastructure pilots and debugging | $1,000 |
+| Contingency | $3,000 |
+| **Total of caps** | **$10,000** |
+
+The caps add up to exactly the ceiling, so they are limits, not targets. Actual spending must stay below the total.
+Revise the caps after measuring real throughput and getting actual prices. No category may be raised without lowering
+another.
+
+**What the caps imply (arithmetic, not a forecast):**
+- $4,000 for training must cover Experiment A's two GRPO arms at 3 seeds (6 runs). If Experiment D's diagnostics core
+  also goes to the cloud, that is 12 runs, or about $330 per run. That matches the low end of the earlier
+  order-of-magnitude estimate, which was for a larger cloud node.
+- Experiment D runs on V1's deterministic simulators, with no LLM patient or judge, so it is the natural candidate for
+  local Spark training. Its titration and refill extension is outside the planned spend and would come from contingency.
+
+### Budget checkpoints
+
+Each checkpoint needs Brendan's explicit approval and a written projection before spending.
+
+| Checkpoint | Before | Requirement |
+|---|---|---|
+| BC0 | Any paid spend | A spend ledger exists, recording date, category, provider, amount, purpose and running total. Cloud budget alerts and automatic shutdown are configured |
+| BC1 | First cloud training pilot | Spending is capped at **$200–$300**, and the pilot's measurement goals are written down |
+| BC2 | Any full training grid | The measured cost per optimizer step projects all required arms, plus evaluation, to fit within the training cap, and the $3,000 contingency stays intact |
+| BC3 | Each further run | The previous run's actual cost was within 25% of its projection. Otherwise stop and re-project |
+| BC4 | Any use of contingency | Stated purpose and amount, with the remaining headroom shown |
+| BC5 | Any external API batch | Estimated tokens and cost, and confirmation that no restricted data is included |
+
+### 27B training approach
+
+**Use parameter-efficient LoRA or QLoRA, not full-parameter fine-tuning.** The primary comparisons are unchanged:
+1. MedGemma-27B base.
+2. MedGemma-27B SFT-only.
+3. MedGemma-27B SFT + outcome-only GRPO.
+4. MedGemma-27B SFT + credit-assignment GRPO.
+
+Both RL arms start from the same SFT checkpoint. Add reward methods (decoupled GRPO, VOI credit) or extra seeds only after
+the core results exist and the budget allows.
+
+**8×H100 is not the default or a commitment.** Candidate configurations, cheapest first:
+1. Local 2× DGX Spark (trainer on one, rollout server on the other, as in V1).
+2. Cloud 1× H100 80GB, only if a measured test shows it fits.
+3. Cloud 2× H100 80GB.
+4. Larger configurations, only if measured performance and total projected cost justify them.
+
+**What LoRA does and doesn't save.** LoRA cuts trainable parameters and optimizer memory. The full 27B base model still
+has to run forward and backward passes. QLoRA may cut memory further, but may slow training and cause compatibility
+problems. The pilot must account for each memory component:
+
+| Component | Rough size or behavior (estimate) | Notes |
+|---|---|---|
+| Base weights | ≈54 GB in bf16; ≈14–17 GB in 4-bit (QLoRA) | Needed on both the trainer and the rollout server |
+| LoRA parameters and optimizer state | About 0.2B trainable parameters at V1's rank 32 on all projections, so a few GB with Adam | Estimated from the published model shape; confirm by counting |
+| Activations | Grow with sequence length and micro-batch size; gradient checkpointing is required | Multi-turn episodes are long, and SDBench cases are longer than V1's |
+| Reference policy | With LoRA, the base with the adapter disabled serves as the reference, so there is no second copy of the weights. It costs an extra forward pass | Applies when the KL coefficient is above 0 |
+| KV cache (rollout server) | Grows with concurrent episodes × context length | Limits rollout batch size |
+| Rollout batch | V1 used 4 prompts × 8 rollouts per step | Larger batches need more KV cache on the server |
+
+**QLoRA cautions:**
+- If the trainer uses a 4-bit base but the rollout server samples from bf16, the policy being trained differs slightly
+  from the policy generating data. Either match the precision or measure the gap.
+- 4-bit kernel support on the Sparks' GB10 GPUs (ARM) is untested.
+
+**Do not assume single-H100 GRPO is feasible without a measured test.**
+
+### Two-Spark utilization strategy
+
+The two DGX Sparks are the **default infrastructure**. Rent GPUs only for training that the Sparks can't do in acceptable
+time, and avoid renting for evaluation. Each Spark has about 128 GB of unified CPU/GPU memory (121 GB visible), with a
+GB10 GPU.
+
+Default uses of the Sparks:
+- MedGemma-4B experimentation;
+- simulator implementation and debugging;
+- reward and verifier development;
+- 27B inference feasibility testing;
+- local benchmark evaluations;
+- small 27B LoRA-GRPO feasibility pilots;
+- patient simulator and judge model hosting;
+- Ray experimentation and distributed episode scheduling.
+
+**Proposed evaluation architecture:**
+
+| Node | Role |
+|---|---|
+| Spark 1 | MedGemma-27B on vLLM or another compatible server, loading base, SFT or GRPO adapters as needed. Evaluates checkpoints under matched inference settings |
+| Spark 2 | Patient-simulation and grading models when feasible; benchmark orchestration and simulator components; extra evaluation workers when resources allow |
+
+Possible local evaluation targets: AgentClinic, SDBench, MediQ, Medmarks, MedAgentBench, HealthBench response
+generation, and other feasible benchmarks from "Benchmark options and access".
+
+**Operational constraints:**
+- Spark 1 ended abruptly three times under vLLM load. Write results incrementally, keep telemetry on, and make long jobs
+  resumable.
+- Evaluation and two-node GRPO can't share the Sparks at the same time. The NCCL weight sync needs a fresh server and a
+  free trainer GPU.
+- Swapping Spark 1 and Spark 2 roles remains an option if Spark 1's stability doesn't improve.
+
+**Generating responses is not the same as official scoring.** Some benchmarks require specific judge models, external
+APIs or proprietary grading. Results with substitute local judges are reported separately, never as official, and are
+validated against official scoring where possible.
+
+| Benchmark | Local response generation | Official scoring needs | Local scoring status |
+|---|---|---|---|
+| AgentClinic | Works (smoke test) | The paper's protocol used GPT-4 as moderator | Unofficial; local judge unvalidated |
+| SDBench | Works on synthetic cases | GPT-5 / o4-mini configurations | Unofficial. For `mimic`, local or verified zero-retention models only |
+| MediQ | Not run | Not yet checked | Unknown |
+| Medmarks verifiable tasks | Works | Deterministic scorers, run locally | **Official** |
+| Medmarks open-ended tasks | Not run | LLM judge (default `openai/gpt-5-mini`) | Unofficial if substituted |
+| MedAgentBench | Not run; needs Docker permission | Grader downloaded separately | Unknown |
+| HealthBench | Works | GPT-4.1 grader (≈$1–2 per 50-example 4B arm, estimated) | Unofficial with a local grader. Validate with the physician-completion mode |
+
+**Restricted data.** For PhysioNet/MIMIC-derived cases, comply with dataset access and data-use restrictions. Don't send
+restricted patient records to unauthorized external APIs. Running locally on the Sparks is the default for gated data.
+
+### Ray orchestration evaluation
+
+Ray is an orchestration and scheduling layer. It may improve resource use and concurrency. **It doesn't make the GPUs
+compute any faster.** Adopt it only where it measurably helps.
+
+**Possible applications:**
+- **A. Parallel benchmark evaluation:**
+  - independent encounters run concurrently;
+  - lightweight simulator workers on CPU;
+  - GPU-backed inference servers shared, rather than one model per worker;
+  - structured trajectories, scores and error logs;
+  - results resumable after a node failure.
+- **B. Multi-turn GRPO rollout orchestration:**
+  - concurrent patient episodes;
+  - model calls routed to shared vLLM endpoints, with batching where possible;
+  - each rollout tagged with the model version that generated it, plus its rewards;
+  - on-policy integrity preserved through controlled adapter or weight synchronization, with stale rollouts rejected.
+- **C. Multi-model simulation:**
+  - doctor-policy inference and patient/judge inference as separate services;
+  - workloads scheduled across the Sparks without duplicating model weights.
+- **D. Integration with RL infrastructure:**
+  - investigate Ray-compatible training, such as veRL or OpenRLHF;
+  - don't rewrite the working TRL/GRPO loop unless a measured benefit justifies it;
+  - compare a Ray design with the existing two-node trainer/rollout architecture;
+  - any port must preserve `env_mask`, the custom `rollout_func`, the shaping, and the unshaped evaluation path.
+
+**Benchmark protocol:**
+- **Workload:** a fixed set of public validation cases, such as AgentClinic-MedQA validation, never test cases. Use the
+  same models, decoding settings and turn limits throughout. Start with 4B, and repeat with 27B once it is served.
+- **Conditions:** serial baseline; 4, 8 and 16 concurrent episodes. Each concurrency level is also run with a plain
+  thread or async pool, so that any gain from Ray is separated from the effect of concurrency itself.
+- **Measures:**
+  - completed episodes per hour;
+  - generated tokens per second;
+  - GPU utilization and memory;
+  - CPU utilization;
+  - time waiting for inference;
+  - patient and judge inference overhead;
+  - episode latency distributions;
+  - failure and timeout rates.
+- **Decision (proposed threshold):** adopt Ray for evaluation if it gives at least 1.3× the completed episodes per hour
+  of the best non-Ray pool, at an equal or lower failure rate. Also adopt it if it provides fault tolerance or resumability
+  we need and wouldn't otherwise have. More concurrency is not assumed to help. If throughput flattens because the GPU is
+  saturated, more episodes only add latency.
+- **Isolation:** install Ray in its own environment, not in the shared `~/spark1/.venv`, until it's proven compatible.
+
+### Local 27B LoRA-GRPO feasibility pilot
+
+Run this tightly bounded local experiment before renting significant cloud infrastructure. It resembles V1's
+disaggregated architecture.
+
+| Node | Role |
+|---|---|
+| Spark 1: trainer | MedGemma-27B LoRA or QLoRA training; gradient checkpointing and memory-conscious batch sizes; GRPO optimizer and reference-policy handling |
+| Spark 2: rollout server | MedGemma-27B inference; multi-turn episode generation; vLLM continuous batching where supported; simulator interaction and rollout logging |
+
+The pilot runs on a V1 simulator or the selected simulator's training cases, never test cases.
+
+**Steps:**
+1. Verify 27B inference on one Spark.
+2. Verify a 27B LoRA or QLoRA forward and backward training step.
+3. Benchmark multi-turn rollout generation.
+4. Run 5–10 genuine GRPO optimizer steps.
+5. Validate model updates, gradient masking, reward variation, adapter synchronization and checkpoint integrity.
+6. Record peak memory, GPU utilization, wall-clock time per optimizer step, rollout throughput and synchronization
+   overhead.
+
+Extrapolate the time for full experiments from these measurements, not from assumptions.
+
+**Synchronization risk.** V1 synced full merged weights over NCCL, about 54 GB per update at 27B. That path is also prone
+to the NCCL problem on any initialization after the first. Syncing only the adapter, by hot-loading LoRA weights into
+vLLM, would move far less data. That option is **untested in our pipeline**.
+
+**If the two-Spark setup is too slow,** keep the Sparks for evaluation and move only the expensive training stage to
+cloud GPUs. "Too slow" means the projected wall-clock for the required arms doesn't fit the timeline Brendan accepts. The
+earlier estimate for a V1-sized 27B run on the Sparks was about 35–50 h, before LLM-in-the-loop rollouts.
+
+### Cloud-compute decision framework
+
+Use cloud compute only when local benchmarks show a significant throughput advantage relative to the incremental cost.
+
+**Before committing to cloud training:**
+1. Price 1× H100 and 2× H100 configurations from current quotes, including region availability and quota.
+2. Establish memory feasibility for the chosen configuration.
+3. Benchmark a representative 27B LoRA-GRPO workload, with long multi-turn rollouts and realistic sequence lengths.
+4. Compare the hourly price with optimizer steps completed per hour, giving **cost per optimizer step** and **projected
+   cost per complete run**.
+5. Include overheads: setup and idle time, storage, data egress and failed runs.
+
+**First cloud experiment:** cap spending at about $200–$300 (BC1). Its only goal is to measure cost per step and projected
+cost per run. **No full training grid** starts until the projected cost of all required arms fits within the budget
+(BC2).
+
+**Hybrid option** (local rollouts, cloud training). This may save money, but evaluate four things first:
+- network latency and bandwidth for weight or adapter sync;
+- synchronization cost per step;
+- security and data-use terms, especially for gated cases;
+- policy-version staleness, and whether it breaks on-policy GRPO.
+
+Don't adopt a hybrid design without measuring these.
+
+### Go/no-go criteria for scaling from 4B to 27B
+
+All must hold before Experiment A's 27B arms launch:
+
+| # | Criterion |
+|---|---|
+| S1 | The V1 stop-token question is resolved, and V2's configuration is recorded (M1, M2) |
+| S2 | The training simulator passed its go/no-go criteria, and its splits are frozen (M3) |
+| S3 | The 4B pilot (Experiment B) passed its pre-registered criteria (M4) |
+| S4 | 27B inference measured on a Spark; the evaluation pipeline validated end to end at 4B |
+| S5 | The local 27B pilot completed, or was ruled out for a measured reason |
+| S6 | Where cloud is needed, the BC1 pilot gave a measured cost per step, and BC2 is satisfied |
+| S7 | Data location and model-release terms are confirmed for the training data |
+| S8 | Endpoints, checkpoint-selection rules and subgroup definitions are frozen before any test evaluation |
+| S9 | Brendan explicitly approves the projected spend |
+
+### Scientific safeguards (unchanged by budget pressure)
+
+- The primary objective stays the same: does credit-assignment GRPO improve clinical information gathering and decision
+  quality beyond a strong SFT baseline?
+- Keep train, validation and test strictly separate.
+- Use one shared, unshaped evaluation metric across SFT, outcome-only GRPO and credit-assignment GRPO.
+- Track safety-relevant metrics separately from aggregate reward.
+- Don't choose metrics or checkpoints based on favorable test results.
+- If the budget runs short, cut seeds or optional arms first, and say so. Don't cut validation, the SFT baseline or
+  test-set hygiene.
+
+### Confirmed vs assumed
+
+| Item | Status |
+|---|---|
+| Two Sparks, about 128 GB each, vLLM 0.20.1; 4B doctor plus Qwen3-8B environment across both | **Confirmed** (smoke tests) |
+| 4B two-node GRPO on the Sparks (V1) | **Confirmed**, with the NCCL fresh-server caveat |
+| 27B inference on a Spark | **Untested** |
+| 27B LoRA or QLoRA training step on a Spark | **Untested** |
+| QLoRA on GB10/ARM | **Untested** |
+| Adapter-only sync to vLLM | **Untested** in our pipeline |
+| Ray on the Sparks | **Untested**; not installed |
+| 1× H100 27B GRPO feasibility | **Untested**. Don't assume it |
+| Cloud prices, quota and cost per step | **Unknown**. No quotes yet |
+| Spark 1 stability under heavy load | **Open risk** |
+
 ## Keeping V2 easy to identify
 
 Best effort. The aim is that readers can spot V2 work easily, without duplicating code or adding structure.
@@ -368,8 +660,10 @@ Best effort. The aim is that readers can spot V2 work easily, without duplicatin
 - **Agustina Saenz, MD MPH:** role TBD (author vs acknowledged clinical reviewer) — her call. Not listed until
   decided. Likely owns W6 and may provide benchmark / agent-system access for W5.
 - **Compute split:** 4B work + benchmark evals on the local **DGX Sparks**; **27B on Azure** (Brendan prefers
-  ~$1–2k+ over ~4 extra weeks of Spark time). See "Compute analysis" below.
-- **Ray:** Brendan explicitly wants to learn Ray; use it on Azure for orchestration (W0).
+  ~$1–2k+ over ~4 extra weeks of Spark time). See "Compute analysis" below. *Superseded 2026-11-09: the Sparks are the
+  default for everything, cloud training is optional, and the $10,000 ceiling applies.*
+- **Ray:** Brendan explicitly wants to learn Ray; use it on Azure for orchestration (W0). *Superseded 2026-11-09: Ray is
+  evaluated on the Sparks first.*
 - **Stage the spend:** cheap checks (W1, W2, W6, W5-A) run first; the 27B grid is committed only after the
   27B pilot measures cost and W1 shows the core diagnostics effect survives with CIs.
 
@@ -413,20 +707,25 @@ Organize by **question**, with scale as a factor — not by hardware (hardware i
 
 ## Compute analysis: 27B on DGX Sparks vs Azure (estimates — the pilot replaces them)
 
+*2026-11-01 estimates, kept for reference. The decision below is superseded by "Compute, infrastructure and budget".*
+
+
 - **Memory:** 128 GB unified memory per Spark; 27B bf16 ≈ 54 GB → rollout node fits vLLM + KV cache; trainer
   with LoRA + gradient checkpointing likely fits but tight (QLoRA fallback would add a confound vs the 4B setup).
 - **Speed:** Spark decode is memory-bandwidth-bound (~270 GB/s); ~7× the parameters → each 60-step run
   **~35–50 h** vs 7 h at 4B. Weight sync grows to ~54 GB/update; the NCCL fresh-first-init issue means a crash
   late in a 2-day run costs the whole run.
 - **Spark-only total:** 27B grid ~12 days + 27B evals ~4–5 days + 4B work ~1 week ≈ **4–5 weeks** serial.
-- **Decision:** 27B on Azure (single 8×H100 node, no cross-node NCCL); Sparks keep 4B + benchmark evals.
+- **Former decision (2026-11-01, superseded):** 27B on Azure, on a single cloud node. The revised plan doesn't assume
+  8×H100. It tests the two Sparks first, then 1× or 2× H100 only if measured costs justify it.
 
 ## Timeline reality check
 
 The original 8-week estimate was ~3 wk compute (critical path) + ~2 wk engineering + ~2 wk external waiting
 (Agustina, quota) + ~2 wk analysis/writing, overlapping. Coding agents compress engineering to days and speed up
 writing. Incompressible: machine time, Agustina's turnaround (send W6 materials in week 1), Azure quota /
-PhysioNet approvals, and learning Ray. **Realistic: ~4–5 weeks with Azure for 27B** (vs ~6–7 Spark-only).
+PhysioNet approvals, and learning Ray. **Realistic: ~4–5 weeks with Azure for 27B** (vs ~6–7 Spark-only). *Superseded:
+see "Timeline".*
 
 ## The weaknesses v1 has (what each workstream fixes)
 
@@ -439,35 +738,36 @@ PhysioNet approvals, and learning Ray. **Realistic: ~4–5 weeks with Azure for 
 | 5 | Synthetic toy simulators only | W8 in-distribution training on an established simulator (Experiments A, B); W5 OOD evaluation (Experiment C) |
 | 6 | Utility matrices + audit labels never clinically validated | W6 clinician validation |
 | 7 | Missing literature (reward hacking, MediQ, ED-Copilot, VOI/active feature acquisition); claims broader than evidence | W7 writing |
-| — | Infra: fragile 2-node NCCL weight sync; user wants to learn Ray | W0 Ray on Azure |
+| — | Infra: fragile 2-node NCCL weight sync; user wants to learn Ray | W0 Ray orchestration (Sparks first) |
 
 All numbers above were reconciled against `results/probe_*.records.jsonl` on 2026-11-01.
 
 ---
 
-## W0 — Infrastructure: Ray on Azure (enabler for everything else)
+## W0 — Infrastructure: Ray orchestration (Sparks first; cloud optional)
 
-**Why:** run seeds/arms/evals in parallel instead of one 7h run at a time; escape the 2-node NCCL weight-sync
-fragility (see `framework/procreward/README.md`); learn Ray.
+**Why:** run episodes, arms and evaluations concurrently on hardware we own, make long jobs resumable given Spark 1's
+abrupt ends, and learn Ray. The 2-node NCCL weight-sync fragility (see `framework/procreward/README.md`) remains a
+separate problem. Ray doesn't fix it by itself. The full evaluation plan and adoption threshold are in "Ray orchestration
+evaluation".
 
 **Steps (in increasing ambition):**
-1. **Azure GPU quota first.** Request quota for an 8×H100 SKU (ND H100 v5 family) in one region, plus some
-   smaller single-GPU SKUs for 4B work. Quota approval can take days — file it on day 1. Check spot/low-priority
-   pricing for evals (interruptible is fine there; less so for training).
-2. **Ray cluster on Azure.** Either the Ray cluster launcher (`ray up` with the Azure provider) on VMs, or KubeRay
-   on AKS. Start with the VM launcher — fewer moving parts.
-3. **Easy win — Ray fan-out for evals.** Wrap `framework/gates/support_probe.py` as a Ray task: one task per
-   (checkpoint × eval set), each with its own vLLM on 1 GPU. All of W1/W2's re-evals become one parallel job.
-4. **Seed/arm sweeps as Ray jobs.** Launch the existing `grpo_disagg.py` runs as independent Ray jobs (one per
-   seed × arm), each with its own trainer+vLLM GPU allocation on a single node — no cross-node NCCL.
-5. **Optional, bigger: Ray-native GRPO.** Evaluate porting to a Ray-based RL framework (veRL or OpenRLHF both run
-   on Ray and support GRPO; veRL has multi-turn/agent rollout support). Only do this if step 4 is too slow for
-   W4. Porting risk: must preserve `env_mask` (no gradient on simulator tokens), the custom `rollout_func`, the
-   info-gain/DREAM shaping, and the invariant that env/gates/eval stay unshaped. **Gate:** reproduce one existing
-   4B diagnostics run (e.g. plain GRPO seed 1) within noise before trusting the port.
+1. **Ray on the two Sparks,** in its own environment.
+2. **Ray fan-out for evaluations.** Wrap episode-level evaluation, and `framework/gates/support_probe.py`, as Ray tasks
+   that share the GPU-backed vLLM servers, instead of loading a model per worker. Benchmark it against a plain pool at
+   serial, 4, 8 and 16 concurrent episodes.
+3. **Seed and arm sweeps as Ray jobs.** Queue the existing `grpo_disagg.py` runs, one at a time on the Sparks, honoring
+   the fresh-server-first-init rule.
+4. **Optional, bigger: Ray-native GRPO.** Evaluate porting to a Ray-based RL framework (veRL or OpenRLHF both run on Ray
+   and support GRPO; veRL has multi-turn/agent rollout support). Do this only if a measured benefit justifies replacing
+   the working TRL loop. Porting risk: it must preserve `env_mask` (no gradient on simulator tokens), the custom
+   `rollout_func`, the info-gain/DREAM shaping, and the invariant that env/gates/eval stay unshaped. **Gate:** reproduce
+   one existing 4B diagnostics run (e.g. plain GRPO seed 1) within noise before trusting the port.
+5. **Cloud, only if needed:** the same Ray jobs on a 1× or 2× H100 node, after BC1. Request quota early, since requesting
+   it is free.
 
-**Done when:** one command launches N seeds × M arms on Azure and a second command evaluates all resulting
-checkpoints, results landing in `results/` in the existing probe format.
+**Done when:** one command evaluates a list of checkpoints on a benchmark across both Sparks, with resumable per-episode
+results in the existing probe format, and the Ray-vs-pool benchmark is recorded.
 
 ---
 
@@ -522,13 +822,14 @@ entropy credit (paired CI). Failure is still reportable ("decision-aware credit 
   arms. To stage the spend, the original diagnostics grid plus an SFT-only arm is the **core**; titration and refill
   are an **extension**, committed only after the pilot measures cost and the core reports. Biased-SFT repair stays out
   of the 27B scope.
-- **Layout:** one 8×H100 node — e.g. 4 GPUs trainer (LoRA) + 4 GPUs vLLM (tensor-parallel 4). Single node avoids
-  the cross-node NCCL problem.
-- **Hardware decision (2026-11-01):** 27B runs on **Azure**, not the DGX Sparks. Spark-only 27B was estimated at
-  ~35–50 h/run (~4–5 weeks for the grid + evals, with NCCL first-init risk on every 2-day run); Brendan prefers to
-  spend ~$1–2k+ to save those weeks. Sparks stay on 4B work (W1–W3) and benchmark evals (W5).
-- **Pilot first:** one 10–20-step run on the Azure node with the real config, measuring: fits in memory? seconds
-  per step, rollout tokens/s, weight-sync time. Extrapolate to 60 steps × grid size → real cost before committing.
+- **Layout (revised 2026-11-09):** LoRA or QLoRA only. First, the two Sparks as trainer and rollout server, as in V1.
+  Cloud 1× or 2× H100 only if the measured cost per step justifies it. 8×H100 is not assumed. The earlier plan of one
+  8×H100 node (4 trainer + 4 vLLM GPUs) on Azure is superseded.
+- **Earlier estimate:** Spark-only 27B at ~35–50 h per run, with NCCL first-init risk on every 2-day run. The local
+  pilot replaces this with measurements.
+- **Pilot first:** the local 27B pilot (5–10 real GRPO steps), then BC1 if cloud is considered. Measure memory fit,
+  seconds per step, rollout tokens/s and sync time. Extrapolate to 60 steps × the required arms to get real time and cost
+  before committing.
 
 **Pre-registered:** the v1 pattern "replicates at scale" if plain GRPO lowers high-risk value or gathering vs
 base and credit-assignment does not. If 27B plain GRPO is already safe, that is itself a finding (scale changes
@@ -672,59 +973,54 @@ pilot tests feasibility. It can't establish which arm is better.
 
 ---
 
-## Timeline (accelerated, cloud-backed; weeks after v1 ships on 2026-11-15)
+## Timeline (revised 2026-11-09)
 
-*Original week-by-week sketch below; with coding agents + Azure the realistic total is ~4–5 weeks (see "Timeline
-reality check").*
+*No reliable total exists until the pilots measure throughput, and data access may take weeks. The earlier "~4–5 weeks
+with Azure" estimate no longer applies. Phases overlap where noted.*
 
-| weeks | work |
-|---|---|
-| now → 11-15 | v1 to arXiv (separate track). **Day 1 of V2: file Azure GPU quota request + message Agustina.** |
-| 1 | W0 steps 1–3 (Ray cluster, eval fan-out); W2 validation split; W1 stratified sets; W7 lit additions start |
-| 2 | W1 re-eval of all existing ckpts + 5-seed dx runs (parallel on Ray); W3 VOI-credit implementation + CPU checks |
-| 3 | W3 4B arms; W4 27B pilot run; W5 benchmark adapter; W6 materials sent to Agustina |
-| 4–5 | W4 full 27B grid; W5 benchmark evals; W6 ratings back → κ analysis |
-| 6–7 | Analysis, figures, rewrite (W7) |
-| 8 | Internal review → journal submission, plus an arXiv posting chosen under `paper/v2-extension/MANUSCRIPT_PLAN.md` |
+| Phase | Work | Machines | Exit |
+|---|---|---|---|
+| 0 | V1 stop-token rerun; PhysioNet credentialing and NEJM inquiry; Ray environment; W6 materials to Agustina | Sparks (preferably Spark 2) | M1, M2 |
+| 1 | Simulator desk and environment checks; AgentClinic harness on validation; Ray-vs-pool benchmark at 4B | Sparks | M3; Ray decision |
+| 2 | 4B adapter and bounded GRPO pilot (Experiment B); W1/W2 sets; W3 4B arms | Sparks | M4 |
+| 3 | 27B inference on a Spark; local 27B LoRA-GRPO pilot | Sparks | Local measurement of cost and time |
+| 4 | Only if needed: price 1×/2× H100 and run a cloud pilot (≤$200–300) | Cloud | BC1, BC2 |
+| 5 | Experiment A core: 27B SFT, outcome-only and credit-assignment GRPO, 3 seeds | Sparks and/or cloud | M6 |
+| 5′ | Experiment D diagnostics core, in parallel where hardware allows | Sparks preferred | M8 |
+| 6 | Experiment C OOD evaluation; clinician review | Sparks | M7 |
+| 7 | Expansions as budget permits; analysis; manuscript (see `paper/v2-extension/MANUSCRIPT_PLAN.md`) | — | M9 |
 
-**Mapping to the reorganized strategy (2026-11-09).** The table above remains the baseline sketch, and it predates the
-priority order under "Implementation priorities", which now governs. Experiment D maps to the W1, W2 and W4 rows.
-Experiment C maps to the W5 and W6 rows. Experiments A and B are additional. Simulator access alone may take weeks
-(PhysioNet review typically takes 1–2 weeks, and NEJM's response time is unknown), and rollouts may be slow, so the
-"~4–5 weeks" estimate no longer covers the full plan. Re-estimate after the go/no-go decision and the 27B pilot.
+**Known delays:** PhysioNet review typically takes 1–2 weeks after the CITI course, and NEJM's response time is unknown.
+Training on the Sparks is serial and slow at 27B. If cloud is used, quota approval can take days. Re-estimate the
+timeline after phase 3.
 
-## Budget (rough — get real quotes)
+## Budget (revised 2026-11-09)
 
-Treat as order-of-magnitude only; Azure on-demand H100 pricing varies by region and changes. Get a quote and run
-the W4 pilot before committing.
+**The ceiling, caps and checkpoints are in "Compute, infrastructure and budget".** The table below maps experiments to
+those caps. Every figure is a placeholder until measured.
 
-| item | estimate |
-|---|---|
-| W1/W2/W3 4B training + all evals (single GPUs, spot where possible) | low hundreds of $ |
-| W4 27B grid (6–9 runs + evals on an 8×H100 node) | ~$2–6k |
-| W5 benchmark evals | low hundreds of $ |
-| Idle/debugging overhead (Ray setup, failed runs) | budget +30% |
-| **Total** | **roughly $3–8k** |
+| Item | Default machines | Cap it draws on | Estimate |
+|---|---|---|---|
+| W1/W2/W3 4B training and all 4B evals | Sparks | — | No cloud spend; electricity logged separately |
+| Experiment B: go/no-go checks and 4B pilot | Sparks | — | No cloud spend if environment models run locally. A NEJM license fee, if any, is unknown and isn't covered by any cap yet |
+| Ray benchmark; local 27B pilot | Sparks | Infrastructure pilots ($1,000) | No cloud spend |
+| Cloud pilot, if needed | 1× or 2× H100 | Infrastructure pilots | ≤$200–300 (BC1) |
+| Experiment A: 27B SFT and initial evals | Sparks, or cloud for SFT | SFT and evaluations ($1,000) | Measured at BC2 |
+| Experiment A: 2 GRPO arms × 3 seeds | Sparks and/or cloud | Training ($4,000) | Measured at BC2. LLM-in-the-loop rollouts should cost several times a V1 run |
+| Experiment D core: diagnostics, 2 arms × 3 seeds + SFT | Sparks preferred | Training | Cloud would draw roughly half the training cap at about $330 per run |
+| Experiment D extension: titration and refill | Sparks | Contingency | Only if headroom remains |
+| Experiment C and other benchmark evaluations | Sparks | Grading and APIs ($1,000), for official graders only | HealthBench official grader ≈$1–2 per 50-example 4B arm (estimate); SDBench official models not priced |
+| Extra seeds and reward methods (decoupled, VOI) | Sparks first | Contingency ($3,000) | After core results, by BC4 |
 
-**Expanded-strategy estimate (updated 2026-11-09, order of magnitude, derived from the table above and not measured).** The W4
-row implies roughly $330–670 per 27B run.
+**Earlier estimates (superseded).** These assumed an 8×H100 node: a 27B grid of ~$2–6k, roughly $3–8k in total, and
+~$330–670 per 27B run, against Brendan's earlier ~$1–2k comfort level for 27B. Keep them only as a sense of scale.
 
-| item | scope | estimate |
-|---|---|---|
-| Experiment B: go/no-go checks + 4B pilot | Local Sparks | No cloud spend, if environment models run locally. A NEJM license fee, if any, is unknown |
-| Experiment A at 27B | Conditional on pilot: base, SFT, 2 GRPO arms × ≥3 seeds | **Not estimated.** LLM-in-the-loop rollouts should cost several times a V1 run; the pilot measures it. Gated data may rule out Azure |
-| Experiment C | Local Sparks; 27B checkpoints evaluated locally or on Azure | Low hundreds of $ (the W5 row) |
-| Experiment D core | Diagnostics: 6 GRPO runs + 1 SFT, plus evals | ~$2–6k (the W4 row) |
-| Experiment D extension | Titration and refill: 12 GRPO runs + 2 SFT, 3 seeds | ~$5–9k additional |
-
-The full expansion would exceed both the $3–8k total above and Brendan's ~$1–2k comfort level for 27B. Each step past
-the pilot therefore needs his explicit approval, and fallbacks include fewer seeds or a smaller extension. External
-API use (SDBench's defaults route to GPT-5 via OpenRouter; HealthBench's official grader uses GPT-4.1) also needs
-approval, and it is not allowed for MIMIC-derived data.
-
-Cost controls: shut nodes down between jobs; spot instances for evals; pilot before grid. **4B work and benchmark
-evals run on the local DGX Sparks; only 27B goes to Azure.** Brendan's comfort level for 27B is ~$1–2k — the pilot
-decides whether the full grid fits that; if not, cut to 2 seeds/arm or drop the VOI arm at 27B.
+**Cost controls:**
+- Shut cloud nodes down between jobs, and set budget alerts and automatic shutdown.
+- Use spot capacity only for interruptible evaluation, never for training that can't resume.
+- Pilot before any grid.
+- Cut seeds or optional arms before cutting validation or baselines.
+- External APIs need approval for each batch (BC5), and are never used for MIMIC-derived data unless verified compliant.
 
 ## Open decisions (Brendan)
 
@@ -733,13 +1029,18 @@ decides whether the full grid fits that; if not, cut to 2 seeds/arm or drop the 
 - [ ] Experiment D: define the SFT-only arm, and whether to train a matched 4B SFT-only arm
 - [ ] Experiment A: source of SFT demonstrations, given that SDBench has no oracle
 - [ ] Experiment A: official test partition only, or also a larger held-out set taken from validation?
-- [ ] Gated data: who runs it (Brendan's PhysioNet credentialing, or Agustina), and may it run on Azure?
+- [ ] Gated data: who runs it (Brendan's PhysioNet credentialing, or Agustina), and may it ever run in the cloud?
+- [ ] Do Spark electricity and running costs count against the $10,000 ceiling? (Default: no; logged separately)
+- [ ] After the local 27B pilot: keep 27B training on the Sparks, or go to the BC1 cloud pilot?
+- [ ] Cloud configuration, if any: 1× or 2× H100, chosen on measured cost per step
+- [ ] LoRA or QLoRA at 27B (and matching precision on the rollout server)
+- [ ] Adopt Ray for evaluation after the Ray-vs-pool benchmark?
 - [ ] Unified expanded paper or separate V2 paper (see `paper/v2-extension/MANUSCRIPT_PLAN.md`)
 - [ ] Stop-token configuration for V2 training and evaluation (after the smoke-test measurement)
 - [ ] Select SDBench, an alternative or no training simulator after the go/no-go checks
 - [ ] Experiment A: approve 27B training if the 4B pilot passes
 - [ ] W4: include the VOI-credit arm at 27B, or only plain vs entropy credit?
-- [ ] W0 step 5: port to a Ray-native RL framework, or keep TRL + Ray job orchestration?
+- [ ] W0 step 4: port to a Ray-native RL framework, or keep TRL + Ray job orchestration?
 - [ ] Agustina's V2 role (V1 lists her as a co-author)
 - [ ] Target journal(s) for submission (leaning TMLR; ML4H/CHIL alternatives; NMI only if W5/W6 are striking)
 - [ ] arXiv endorser identified (Agustina, if eligible)

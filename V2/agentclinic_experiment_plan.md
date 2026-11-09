@@ -302,7 +302,7 @@ one moderator call. That is ≤ 41 calls per episode, and the prompt grows every
 **Phase 3:** multi-turn GRPO with LLM-in-the-loop environment calls. Expect several times the V1 cost of ≈ 7 h
 per 60-step run; needs a pilot.
 
-**27B (W4):** run the same harness on Azure after the 4B pilot. Environment-model calls dominate, not policy size.
+**27B (W4):** run the same harness on the Sparks after the 4B pilot, with 27B on one Spark and the environment models on the other (revised 2026-11-09; cloud is only for training, and only if justified). Environment-model calls dominate, not policy size.
 
 **Infrastructure:** our own harness needs no new heavy dependencies; it reuses vLLM, our parser, and plain HTTP
 calls. AgentClinic's `openai==0.28` pin is avoided.
