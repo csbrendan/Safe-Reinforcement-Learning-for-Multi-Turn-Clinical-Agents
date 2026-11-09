@@ -69,6 +69,7 @@ tasks/                  rx_triage/, diagnostics/, titration/  (longterm_care/ is
 scripts/                experiment runners and figure scripts
 figures/                make_fig_dialogues.py (paper Figure 2)
 paper/                  LaTeX source, bibliography and compiled PDF of the preprint
+paper/v2-extension/     working copy of the manuscript for the V2 extension
 docs/                   design notes and per-run reports (docs/eval_runs/), the project's lab notebook
 V2/                     extension: plan, experiment designs, benchmark smoke tests
 ```

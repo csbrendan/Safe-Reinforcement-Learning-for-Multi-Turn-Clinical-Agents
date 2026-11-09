@@ -6,8 +6,9 @@ experiments that live in this repo. Treat the `docs/` files as the run-by-run la
 file as the source of truth for the paper's final thesis and framing** — the write-up evolved past some of the
 older `docs/` phrasing, and this file reflects where it landed.
 
-> **V1 is frozen (tag `arxiv-v1`).** Do not change `paper/main.tex`, `paper/figs/` or existing results. V2 work goes in
-> `V2/`, and the V2 manuscript in `paper/v2-extension/`. See "Repository separation" in `V2/PLAN.md`.
+> **V1 paper is frozen (tag `arxiv-v1`); edit the V2 manuscript in `paper/v2-extension/`.** Keep V2 docs and new
+> experiments in `V2/` or prefix them `v2_`. Shared code may be updated directly, with no duplication. See "Keeping V2
+> easy to identify" in `V2/PLAN.md`.
 
 ## The paper
 

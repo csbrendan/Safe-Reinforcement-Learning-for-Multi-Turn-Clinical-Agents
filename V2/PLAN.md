@@ -114,15 +114,16 @@ These steps may overlap where appropriate.
   scales").
 - **Reward provenance.** Every result reports whether its reward came from an exact verifier or a model-based judgment.
 
-## Repository separation: V1 is frozen
+## Keeping V2 easy to identify
 
-- **Frozen V1 record:** the arXiv submission is tagged `arxiv-v1`. Do not modify `paper/main.tex`, `paper/figs/`,
-  `paper/main.pdf`, `paper/arxiv_submission_v1.zip`, or existing results and checkpoints.
-- **V2 manuscript:** edit only [`paper/v2-extension/`](../paper/v2-extension/), a separate working copy.
-- **V2 docs, experiment designs, logs and new code:** keep them under `V2/`. Write new results to a V2 location, not
-  over existing files in `results/`.
-- **Shared code:** import from `framework/` and `tasks/` rather than editing them. If a change can't be avoided, it
-  must be additive and leave V1 behavior as the default, so V1 runs still reproduce. This includes new reward options.
+Best effort. The aim is that readers can spot V2 work easily, without duplicating code or adding structure.
+
+- **V1 paper:** the arXiv submission is tagged `arxiv-v1`. Don't edit `paper/main.tex`, `paper/figs/`, `paper/main.pdf` or
+  `paper/arxiv_submission_v1.zip`. The V2 manuscript lives in [`paper/v2-extension/`](../paper/v2-extension/).
+- **V2 docs and wholly new experiments:** keep them under `V2/`, or use a `v2_` prefix when they belong elsewhere (for
+  example `scripts/v2_*`, `results/v2_*`, `checkpoints/v2_*`).
+- **Shared code:** update `framework/` and `tasks/` directly when needed, with no copies or parallel versions. Keep V1
+  behavior available where it's cheap, and don't overwrite existing V1 results.
 - **External clones, venvs and generated data** stay outside the repo (currently `~/v2_bench/`).
 
 ## Decisions so far (2026-11-01)
