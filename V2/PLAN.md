@@ -9,7 +9,7 @@ submitted 2026-11-07) is a separate track and is NOT blocked by anything here.*
 ## Goal
 
 Turn the current paper into a journal-grade article (style reference: Nature Machine Intelligence) by fixing every
-major weakness of v1, within a hard ceiling of $10,000 in incremental spending, and submit the result to a journal. V1
+major weakness of v1, within a hard $10,000 ceiling on GRPO training spend, and submit the result to a journal. V1
 stays frozen as a citable preprint. Whether V2 is an expanded version of that paper or a separate one is an open
 decision; see [`../paper/v2-extension/MANUSCRIPT_PLAN.md`](../paper/v2-extension/MANUSCRIPT_PLAN.md).
 
@@ -244,7 +244,7 @@ Some activities can run in parallel. All are proposed.
 9. Expand with additional seeds or reward methods only as the budget permits.
 
 **Experiment D** isn't in this order. Its simulators are deterministic and cheap to roll out, so it can train on the
-Sparks once step 5 has measured local 27B speed. Schedule it then, within the training cap. Writing the paper, including
+Sparks once step 5 has measured local 27B speed. Schedule it then, within the GRPO caps. Writing the paper, including
 clinician-reviewed trajectory analysis, follows the results.
 
 **Can run in parallel:** steps 2 and 4; PhysioNet credentialing and NEJM inquiries; W6 materials; and the AgentClinic
@@ -360,37 +360,45 @@ unmeasured until the pilots below run.*
 
 ### Hard budget ceiling
 
-**Total incremental V2 spending must stay below $10,000 USD.** This ceiling covers:
-- cloud GPU training and inference;
-- external LLM API calls for patient simulators or judges;
-- benchmark grading;
-- infrastructure pilots, debugging and failed experiments;
-- storage, networking and other cloud costs.
+*Scope clarified 2026-11-09 by Brendan: the ceiling covers GRPO training, not all V2 spending, and electricity is not a
+concern.*
 
-**Excluded:** the two DGX Sparks, which we already own. Their electricity and running costs aren't zero. Estimate and log
-them separately. Whether they count against the ceiling is an open decision, and they don't count by default.
+**GRPO training spend must stay below $10,000 USD.** It covers every incremental cost of 27B GRPO training:
+- cloud GPU time for GRPO runs, including rollout generation during training;
+- GRPO pilots, debugging and failed runs, including the BC1 cloud pilot;
+- storage, networking and other cloud costs attributable to GRPO training;
+- external API calls made inside training rollouts, such as patient simulators or judges, if any.
 
-**Target $5,000–$7,000 of planned spending,** leaving $3,000–$5,000 for contingencies and additional experiments.
+**Target $5,000–$7,000 of planned GRPO spend,** leaving $3,000–$5,000 for contingencies, extra seeds and additional
+reward methods.
 
-| Category | Provisional cap |
+| GRPO training | Provisional cap |
 |---|---|
-| 27B LoRA-GRPO training (Experiments A and D) | $4,000 |
-| 27B SFT and initial evaluations | $1,000 |
-| Benchmark grading and external judge APIs | $1,000 |
-| Infrastructure pilots and debugging | $1,000 |
-| Contingency | $3,000 |
+| Core GRPO runs (Experiment A; Experiment D if trained in the cloud) | $6,000 |
+| GRPO pilots and debugging | $1,000 |
+| Contingency (extra seeds, reward methods, reruns) | $3,000 |
 | **Total of caps** | **$10,000** |
 
 The caps add up to exactly the ceiling, so they are limits, not targets. Actual spending must stay below the total.
-Revise the caps after measuring real throughput and getting actual prices. No category may be raised without lowering
-another.
+Revise the caps after measuring real throughput and getting actual prices.
+
+**Outside the ceiling, but still each needing Brendan's approval:**
+
+| Item | Provisional estimate | Notes |
+|---|---|---|
+| 27B SFT and initial evaluations | Up to ~$1,000 if run in the cloud | $0 if run on the Sparks |
+| Benchmark grading and external judge APIs | Up to ~$1,000 | HealthBench official grader ≈$1–2 per 50-example 4B arm (estimate) |
+| Non-GRPO infrastructure (Ray tests, inference pilots) | Up to ~$1,000 if cloud is used | $0 on the Sparks |
+
+No overall V2 ceiling is set beyond these. Spark electricity and running costs are excluded and need not be tracked. The
+Sparks themselves are already owned.
 
 **What the caps imply (arithmetic, not a forecast):**
-- $4,000 for training must cover Experiment A's two GRPO arms at 3 seeds (6 runs). If Experiment D's diagnostics core
-  also goes to the cloud, that is 12 runs, or about $330 per run. That matches the low end of the earlier
-  order-of-magnitude estimate, which was for a larger cloud node.
-- Experiment D runs on V1's deterministic simulators, with no LLM patient or judge, so it is the natural candidate for
-  local Spark training. Its titration and refill extension is outside the planned spend and would come from contingency.
+- Experiment A's two GRPO arms at 3 seeds are 6 runs. If Experiment D's diagnostics core also trains in the cloud, that is
+  12 runs. The $6,000 core cap then allows about $500 per run for 12, or $1,000 per run for 6. That is at or above the
+  earlier order-of-magnitude estimate of ~$330–670 per run.
+- Experiment D runs on V1's deterministic simulators, with no LLM patient or judge, so it remains the natural candidate
+  for local Spark training. Its titration and refill extension would come from contingency.
 
 ### Budget checkpoints
 
@@ -398,11 +406,11 @@ Each checkpoint needs Brendan's explicit approval and a written projection befor
 
 | Checkpoint | Before | Requirement |
 |---|---|---|
-| BC0 | Any paid spend | A spend ledger exists, recording date, category, provider, amount, purpose and running total. Cloud budget alerts and automatic shutdown are configured |
+| BC0 | Any paid spend | A spend ledger exists, recording date, category (inside or outside the GRPO ceiling), provider, amount, purpose and running GRPO total. Cloud budget alerts and automatic shutdown are configured |
 | BC1 | First cloud training pilot | Spending is capped at **$200–$300**, and the pilot's measurement goals are written down |
-| BC2 | Any full training grid | The measured cost per optimizer step projects all required arms, plus evaluation, to fit within the training cap, and the $3,000 contingency stays intact |
+| BC2 | Any full GRPO grid | The measured cost per optimizer step projects all required GRPO arms to fit within the $6,000 core cap, and the $3,000 contingency stays intact |
 | BC3 | Each further run | The previous run's actual cost was within 25% of its projection. Otherwise stop and re-project |
-| BC4 | Any use of contingency | Stated purpose and amount, with the remaining headroom shown |
+| BC4 | Any use of GRPO contingency | Stated purpose and amount, with the remaining headroom shown |
 | BC5 | Any external API batch | Estimated tokens and cost, and confirmation that no restricted data is included |
 
 ### 27B training approach
@@ -661,7 +669,7 @@ Best effort. The aim is that readers can spot V2 work easily, without duplicatin
   decided. Likely owns W6 and may provide benchmark / agent-system access for W5.
 - **Compute split:** 4B work + benchmark evals on the local **DGX Sparks**; **27B on Azure** (Brendan prefers
   ~$1–2k+ over ~4 extra weeks of Spark time). See "Compute analysis" below. *Superseded 2026-11-09: the Sparks are the
-  default for everything, cloud training is optional, and the $10,000 ceiling applies.*
+  default for everything, cloud training is optional, and the $10,000 GRPO-training ceiling applies.*
 - **Ray:** Brendan explicitly wants to learn Ray; use it on Azure for orchestration (W0). *Superseded 2026-11-09: Ray is
   evaluated on the Sparks first.*
 - **Stage the spend:** cheap checks (W1, W2, W6, W5-A) run first; the 27B grid is committed only after the
@@ -996,21 +1004,21 @@ timeline after phase 3.
 
 ## Budget (revised 2026-11-09)
 
-**The ceiling, caps and checkpoints are in "Compute, infrastructure and budget".** The table below maps experiments to
-those caps. Every figure is a placeholder until measured.
+**The GRPO ceiling, caps and checkpoints are in "Compute, infrastructure and budget".** The table below maps
+experiments to them. Every figure is a placeholder until measured.
 
-| Item | Default machines | Cap it draws on | Estimate |
+| Item | Default machines | Budget line | Estimate |
 |---|---|---|---|
-| W1/W2/W3 4B training and all 4B evals | Sparks | — | No cloud spend; electricity logged separately |
-| Experiment B: go/no-go checks and 4B pilot | Sparks | — | No cloud spend if environment models run locally. A NEJM license fee, if any, is unknown and isn't covered by any cap yet |
-| Ray benchmark; local 27B pilot | Sparks | Infrastructure pilots ($1,000) | No cloud spend |
-| Cloud pilot, if needed | 1× or 2× H100 | Infrastructure pilots | ≤$200–300 (BC1) |
-| Experiment A: 27B SFT and initial evals | Sparks, or cloud for SFT | SFT and evaluations ($1,000) | Measured at BC2 |
-| Experiment A: 2 GRPO arms × 3 seeds | Sparks and/or cloud | Training ($4,000) | Measured at BC2. LLM-in-the-loop rollouts should cost several times a V1 run |
-| Experiment D core: diagnostics, 2 arms × 3 seeds + SFT | Sparks preferred | Training | Cloud would draw roughly half the training cap at about $330 per run |
-| Experiment D extension: titration and refill | Sparks | Contingency | Only if headroom remains |
-| Experiment C and other benchmark evaluations | Sparks | Grading and APIs ($1,000), for official graders only | HealthBench official grader ≈$1–2 per 50-example 4B arm (estimate); SDBench official models not priced |
-| Extra seeds and reward methods (decoupled, VOI) | Sparks first | Contingency ($3,000) | After core results, by BC4 |
+| W1/W2/W3 4B training and all 4B evals | Sparks | — | No cloud spend |
+| Experiment B: go/no-go checks and 4B pilot | Sparks | — | No cloud spend if environment models run locally. A NEJM license fee, if any, is unknown and outside the ceiling |
+| Ray benchmark; local 27B pilot | Sparks | — | No cloud spend |
+| Cloud GRPO pilot, if needed | 1× or 2× H100 | GRPO pilots ($1,000) | ≤$200–300 (BC1) |
+| Experiment A: 27B SFT and initial evals | Sparks, or cloud for SFT | Outside ceiling (~$1,000 if cloud) | Measured |
+| Experiment A: 2 GRPO arms × 3 seeds | Sparks and/or cloud | GRPO core ($6,000) | Measured at BC2. LLM-in-the-loop rollouts should cost several times a V1 run |
+| Experiment D core: diagnostics, 2 arms × 3 seeds + SFT | Sparks preferred | GRPO core, if cloud | About $500 per run if all 12 core runs go to the cloud |
+| Experiment D extension: titration and refill | Sparks | GRPO contingency | Only if headroom remains |
+| Experiment C and other benchmark evaluations | Sparks | Outside ceiling (grading and APIs, ~$1,000) | Official graders only. SDBench official models not priced |
+| Extra seeds and reward methods (decoupled, VOI) | Sparks first | GRPO contingency ($3,000) | After core results, by BC4 |
 
 **Earlier estimates (superseded).** These assumed an 8×H100 node: a 27B grid of ~$2–6k, roughly $3–8k in total, and
 ~$330–670 per 27B run, against Brendan's earlier ~$1–2k comfort level for 27B. Keep them only as a sense of scale.
@@ -1030,11 +1038,11 @@ those caps. Every figure is a placeholder until measured.
 - [ ] Experiment A: source of SFT demonstrations, given that SDBench has no oracle
 - [ ] Experiment A: official test partition only, or also a larger held-out set taken from validation?
 - [ ] Gated data: who runs it (Brendan's PhysioNet credentialing, or Agustina), and may it ever run in the cloud?
-- [ ] Do Spark electricity and running costs count against the $10,000 ceiling? (Default: no; logged separately)
 - [ ] After the local 27B pilot: keep 27B training on the Sparks, or go to the BC1 cloud pilot?
 - [ ] Cloud configuration, if any: 1× or 2× H100, chosen on measured cost per step
 - [ ] LoRA or QLoRA at 27B (and matching precision on the rollout server)
 - [ ] Adopt Ray for evaluation after the Ray-vs-pool benchmark?
+- [ ] Set an overall V2 ceiling for non-GRPO spending (SFT, evaluation, APIs), or keep approving it item by item?
 - [ ] Unified expanded paper or separate V2 paper (see `paper/v2-extension/MANUSCRIPT_PLAN.md`)
 - [ ] Stop-token configuration for V2 training and evaluation (after the smoke-test measurement)
 - [ ] Select SDBench, an alternative or no training simulator after the go/no-go checks
