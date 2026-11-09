@@ -102,7 +102,7 @@ Pointing vLLM at a separate `generation_config` with `[1, 106]` fixes this serve
 - **Diagnosis commits:** `DIAGNOSIS READY:` works, but the 200-token cap can cut off a reply right at the marker. My harness first counted that as diagnosed, and now records it as `invalid_commit`. That fix compiles but hasn't been rerun on a live case.
 - **Remaining doctor weakness:** turns can run long and pack in many questions, and 2–4 turns per run still hit the token cap in some cases.
 - **Answer leakage:** 27 of 215 cases contain the diagnosis verbatim in `Test_Results` after normalizing case and punctuation (case IDs in `agentclinic/a1.stdout`). This morning's cruder string check counted 28, so finalize the list with one agreed rule. I tested only clean cases, and the doctor never sees that field directly. One leak was flagged in run A1, from a measurement model inventing a biopsy result, not from the case data. The audit only catches verbatim text, so paraphrases and abbreviations can slip through.
-- **Correction to the plan doc:** I did not reproduce the "final-turn notice is dropped" bug listed in `docs/v2_agentclinic_experiment_plan.md`; on reading the code, the notice does reach the doctor on the last turn. Worth rechecking before relying on that entry.
+- **Correction to the plan doc:** I did not reproduce the "final-turn notice is dropped" bug listed in `V2/agentclinic_experiment_plan.md`; on reading the code, the notice does reach the doctor on the last turn. Worth rechecking before relying on that entry.
 
 ## SDBench
 

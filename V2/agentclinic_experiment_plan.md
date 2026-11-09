@@ -1,7 +1,7 @@
 # V2 plan: AgentClinic as an external interactive clinical benchmark
 
 *Drafted 2026-11-07. Planning only: nothing has been trained, installed, or downloaded beyond a read-only
-clone of the AgentClinic repository. This expands workstream **W5, Option A** of [`V2/PLAN.md`](../V2/PLAN.md).*
+clone of the AgentClinic repository. This expands workstream **W5, Option A** of [`V2/PLAN.md`](PLAN.md).*
 
 **How to read this document.** Every statement is tagged as one of:
 - **[VERIFIED]**: checked against the AgentClinic code, the paper, or our own repository.

@@ -70,7 +70,7 @@ scripts/                experiment runners and figure scripts
 figures/                make_fig_dialogues.py (paper Figure 2)
 paper/                  LaTeX source, bibliography and compiled PDF of the preprint
 docs/                   design notes and per-run reports (docs/eval_runs/), the project's lab notebook
-V2/                     plan for the ongoing extension
+V2/                     extension: plan, experiment designs, benchmark smoke tests
 ```
 
 Model weights, checkpoints, generated data and run logs are not tracked.
@@ -118,7 +118,7 @@ external interactive clinical benchmark (AgentClinic is the leading candidate), 
 trajectories. It also adds larger risk-stratified evaluation sets and checkpoint selection on a separate
 validation split.
 
-See [`V2/PLAN.md`](V2/PLAN.md) and [`docs/v2_agentclinic_experiment_plan.md`](docs/v2_agentclinic_experiment_plan.md).
+See [`V2/PLAN.md`](V2/PLAN.md) and [`V2/agentclinic_experiment_plan.md`](V2/agentclinic_experiment_plan.md).
 
 ## Citation
 

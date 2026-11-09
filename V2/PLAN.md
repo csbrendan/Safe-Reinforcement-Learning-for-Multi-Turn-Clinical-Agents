@@ -43,7 +43,7 @@ Do not change model size and environment in the same comparison until each effec
   any GRPO run.
 - **Design constraints:**
   - V1's main diagnostics RL arms started from base, and no matched SFT-only arm exists at 4B
-    (see `docs/v2_agentclinic_experiment_plan.md` §4). Define the SFT-only arm before training, and train a 4B match
+    (see `V2/agentclinic_experiment_plan.md` §4). Define the SFT-only arm before training, and train a 4B match
     if the 4B-vs-27B comparison needs one.
   - Decide the stop-token configuration before training (see "Dependencies"), and use the same configuration for
     both scales.
@@ -64,7 +64,7 @@ Do not change model size and environment in the same comparison until each effec
 - **Separation:** external evaluation cases stay out of all training data. If a benchmark is also a training candidate
   under Experiment B, its evaluation split must be disjoint from anything used in training or prompt tuning.
 - **Attribution:** account for interface and task differences, so poor transfer isn't mistaken for failed reasoning.
-  Keep the format-only control and valid-action reporting from `docs/v2_agentclinic_experiment_plan.md` §4, and
+  Keep the format-only control and valid-action reporting from `V2/agentclinic_experiment_plan.md` §4, and
   report interface failures separately from diagnostic errors.
 
 ### Implementation priorities
@@ -113,6 +113,17 @@ These steps may overlap where appropriate.
 - **Base-model comparability.** Compare 4B and 27B on the same stratified sets (see "How V2 combines results across
   scales").
 - **Reward provenance.** Every result reports whether its reward came from an exact verifier or a model-based judgment.
+
+## Repository separation: V1 is frozen
+
+- **Frozen V1 record:** the arXiv submission is tagged `arxiv-v1`. Do not modify `paper/main.tex`, `paper/figs/`,
+  `paper/main.pdf`, `paper/arxiv_submission_v1.zip`, or existing results and checkpoints.
+- **V2 manuscript:** edit only [`paper/v2-extension/`](../paper/v2-extension/), a separate working copy.
+- **V2 docs, experiment designs, logs and new code:** keep them under `V2/`. Write new results to a V2 location, not
+  over existing files in `results/`.
+- **Shared code:** import from `framework/` and `tasks/` rather than editing them. If a change can't be avoided, it
+  must be additive and leave V1 behavior as the default, so V1 runs still reproduce. This includes new reward options.
+- **External clones, venvs and generated data** stay outside the repo (currently `~/v2_bench/`).
 
 ## Decisions so far (2026-11-01)
 
@@ -297,7 +308,7 @@ transfer: questions asked, premature commitment, accuracy, plus the guarded-repo
 the benchmark's patient simulator to our ask/commit JSON schema.
 
 Detailed AgentClinic plan (verified capabilities, experiment matrix, interface adapter, splits, pilot):
-[`docs/v2_agentclinic_experiment_plan.md`](../docs/v2_agentclinic_experiment_plan.md).
+[`agentclinic_experiment_plan.md`](agentclinic_experiment_plan.md).
 
 **Option B — real-data environment (stronger, more work):** build a 4th task from **MIMIC-IV-ED** in the style of
 ED-Copilot: findings = triage vitals/labs, per-test cost, outcome = critical-event label; "oracle" = best policy
