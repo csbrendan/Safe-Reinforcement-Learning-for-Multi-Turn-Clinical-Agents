@@ -1,5 +1,7 @@
 # V2 SD-Bench baseline and RL readiness (MedGemma 4B)
 
+> **Update 2026-11-11:** V2 was refocused on a three-arm comparison with no V1 gate reproduction. Sections 4 and 7 are superseded by [`sdbench_execution_plan.md`](sdbench_execution_plan.md); the infrastructure findings below still hold.
+
 *Audit dated 2026-11-11. No GPU jobs ran, no data was downloaded, and no external API was called. Sources: `V2/benchmark_smoke_report.md`, its logs and scripts, `~/v2_bench/` (SDBench commit `304ce96`) and the server logs in `~/v2_bench/logs/`.*
 
 ## Bottom line
