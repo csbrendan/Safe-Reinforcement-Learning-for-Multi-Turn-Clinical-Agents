@@ -2,7 +2,7 @@
 
 Brendan P. Murphy · Agustina Saenz, MD, MPH
 
-📄 Paper: arXiv preprint (link added on announcement) · source and PDF in [`paper/`](paper/)
+📄 Paper: [arXiv:2611.12728](https://arxiv.org/abs/2611.12728) · [PDF](paper/main.pdf) · LaTeX source in [`paper/`](paper/)
 
 ---
 
@@ -127,10 +127,13 @@ See [`V2/PLAN.md`](V2/PLAN.md), [`V2/agentclinic_experiment_plan.md`](V2/agentcl
 
 ```bibtex
 @misc{murphy2026saferl,
-  title  = {Safe Reinforcement Learning for Multi-Turn Clinical Agents: When Dense Rewards Beat Outcome Rewards},
-  author = {Murphy, Brendan P. and Saenz, Agustina},
-  year   = {2026},
-  note   = {arXiv preprint}
+  title         = {Safe Reinforcement Learning for Multi-Turn Clinical Agents: When Dense Rewards Beat Outcome Rewards},
+  author        = {Murphy, Brendan P. and Saenz, Agustina},
+  year          = {2026},
+  eprint        = {2611.12728},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  url           = {https://arxiv.org/abs/2611.12728}
 }
 ```
 
