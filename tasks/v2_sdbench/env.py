@@ -45,6 +45,9 @@ DEFAULTS: dict[str, Any] = {
     "question_guard": True, "canonicalize": True, "gk_parallel": True, "cost_mode": "corrected",
     "gather": "record_grounded", "gather_cap_n": 10,
     "policy_stop_token_ids": [106],  # <end_of_turn>; see episode.clean_reply
+    # SD-Bench's own per-turn limits (official default: none). Opt-in task change: set for all arms and the guarded
+    # evaluation alike, never for the official evaluation.
+    "max_questions_per_turn": None, "max_tests_per_turn": None,
 }
 
 
@@ -87,7 +90,9 @@ class Services:
         eb = qwen_no_think() if cfg.get("aux_no_think") else None
         g, j, c = cfg["gatekeeper"], cfg["judge"], cfg["costing"]
         self.cfg = cfg
-        self.sdb_cfg = make_config(cfg["dataset"], max_turns=cfg["max_turns"])
+        self.sdb_cfg = make_config(cfg["dataset"], max_turns=cfg["max_turns"],
+                                   max_questions_per_turn=cfg["max_questions_per_turn"],
+                                   max_tests_per_turn=cfg["max_tests_per_turn"])
         self.gk_llm = local_chat(g["url"], g["model"], max_tokens=g["max_tokens"], extra_body=eb)
         self.gk_cache = JsonlCache(os.path.join(cd, "gatekeeper.jsonl"))
         self.judge = Judge(local_chat(j["url"], j["model"], max_tokens=j["max_tokens"], extra_body=eb),

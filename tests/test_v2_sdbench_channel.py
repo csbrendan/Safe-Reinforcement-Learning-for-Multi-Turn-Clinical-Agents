@@ -340,3 +340,10 @@ def test_price_prefetch_is_concurrent_and_cached():
     t0 = time.time()
     cm.prefetch(["CBC", "CMP", "troponin", "CBC"])
     assert sorted(calls) == ["CBC", "CMP", "troponin"] and time.time() - t0 < 0.5
+
+
+def test_optional_per_turn_cap_uses_sdbench_limits(tmp_path):
+    cfg = make_config("synthetic", max_turns=6, max_questions_per_turn=2)
+    r = CachedTestRunner(cfg, CASE, {}, FakeGK(), JsonlCache(str(tmp_path / "cap.jsonl")), "synthetic")
+    out = r([Q + "Do you smoke?", Q + "What is your temperature?", Q + "What is your pulse rate?"])
+    assert len(out.test_results) == 2 and out.limit_messages and "limited to 2" in out.limit_messages[0]
