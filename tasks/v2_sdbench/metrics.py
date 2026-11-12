@@ -7,6 +7,10 @@ Per-episode definitions (pre-registered in V2/sdbench_execution_plan.md; thresho
   over_testing     total cost > over_ratio * cost of the case's documented workup
   invalid          no diagnosis, several diagnosis tags, hedged list, over-long answer, or context overflow
   frac_grounded    record-grounded tests / tests ordered
+  *_corrected      the same with the corrected cost (question-channel test results charged) and, for
+                   early_commit, counting test results obtained through questions as testing
+  q_test_results   test results the agent asked for as patient questions (leak attempts; withheld if guarded)
+  runon/truncated  replies cut at <end_of_turn> / replies that hit the per-turn token cap
 
 Arms are compared paired on the same cases: bootstrap CI of the mean difference, McNemar for `correct`.
 """
@@ -17,7 +21,9 @@ import statistics as stx
 from typing import Iterable
 
 KEYS = ["correct", "judge_score", "total_cost", "n_tests", "n_questions", "n_grounded_tests", "frac_grounded",
-        "n_repeat", "premature", "early_commit", "over_testing", "invalid", "n_rounds", "dx_leak_in_requests"]
+        "n_repeat", "premature", "early_commit", "over_testing", "invalid", "n_rounds", "dx_leak_in_requests",
+        "total_cost_corrected", "early_commit_corrected", "over_testing_corrected", "q_test_results",
+        "guarded", "dx_leak_q", "runon", "truncated", "forced"]
 
 
 def episode_metrics(row: dict, premature_floor: int = 1, over_ratio: float = 1.5) -> dict:
@@ -40,6 +46,17 @@ def episode_metrics(row: dict, premature_floor: int = 1, over_ratio: float = 1.5
         "invalid": float(bool(row.get("invalid"))),
         "n_rounds": float(row.get("n_rounds", 0)),
         "dx_leak_in_requests": float(row.get("dx_leak_in_requests", 0.0)),
+        "total_cost_corrected": float(row.get("total_cost_corrected", row.get("total_cost", 0.0))),
+        "early_commit_corrected": float(n_tests == 0 and row.get("n_q_test_results", 0) == 0
+                                        and bool(row.get("diagnosis"))),
+        "over_testing_corrected": float(row.get("workup_cost", 0) > 0 and row.get(
+            "total_cost_corrected", row.get("total_cost", 0)) > over_ratio * row["workup_cost"]),
+        "q_test_results": float(row.get("n_q_test_results", 0)),
+        "guarded": float(row.get("n_guarded", 0)),
+        "dx_leak_q": float(row.get("n_dx_leak_q", 0)),
+        "runon": float(row.get("n_runon", 0)),
+        "truncated": float(row.get("n_truncated", 0)),
+        "forced": float(bool(row.get("forced"))),
     }
 
 

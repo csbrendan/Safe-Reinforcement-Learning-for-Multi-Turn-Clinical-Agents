@@ -44,6 +44,7 @@ DEFAULTS: dict[str, Any] = {
     "aux_no_think": True, "cache_dir": "results/v2_sdbench/cache", "rollout_log": "", "n_threads": 16,
     "question_guard": True, "canonicalize": True, "gk_parallel": True, "cost_mode": "corrected",
     "gather": "record_grounded", "gather_cap_n": 10,
+    "policy_stop_token_ids": [106],  # <end_of_turn>; see episode.clean_reply
 }
 
 
@@ -145,6 +146,8 @@ class Services:
                 "n_questions": len(q),
                 "n_q_test_results": sum(1 for l in q if l.get("channel_kind") == "test_result"),
                 "n_guarded": sum(1 for l in q if l.get("guarded")),
+                "n_dx_leak_q": sum(1 for l in q if l.get("channel_kind") == "dx_leak"),
+                "n_dx_in_test_results": _dx_in_tests(logs, ep.runner.dx_terms),
                 "n_historic_tests": sum(1 for l in q if l.get("channel_kind") == "historic_test"),
                 "n_canonicalized": sum(1 for l in logs if "sent" in l),
                 "n_grounded": sum(1 for l in logs if l.get("record_grounded")),
@@ -154,7 +157,15 @@ class Services:
                 "n_repeat": sum(1 for l in logs if l.get("repeat")),
                 "n_rounds": rec["num_rounds"], "n_test_rounds": rec["num_test_rounds"],
                 "n_agent_msgs": rec["n_agent_msgs"], "n_nags": rec["n_nags"],
+                "n_runon": rec["n_runon"], "n_truncated": rec["n_truncated"],
                 "forced": rec["forced"], "diagnosis": rec["diagnosis"]}
+
+
+def _dx_in_tests(logs: list, dx_terms: set) -> int:
+    """Audit: ordered tests whose result names the reference diagnosis (e.g. a biopsy saying "amyloid"). That
+    can be legitimate (it's what the test shows), so it's counted, not blocked."""
+    from tasks.v2_sdbench.channel import mentions_dx
+    return sum(1 for l in logs if not l.get("is_question") and mentions_dx(l.get("result", ""), dx_terms))
 
 
 def build_train_prompts(args) -> list[dict]:
@@ -202,8 +213,12 @@ def make_rollout_func(tok, args, helpers: dict):
             if not active:
                 break
             out = client.chat([e.messages for e in active], n=1, temperature=temp,
-                              max_tokens=cfg["turn_max_tokens"], logprobs=0)
-            texts = tok.batch_decode(out["completion_ids"], skip_special_tokens=True)
+                              max_tokens=cfg["turn_max_tokens"], logprobs=0,
+                              generation_kwargs={"stop_token_ids": cfg["policy_stop_token_ids"]})
+            # keep special tokens so Episode.step can cut at <end_of_turn> if a server ignores the stop id
+            texts = tok.batch_decode(out["completion_ids"], skip_special_tokens=False)
+            for e, c in zip(active, out["completion_ids"]):
+                e.n_truncated += len(c) >= cfg["turn_max_tokens"]
             list(pool.map(lambda et: et[0].step(et[1]), zip(active, texts)))  # gatekeeper calls in parallel
         scored = list(pool.map(svc.score, eps))
         prompt_ids, completion_ids, logprobs, masks, rewards = [], [], [], [], []

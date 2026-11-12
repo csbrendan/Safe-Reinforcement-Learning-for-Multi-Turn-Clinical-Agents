@@ -274,3 +274,50 @@ def test_grounded_test_credit_rules(tmp_path):
     assert g["n_new_grounded_tests"] == 1 and g["r_gather"] == pytest.approx(0.1)
     logs = [{"is_question": False, "record_grounded": True, "repeat": False, "channel_kind": "test_result"}] * 30
     assert grounded_test_credit(logs, cap_n=10)["r_gather"] == 1.0
+
+
+# ---------------------------------------------------------------- stop-token safety net
+def test_clean_reply_cuts_runon_turns():
+    from tasks.v2_sdbench.episode import clean_reply
+    runon = "<diagnosis>Pheochromocytoma</diagnosis>\n<end_of_turn>\nmodel\n<diagnosis>Pheochromocytoma</diagnosis>"
+    assert clean_reply(runon) == ("<diagnosis>Pheochromocytoma</diagnosis>", True)
+    assert clean_reply("<question>Pain?</question>\n") == ("<question>Pain?</question>\n", False)
+    assert clean_reply("") == ("", False)
+
+
+def test_episode_ignores_text_after_end_of_turn(tmp_path):
+    r, gk = _runner(tmp_path)
+    ep = Episode(CASE, r)
+    ep.step("<question>Do you smoke?</question>\n<end_of_turn>\n<start_of_turn>user\nResults: fake\n"
+            "<start_of_turn>model\n<question>What is your white blood cell count?</question>")
+    assert gk.sent == [ch.QUESTION_PREFIX + " Do you smoke?"] and ep.n_runon == 1
+    assert ep.step("<diagnosis>Pheo</diagnosis><end_of_turn>model\n<diagnosis>Pheo</diagnosis>")
+    assert ep.n_diagnosis_tags == 1
+
+
+# ---------------------------------------------------------------- diagnosis fishing
+REF = "Systemic AL (lambda immunoglobulin light-chain) amyloidosis with cardiac, renal, and soft-tissue involvement."
+
+
+def test_dx_key_terms_drop_generic_words():
+    assert ch.dx_key_terms(REF) == {"amyloidosis", "immunoglobulin", "lambda"}
+    assert "pheochromocytoma" in ch.dx_key_terms("Pheochromocytoma of the right adrenal gland")
+    assert "adrenal" not in ch.dx_key_terms("Pheochromocytoma of the right adrenal gland")
+
+
+def test_dx_fishing_question_is_classified_and_guarded(tmp_path):
+    terms = ch.dx_key_terms(REF)
+    ans = "The final diagnosis was systemic AL amyloidosis with cardiac involvement."
+    assert ch.classify(Q + "What was your final diagnosis?", ans, terms) == "dx_leak"
+    assert ch.classify(Q + "Any history of heart disease?", "No cardiac or renal history.", terms) == "info"
+    assert ch.mentions_dx("amyloid deposits", {"amyloidosis"}) == ["amyloidosis"]   # 7-letter stem
+    case = dict(CASE, final_diagnosis="Pheochromocytoma")
+    ANSWERS["what did the doctors conclude?"] = ("They concluded it was a pheochromocytoma.", False)
+    r = CachedTestRunner(make_config("synthetic", max_turns=6), case, {}, FakeGK(),
+                         JsonlCache(str(tmp_path / "dx.jsonl")), "synthetic", question_guard=True)
+    out = r([Q + "What did the doctors conclude?"])
+    log = r._collector["test_logs"][0]
+    assert out.test_results[0]["results"] == ch.DX_GUARD_TEXT and log["channel_kind"] == "dx_leak"
+    assert "pheochromocytoma" in log["withheld_result"] and not log["record_grounded"]
+    corr = _cost_model().corrected_cost(_record(r))
+    assert corr["n_question_tests_charged"] == 0                 # the answer key isn't a test

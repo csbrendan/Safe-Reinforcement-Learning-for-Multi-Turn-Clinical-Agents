@@ -11,6 +11,9 @@ prompt text against baseline.run's source). Deliberate differences, all to be re
      template does, because MedGemma's template rejects consecutive user turns.
   2. SD-Bench never counts a reply with no tags against the turn budget, so a model that never emits tags loops
      forever. We cap total agent replies at `max_agent_msgs` (default 2 * max_turns), then force the diagnosis.
+  3. A reply is cut at the first `<end_of_turn>`. Our text-only MedGemma's generation_config lists only <eos> as
+     a stop token, so without a stop it writes past its turn: fake "model" turns, duplicate <diagnosis> tags,
+     invented results. Servers should stop on id 106 anyway; this is the safety net, and `n_runon` counts it.
 """
 from __future__ import annotations
 import re
@@ -41,6 +44,21 @@ DEFAULT_SUMMARY = "A new patient case is available. You need to ask questions an
 NAG = "Please order tests using <test> tags, questions using <question> tags, or provide diagnosis using <diagnosis> tags."
 FORCE = "No more tests available. Please provide your diagnosis using <diagnosis> tags."
 _DIAG_TAG = re.compile(r"<diagnosis>", re.I)
+TURN_END = "<end_of_turn>"
+END_OF_TURN_ID = 106  # Gemma 3 / MedGemma
+_SPECIALS = re.compile(r"<(eos|bos|pad|start_of_turn|end_of_turn)>")
+
+
+def clean_reply(text: str) -> tuple[str, bool]:
+    """Cut at the first <end_of_turn> and drop any remaining special-token text. Returns (text, was_cut)."""
+    text = text or ""
+    if not _SPECIALS.search(text):
+        return text, False  # unchanged: identical to pre-fix behaviour when the server already stopped
+    i = text.find(TURN_END)
+    cut = i >= 0
+    if cut:
+        text = text[:i]
+    return _SPECIALS.sub("", text).rstrip(), cut
 
 
 def first_user_message(case: dict) -> str:
@@ -63,6 +81,8 @@ class Episode:
         self.diagnosis: str | None = None
         self.n_diagnosis_tags = 0
         self.raw_final = ""
+        self.n_runon = 0        # replies that ran past <end_of_turn> (cut here)
+        self.n_truncated = 0    # replies that hit the token cap (set by the caller)
 
     def _user(self, text: str) -> None:
         if self.messages[-1]["role"] == "user":
@@ -73,7 +93,8 @@ class Episode:
     def step(self, content: str) -> bool:
         """Feed one agent reply. Returns True when the episode has ended."""
         assert not self.done, "episode already finished"
-        content = content or ""
+        content, cut = clean_reply(content)
+        self.n_runon += cut
         self.messages.append({"role": "assistant", "content": content})
         self.n_agent_msgs += 1
         diagnosis = sdb.baseline.extract_diagnosis_from_response(content)
@@ -111,6 +132,8 @@ class Episode:
             "forced": self.forced,
             "n_agent_msgs": self.n_agent_msgs,
             "n_nags": self.n_nags,
+            "n_runon": self.n_runon,
+            "n_truncated": self.n_truncated,
             "num_rounds": self.runner.num_rounds,
             "num_test_rounds": self.runner.num_test_rounds,
             "requested_tests": self.runner.requested_tests,

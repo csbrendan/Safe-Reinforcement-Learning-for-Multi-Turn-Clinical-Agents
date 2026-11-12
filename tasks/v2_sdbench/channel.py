@@ -27,6 +27,7 @@ TEST_PREFIX = "Test to order:"
 
 GUARD_TEXT = ("This is a diagnostic test result, which the patient cannot report. "
               "To obtain it, order it as a test using <test> tags.")
+DX_GUARD_TEXT = "The patient cannot tell you the diagnosis. Gather findings with questions and tests."
 
 # Diagnostic studies and specimen work. Matched in the result text.
 _STUDY = re.compile(
@@ -107,25 +108,60 @@ def reveals_test_result(result: str) -> bool:
     return bool(_STUDY.search(result) or _LAB_UNIT.search(result) or _analyte_result(result))
 
 
-def classify(request: str, result: str) -> str:
-    """One of: rejected | test_result | historic_test | info.
+# Words that appear in reference diagnoses but are not specific to one (anatomy, qualifiers, generic nouns).
+# Everything else in the reference (lymphoma, pheochromocytoma, amyloidosis, whipple, teratoma, ...) is a key term.
+_GENERIC = set("""
+a an the of with and or in on to for by from due secondary primary acute chronic left right bilateral syndrome
+disease disorder type associated involvement systemic setting arising consistent confirmed multiple variant
+pathogenic germline mature cystic receptor infection tumor tumour mass lesion related induced severe mild
+positive negative testing test chain light small large cell cells tissue soft soft-tissue central nervous system
+nervous-system central-nervous-system cutaneous skin brain lung liver kidney heart cardiac renal hepatic pulmonary
+intestinal small-intestinal intestine ovarian ovary bone marrow blood fluid cerebrospinal cerebrospinal-fluid gland
+adrenal medulla thyroid immunophenotype germinal center germinal-center non-germinal-center polymerase reaction
+chain-reaction polymerase-chain-reaction stage grade status post history partial complete early late recurrent
+endocrine metabolic autoimmune inflammatory infectious malignant benign neoplasm
+""".split())
+
+
+def dx_key_terms(reference: str) -> set[str]:
+    words = re.findall(r"[a-z][a-z\-]{3,}", (reference or "").lower())
+    return {w for w in words if w not in _GENERIC and not all(p in _GENERIC for p in w.split("-"))}
+
+
+def mentions_dx(text: str, key_terms: set[str]) -> list[str]:
+    """Key terms of the reference found in `text`. Long terms also match on a 7-letter stem
+    (amyloidosis ~ amyloid, whipple ~ whipplei)."""
+    words = set(re.findall(r"[a-z][a-z\-]{3,}", (text or "").lower()))
+    hits = []
+    for k in key_terms:
+        stem = k[:7] if len(k) >= 8 else None
+        if k in words or (stem and any(w.startswith(stem) for w in words)):
+            hits.append(k)
+    return sorted(hits)
+
+
+def classify(request: str, result: str, dx_terms: set[str] | None = None) -> str:
+    """One of: rejected | dx_leak | test_result | historic_test | info.
 
     For a <test> request, "test_result" just means the test returned something (it's charged as a test anyway).
-    For a question, "test_result" is the leak the guard and the corrected cost address; "info" is history,
-    symptoms or bedside observation, which SD-Bench allows for free.
+    For a question:
+      dx_leak      the answer names the reference diagnosis (e.g. "What was your final diagnosis?"). Withheld by
+                   the guard; never charged (it isn't a test, it's the answer key).
+      test_result  a lab/imaging/pathology result; withheld by the guard, charged by the corrected cost.
+      info         history, symptoms or bedside observation, which SD-Bench allows for free.
     """
     r = result or ""
     if _REJECT.search(r):
         return "rejected"
     if not is_question(request):
         return "test_result"
+    if dx_terms and mentions_dx(r, dx_terms):
+        return "dx_leak"
     if not reveals_test_result(r):
         return "info"
     if _HIST_REQ.search(body(request)) and _HIST_RES.search(r):
         return "historic_test"
     return "test_result"
-
-
 
 
 def split_compound(test_body: str) -> list[str]:

@@ -38,6 +38,7 @@ def run_episode(svc: Services, case: dict, policy, k: int) -> dict:
             break
         tm.add("policy", time.time() - tp)
         n_out_tokens += getattr(getattr(r, "usage", None), "completion_tokens", 0) or 0
+        ep.n_truncated += r.choices[0].finish_reason == "length"
         ts = time.time()
         ep.step(r.choices[0].message.content or "")
         tm.add("env_step", time.time() - ts)
@@ -59,9 +60,13 @@ def main():
     ap.add_argument("--temperature", type=float, default=0.0)
     ap.add_argument("--max-tokens", type=int, default=400)
     ap.add_argument("--limit", type=int, default=0, help="first N cases only (plumbing runs)")
+    ap.add_argument("--cases", default="", help="comma-separated case ids (benchmarks)")
+    ap.add_argument("--cache-dir", default="", help="override the config's cache_dir (cold-cache benchmarks)")
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--condition", choices=["official", "guarded"], default="official")
     ap.add_argument("--serial-gatekeeper", action="store_true", help="benchmark baseline: one request at a time")
+    ap.add_argument("--no-stop-fix", action="store_true",
+                    help="benchmark/reproduction only: don't send stop_token_ids (pre-fix behaviour)")
     ap.add_argument("--timeout", type=float, default=0, help="seconds; stop submitting and exit after this")
     ap.add_argument("--unseal-test", action="store_true")
     ap.add_argument("--out", required=True)
@@ -70,11 +75,16 @@ def main():
     cfg["arm"], cfg["lam_gather"] = "B", 0.0  # evaluation: no gathering credit, reward fields unused
     cfg["question_guard"] = cfg["canonicalize"] = a.condition == "guarded"
     cfg["gk_parallel"] = not a.serial_gatekeeper
+    if a.cache_dir:
+        cfg["cache_dir"] = a.cache_dir
     cases = load_split(cfg["dataset"], a.split)
     if a.split == "test" and not a.unseal_test:
         raise PermissionError("test split is sealed; pass --unseal-test only for the final frozen evaluation")
     if a.split != "test":
         assert_not_test(cfg["dataset"], [c["case_id"] for c in cases])
+    if a.cases:
+        want = a.cases.split(",")
+        cases = [c for c in cases if str(c["case_id"]) in want]
     if a.limit:
         cases = cases[: a.limit]
     tok = None
@@ -82,8 +92,9 @@ def main():
         from transformers import AutoTokenizer
         tok = AutoTokenizer.from_pretrained(cfg["reader"]["tokenizer"])
     svc = Services(cfg, tokenizer=tok)
+    stop = {} if a.no_stop_fix else {"stop_token_ids": cfg["policy_stop_token_ids"], "skip_special_tokens": False}
     policy = local_chat(a.policy_url, a.policy_model, temperature=a.temperature, max_tokens=a.max_tokens,
-                        seed=None if a.temperature > 0 else 0)
+                        seed=None if a.temperature > 0 else 0, extra_body=stop or None)
     done = set()
     if os.path.exists(a.out):
         with open(a.out) as f:

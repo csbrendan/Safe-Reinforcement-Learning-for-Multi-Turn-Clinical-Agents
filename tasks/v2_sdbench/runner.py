@@ -16,8 +16,9 @@ Each log entry adds:
                     "not available in the patient's current record", and not withheld by the guard).
   repeat          = same canonical request was already made in this episode.
   channel_kind    = channel.classify(request, result): rejected | test_result | historic_test | info.
-  guarded         = (guard on) a question whose answer was a test result; the agent got GUARD_TEXT instead and
-                    the real answer is kept in `withheld_result` for audit only.
+  guarded         = (guard on) a question whose answer was a test result or named the reference diagnosis; the
+                    agent got GUARD_TEXT / DX_GUARD_TEXT instead and the real answer is kept in `withheld_result`
+                    for audit only.
 
 Options (training environment; official SD-Bench behaviour is all-off except parallelism):
   question_guard  block test results returned through the question channel (information-leakage fix).
@@ -35,7 +36,7 @@ from typing import Any, Callable
 
 from tasks.v2_sdbench import sdb
 from tasks.v2_sdbench.cache import JsonlCache, make_key
-from tasks.v2_sdbench.channel import GUARD_TEXT, canonical_request, classify, is_question
+from tasks.v2_sdbench.channel import DX_GUARD_TEXT, GUARD_TEXT, canonical_request, classify, dx_key_terms, is_question
 
 UNAVAILABLE_RE = re.compile(r"^\s*results not available for", re.I)
 _REJECTION = ("i can only provide specific test results or answer specific patient questions",
@@ -94,6 +95,7 @@ class CachedTestRunner(sdb.gatekeeper.BatchTestRunner):
         self.canonicalize = canonicalize
         self.parallel = parallel
         self.timer = timer
+        self.dx_terms = dx_key_terms(case.get("final_diagnosis", ""))
 
     def _order_one(self, name: str) -> dict:
         sent = canonical_request(name) if self.canonicalize else name
@@ -134,8 +136,8 @@ class CachedTestRunner(sdb.gatekeeper.BatchTestRunner):
             norm = normalize_request(canonical_request(r["test_name"]))
             unavailable = bool(UNAVAILABLE_RE.match(r["results"]))
             q = is_question(r["test_name"])
-            kind = "rejected" if unavailable else classify(r["test_name"], r["results"])
-            guarded = self.question_guard and q and kind == "test_result"
+            kind = "rejected" if unavailable else classify(r["test_name"], r["results"], self.dx_terms)
+            guarded = self.question_guard and q and kind in ("test_result", "dx_leak")
             log = {
                 "test_name": r["test_name"], "reason": "", "result": r["results"],
                 "is_synthetic": r["is_synthetic"], "timestamp": datetime.datetime.now().isoformat(),
@@ -149,8 +151,9 @@ class CachedTestRunner(sdb.gatekeeper.BatchTestRunner):
                 "guarded": guarded,
             }
             if guarded:
-                log["withheld_result"], log["result"] = r["results"], GUARD_TEXT
-                r["results"] = GUARD_TEXT
+                text = DX_GUARD_TEXT if kind == "dx_leak" else GUARD_TEXT
+                log["withheld_result"], log["result"] = r["results"], text
+                r["results"] = text
             if r["sent"] != r["test_name"]:
                 log["sent"] = r["sent"]
             self._collector["test_logs"].append(log)
