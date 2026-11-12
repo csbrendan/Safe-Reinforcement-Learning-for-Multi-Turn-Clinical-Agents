@@ -1,0 +1,417 @@
+Counter({'info': 143, 'test_result': 56, 'dx_leak': 7, 'rejected': 2})
+[0] dx_leak       g=True Q: Are there any other possible causes for the patient's iron deficiency anemia and the clinical 
+      A: "The patient's iron deficiency anemia is not the primary cause of her anemia. Her anemia is normocytic and normochromic, with a low hemoglobin, low hematocrit, and a mean corpuscular volume within the normal range. The pr"
+[0] dx_leak       g=True Q: Considering the patient's age and symptoms, what are the most likely causes of her recurrent f
+      A: 'The most likely causes of her recurrent fever and confusion, given her age and symptoms, include infectious processes such as tuberculosis, fungal infections, or viral encephalitis; autoimmune or inflammatory conditions '
+[0] dx_leak       g=True Q: Given the patient's TIBC, Transferrin Saturation, and Ferritin levels, what are your thoughts 
+      A: "The patient's transferrin saturation and TIBC were not documented in the chart. However, given the markedly elevated ferritin level of 3,150 ng/mL, this suggests a significant iron overload, which is consistent with the "
+[0] dx_leak       g=True Q: Is there anything else you would like to consider in this patient's case regarding her possibl
+      A: "The patient's anemia is normocytic and normochromic, with a low hemoglobin and hematocrit, but no evidence of iron deficiency. The serum ferritin is markedly elevated, which is inconsistent with iron deficiency anemia. T"
+[0] dx_leak       g=True Q: What is the significance of the hypercellular bone marrow with trilineage hematopoiesis and he
+      A: 'The hypercellular bone marrow with trilineage hematopoiesis and hemophagocytosis indicates active marrow involvement by a neoplastic process. The presence of hemophagocytosis suggests a reactive or neoplastic process inv'
+[0] dx_leak       g=True Q: What is the significance of the iron studies (low iron, low transferrin saturation, and high f
+      A: "The patient's iron studies show a low serum iron, low transferrin saturation, and a markedly elevated ferritin. These findings are not directly indicative of iron deficiency but rather suggest a process of iron overload "
+[0] dx_leak       g=True Q: What is your impression of the patient's presentation, and what is your next step in her evalu
+      A: 'The patient presents with a subacute, febrile, multisystem illness complicated by progressive encephalopathy and recurrent cerebral ischemia. The next step in her evaluation involves obtaining a tissue biopsy of an invol'
+[0] info          g=False Q: Are there any known medical conditions that could be contributing to the patient's symptoms?
+      A: 'The patient has a history of hypertension, primary hypothyroidism, and hyperlipidemia. There is no history of diabetes mellitus, atrial fibrillation, venous thromboembolism, recurrent miscarriage, recent vascular instrum'
+[0] info          g=False Q: Are there any other symptoms the patient is experiencing, such as headaches, muscle aches, fat
+      A: 'The patient reports diffuse arthralgias and myalgias without frank joint swelling. She denies epistaxis, hemoptysis, hematochezia, mucosal ulcers, sicca symptoms, Raynaud phenomenon, alopecia, photosensitive rash, dyspne'
+[0] info          g=False Q: Are there any recent changes in diet or medication intake?
+      A: 'No recent changes in diet or medication intake were reported. The patient continued her usual medications, including lisinopril, levothyroxine, and atorvastatin, and had recently completed two antibiotic courses for pres'
+[0] info          g=False Q: Are you experiencing any gait disturbances or other neurological symptoms?
+      A: 'The patient reports a subtle right pronator drift and a cautious, mildly wide-based gait. She has difficulty with tandem gait and describes a mild dysarthria. There is no neck stiffness, and Kernig and Brudzinski signs a'
+[0] info          g=False Q: Are you experiencing any other symptoms, such as headache, stiff neck, rash, or abdominal pain
+      A: 'The patient denies headache until a few days before admission, when she reported mild, diffuse, non-positional headache. There was no neck stiffness, photophobia, seizure activity, visual loss, or incontinence. She denie'
+[0] info          g=False Q: Are you pregnant or breastfeeding?
+      A: 'No known pregnancy or breastfeeding.'
+[0] info          g=False Q: Are you sexually active? If so, what is your sexual history?
+      A: 'The patient is married and has been in a monogamous relationship with her husband for more than three decades. She does not report any other sexual partners or practices.'
+[0] info          g=False Q: Are you sexually active? If so, what is your typical sexual behavior?
+      A: 'The patient is married and has been in a monogamous relationship with her husband for more than three decades. She does not report any changes in sexual behavior or activity.'
+[0] info          g=False Q: Are you taking any medications, including over-the-counter drugs, supplements, and herbal reme
+      A: 'The patient is currently taking lisinopril, levothyroxine, and atorvastatin. She has recently completed a course of amoxicillin–clavulanate and nitrofurantoin, which were prescribed for presumed sinusitis and urinary tra'
+[0] info          g=False Q: Are you taking any medications, including prescription, over-the-counter, and herbal supplemen
+      A: 'The patient is currently taking lisinopril, levothyroxine, and atorvastatin. She has recently completed a course of amoxicillin–clavulanate and nitrofurantoin, but these were discontinued without improvement. She reports'
+[0] info          g=False Q: Based on the patient's intermittent fever, night sweats, confusion, and history of hypertensio
+      A: "The patient's intermittent fever, night sweats, confusion, and history of hypertension, hypothyroidism, and hyperlipidemia are non-specific findings that could be consistent with a variety of conditions. The fever and ni"
+[0] info          g=False Q: Can you describe the nature of the fever? Is it constant or intermittent? What is the highest 
+      A: 'The patient described the fever as intermittent, with temperatures she measured at home as high as 38.9°C. The fevers occurred most often in the late afternoon and evening and were accompanied by drenching night sweats.'
+[0] info          g=False Q: Can you describe the patient's overall condition and any changes in their symptoms since admis
+      A: 'The patient is a 58-year-old woman with a history of hypertension, primary hypothyroidism, and hyperlipidemia. She was admitted due to six weeks of recurrent fever and three weeks of progressive confusion. She has had in'
+[0] info          g=False Q: Do you have any allergies or sensitivities to medications or other substances?
+      A: 'The patient reports a rash with trimethoprim–sulfamethoxazole in the past; there are no other known drug allergies.'
+[0] info          g=False Q: Do you have any known allergies to medications or other substances?
+      A: 'No known drug allergies. She reported a rash with trimethoprim–sulfamethoxazole in the past; there were no other known drug allergies.'
+[0] info          g=False Q: Do you have any known exposures to infectious diseases?
+      A: 'The patient has no known exposures to infectious diseases. She has not had any recent travel outside the region, no consumption of unpasteurized dairy products, no exposure to farm animals or rodents, and no known contac'
+[0] info          g=False Q: Do you have any other symptoms, such as headaches, muscle aches, fatigue, weight loss, night s
+      A: 'The patient reported diffuse arthralgias and myalgias without frank joint swelling, as well as profound fatigue, anorexia, and an unintentional weight loss of 6 kg. She also described drenching night sweats and had not n'
+[0] info          g=False Q: Does the patient experience any gait disturbances or other neurological symptoms?  If so, can 
+      A: 'The patient has a subtle right pronator drift; strength is otherwise full. Deep-tendon reflexes are symmetrically brisk, and the plantar responses are flexor. Sensation is intact. The gait is cautious and mildly wide-bas'
+[0] info          g=False Q: Does the patient have any known allergies?
+      A: 'The patient reports a rash with trimethoprim–sulfamethoxazole in the past; there are no other known drug allergies.'
+[0] info          g=False Q: Does the patient have any known exposures to infectious diseases?
+      A: 'The patient has no known exposures to infectious diseases. She denies recent travel outside the region, consumption of unpasteurized dairy products, exposure to farm animals or rodents, and contact with persons with tube'
+[0] info          g=False Q: Does the patient have any known medical conditions, such as diabetes, heart disease, or lung d
+      A: "The patient's medical history includes hypertension, primary hypothyroidism, and hyperlipidemia. There is no history of diabetes mellitus, atrial fibrillation, venous thromboembolism, recurrent miscarriage, recent vascul"
+[0] info          g=False Q: Given the patient's iron deficiency anemia, progressive cognitive decline, and lack of other o
+      A: "The patient's history and laboratory findings do not suggest Wilson's disease or other copper metabolism disorders. There is no evidence of hepatic dysfunction, Kayser-Fleischer rings, or other characteristic features of"
+[0] info          g=False Q: Has the patient experienced any recent stressful events or emotional distress?
+      A: 'The patient has not reported any recent stressful events or emotional distress.'
+[0] info          g=False Q: Has the patient experienced any recent travel or exposure to infectious diseases?
+      A: 'The patient has not had any recent travel outside the region. She has not had exposure to infectious diseases, including no recent travel-related vaccinations, no consumption of unpasteurized dairy products, no exposure '
+[0] info          g=False Q: Has the patient had any recent episodes of vomiting or diarrhea?
+      A: 'No episodes of vomiting or diarrhea have been reported.'
+[0] info          g=False Q: Has the patient had any recent surgeries or invasive procedures?
+      A: 'The patient has not had any recent surgeries or invasive procedures.'
+[0] info          g=False Q: Has there been any improvement in the patient's confusion or fever?
+      A: "The patient's confusion and fever have shown improvement. The fevers resolved within the first week of therapy, and her mental status has gradually improved over the first two cycles of treatment, with return of orientat"
+[0] info          g=False Q: Have you had any recent contact with sick individuals?
+      A: 'No known contact with sick individuals.'
+[0] info          g=False Q: Have you had any recent travel, especially to areas with endemic infectious diseases?
+      A: 'The patient has not had any recent travel outside the region, and there is no indication of exposure to areas with endemic infectious diseases.'
+[0] info          g=False Q: Have you started any new medications or treatments?
+      A: "No new medications or treatments have been started recently. The patient's medications include lisinopril, levothyroxine, and atorvastatin. She recently completed two antibiotic courses for presumed sinusitis and urinary"
+[0] info          g=False Q: How is the patient's overall functional status?
+      A: 'Previously independent in activities of daily living with no cognitive complaints.'
+[0] info          g=False Q: Is the patient able to maintain adequate oral intake?
+      A: 'The patient has an unintentional weight loss of 6 kg and reports anorexia, which suggests she may have difficulty maintaining adequate oral intake. However, she is currently being evaluated for potential nutritional supp'
+[0] info          g=False Q: Is the patient able to tolerate oral intake?
+      A: 'The patient is able to tolerate oral intake.'
+[0] info          g=False Q: Is the patient currently working or retired?
+      A: 'Retired.'
+[0] info          g=False Q: Is the patient eating and drinking?
+      A: 'The patient has anorexia as part of her presenting symptoms.'
+[0] info          g=False Q: Is the patient experiencing any headache, neck stiffness, or photophobia?
+      A: 'The patient reported mild, diffuse, non-positional headache in the few days before admission. There was no neck stiffness or photophobia.'
+[0] info          g=False Q: Is the patient experiencing any other neurological symptoms, such as weakness or numbness?
+      A: 'The patient has subtle right pronator drift and mild dysarthria. There is no significant weakness or numbness noted on examination.'
+[0] info          g=False Q: Is the patient experiencing any pain? Where and what type?
+      A: 'The patient does not report any specific pain. She has not mentioned localized pain, and there were no findings of tenderness or discomfort during the physical examination.'
+[0] info          g=False Q: Is the patient experiencing any recent weight loss?
+      A: 'The patient reports unintentional weight loss of approximately 6 kg over the six weeks prior to admission.'
+[0] info          g=False Q: Is the patient experiencing any seizures or altered mental status beyond the confusion?
+      A: "No seizures were observed. The patient's mental status was described as confused and disoriented to the date, with difficulty with serial subtraction and three-item recall. There was no evidence of seizure activity durin"
+[0] info          g=False Q: Is the patient immunocompromised?
+      A: 'The patient has no known immunocompromising conditions. She has a history of primary hypothyroidism, which is managed with levothyroxine, and no other autoimmune or immunodeficiency disorders are documented. Her immuniza'
+[0] info          g=False Q: Is the patient on any anticoagulants or antiplatelet medications?
+      A: 'The patient is not currently on any anticoagulants or antiplatelet medications.'
+[0] info          g=False Q: Is the patient pregnant or breastfeeding?
+      A: 'The patient is not pregnant or breastfeeding.'
+[0] info          g=False Q: Is the patient sexually active? If so, what is their sexual behavior?
+      A: 'The patient is monogamous and has been in a long-term relationship with her husband for over three decades. She does not engage in any sexual activity outside of this relationship.'
+[0] info          g=False Q: Is the patient taking any medications that have been associated with neurologic side effects t
+      A: 'The patient is taking lisinopril, levothyroxine, and atorvastatin. None of these medications are known to cause neurologic side effects that would explain the cognitive decline.'
+[0] info          g=False Q: Is there a family history of any relevant conditions, such as autoimmune diseases or infection
+      A: 'Family history was notable for an ischemic stroke in her mother at 74 years of age, myocardial infarction in her father, and breast carcinoma in a sister. There was no family history of hematologic malignancy, bleeding o'
+[0] info          g=False Q: Is there any history of recent infections, travel, or exposure to anyone with infectious disea
+      A: 'The patient denies recent infections, travel, or exposure to anyone with infectious diseases.'
+[0] info          g=False Q: Is there any progression of the patient's cognitive decline?
+      A: "The patient's cognitive decline has been progressive, with worsening inattention, disorientation, and memory impairment over the three weeks prior to admission. She has exhibited fluctuating levels of confusion and has h"
+[0] info          g=False Q: Order a chest CT
+      A: 'The patient has had a chest CT performed as part of the initial diagnostic workup. The study did not reveal any mediastinal, hilar, axillary, retroperitoneal, mesenteric, or pelvic lymphadenopathy or focal mass lesion.'
+[0] info          g=False Q: Order a stool sample for ova and parasites
+      A: "The patient's stool sample for ova and parasites was obtained and is pending results."
+[0] info          g=False Q: Vitamin B12 Level: Normal
+      A: 'Vitamin B12 Level: Normal'
+[0] info          g=False Q: What allergies does the patient have?
+      A: 'Allergies: The patient reports a rash with trimethoprim–sulfamethoxazole in the past; there are no other known drug allergies.'
+[0] info          g=False Q: What are the patient's current symptoms, particularly the fever (frequency, severity, and patt
+      A: 'The patient has had daily fevers for the past six weeks, with temperatures as high as 38.9°C, occurring most often in the late afternoon and evening. She has experienced drenching night sweats that require changing bedcl'
+[0] info          g=False Q: What are the patient's main activities of daily living?
+      A: 'Previously independent in activities of daily living with no cognitive complaints.'
+[0] info          g=False Q: What are the patient's psychosocial supports?
+      A: 'The patient lives with her husband in a rural town in the northeastern United States. She has no known history of diabetes mellitus, atrial fibrillation, venous thromboembolism, recurrent miscarriage, recent vascular ins'
+[0] info          g=False Q: What are the patient's usual daily activities?
+      A: 'Previously independent in activities of daily living with no cognitive complaints.'
+[0] info          g=False Q: What are the patient's vital signs currently?
+      A: "The patient's current vital signs are as follows: temperature 38.6°C, heart rate 104 beats per minute, blood pressure 138/82 mm Hg, respiratory rate 18 breaths per minute, and oxygen saturation 96% while breathing ambien"
+[0] info          g=False Q: What are your symptoms in more detail?  Specifically, describe the fever (how high, how often)
+      A: 'The patient reports intermittent fevers with temperatures as high as 38.9°C, occurring most often in the late afternoon and evening, accompanied by drenching night sweats. The confusion began three weeks before admission'
+[0] info          g=False Q: What is performed the day after the day after the day after the day after the day after the da
+      A: 'The day after the day after the day after the day after the day after the day after the day after tomorrow is 8 days from now.'
+[0] info          g=False Q: What is performed the day after the day after the day after the day after the day after the da
+      A: 'The day after the day after the day after the day after the day after the day after tomorrow is seven days from now.'
+[0] info          g=False Q: What is performed the day after the day after the day after the day after the day after tomorr
+      A: 'The day after the day after the day after the day after the day after tomorrow is five days from now.'
+[0] info          g=False Q: What is performed the day after the day after the day after the day after tomorrow?
+      A: 'The day after the day after the day after the day after tomorrow is five days from now.'
+[0] info          g=False Q: What is performed the day after the day after the day after tomorrow?
+      A: "The day after the day after the day after tomorrow is three days from now. The specific activity performed on that day is not documented in the patient's chart."
+[0] info          g=False Q: What is performed the day after the day after tomorrow?
+      A: "The day after the day after tomorrow is three days from now. The specific activity performed on that day is not documented in the patient's chart."
+[0] info          g=False Q: What is performed the day after tomorrow?
+      A: "The patient's schedule for the day after tomorrow is not documented in the chart. Would you like to request a specific diagnostic test or ask a specific question about the patient's history, symptoms, or demographics?"
+[0] info          g=False Q: What is the patient's blood pressure and heart rate?
+      A: 'Blood pressure is 138/82 mm Hg, and the heart rate is 104 beats per minute.'
+[0] info          g=False Q: What is the patient's current medication list?
+      A: "The patient's current medication list includes lisinopril, levothyroxine, and atorvastatin. She had recently completed a course of amoxicillin–clavulanate and nitrofurantoin, but these were not ongoing at the time of adm"
+[0] info          g=False Q: What is the patient's current temperature?
+      A: '38.6°C'
+[0] info          g=False Q: What is the patient's current weight?
+      A: "The patient's current weight is not documented in the chart."
+[0] info          g=False Q: What is the patient's diet?
+      A: "The patient's diet is not documented in the chart. She reported anorexia and unintentional weight loss during the course of her illness, but no specific dietary history was recorded."
+[0] info          g=False Q: What is the patient's dietary intake?
+      A: "The patient's dietary intake has not been specifically documented in the chart. However, she reported anorexia and unintentional weight loss of 6 kg over the six weeks prior to admission, which suggests a significant red"
+[0] info          g=False Q: What is the patient's family history of hematological disorders or infections?
+      A: 'Family history was notable for an ischemic stroke in her mother at 74 years of age, myocardial infarction in her father, and breast carcinoma in a sister. There was no family history of hematologic malignancy, bleeding o'
+[0] info          g=False Q: What is the patient's family history, especially for autoimmune diseases, infections, or neuro
+      A: 'Family history was notable for an ischemic stroke in her mother at 74 years of age, myocardial infarction in her father, and breast carcinoma in a sister. There was no family history of hematologic malignancy, bleeding o'
+[0] info          g=False Q: What is the patient's gait?
+      A: "The patient's gait was cautious and mildly wide-based; tandem gait was impaired."
+[0] info          g=False Q: What is the patient's height?
+      A: "The patient's height is 168 cm."
+[0] info          g=False Q: What is the patient's latest vital sign reading when you took it?
+      A: "The patient's latest vital sign reading, as documented, was a temperature of 38.6°C, a heart rate of 104 beats per minute, a blood pressure of 138/82 mm Hg, a respiratory rate of 18 breaths per minute, and an oxygen satu"
+[0] info          g=False Q: What is the patient's level of activity?
+      A: 'Previously independent in activities of daily living with no cognitive complaints.'
+[0] info          g=False Q: What is the patient's medical history, including any previous illnesses, surgeries, or hospita
+      A: "The patient's medical history includes hypertension, primary hypothyroidism, and hyperlipidemia. She had undergone an uncomplicated laparoscopic cholecystectomy nine years earlier. There was no history of diabetes mellit"
+[0] info          g=False Q: What is the patient's mental status?
+      A: 'The patient is awake but inattentive and is disoriented to the date. She has difficulty with serial subtraction and with three-item recall at five minutes. Speech is fluent but occasionally interrupted by word-finding pa'
+[0] info          g=False Q: What is the patient's past medical history of any hemicranias?
+      A: "The patient's past medical history does not include hemicranias."
+[0] info          g=False Q: What is the patient's recent travel history?
+      A: 'The patient has not had any recent travel outside the region. She has not traveled outside the northeastern United States in the past few months.'
+[0] info          g=False Q: What is the patient's reported alcohol consumption?
+      A: 'The patient reported drinking one or two glasses of wine per month.'
+[0] info          g=False Q: What is the patient's smoking history?
+      A: 'The patient has never smoked.'
+[0] info          g=False Q: What is the patient's social support system like?
+      A: 'The patient lives with her husband and has no other known family members or close friends in the immediate vicinity. She has a supportive spouse and no indication of social isolation or lack of support.'
+[0] info          g=False Q: What is the significance of the elevated ESR and CRP levels?
+      A: 'The elevated erythrocyte sedimentation rate (ESR) and C-reactive protein (CRP) levels indicate an ongoing inflammatory process. These markers are nonspecific but strongly suggest systemic inflammation, which can be seen '
+[0] info          g=False Q: What is your current diet?
+      A: "The patient's diet is not documented in the chart. She has not been examined for dietary habits or nutritional intake."
+[0] info          g=False Q: What is your current weight? Have you noticed any unexplained weight loss?
+      A: "The patient's current weight is not documented in the chart. However, she reported an unintentional weight loss of 6 kg over the six weeks prior to admission."
+[0] info          g=False Q: What is your family history, specifically for any autoimmune diseases, infections, or neurolog
+      A: 'Family history was notable for an ischemic stroke in her mother at 74 years of age, myocardial infarction in her father, and breast carcinoma in a sister. There was no family history of hematologic malignancy, bleeding o'
+[0] info          g=False Q: What is your medical history, including any previous illnesses, surgeries, or hospitalizations
+      A: "The patient's medical history includes hypertension, primary hypothyroidism, and hyperlipidemia. She had undergone an uncomplicated laparoscopic cholecystectomy nine years earlier. There was no history of diabetes mellit"
+[0] info          g=False Q: What is your social history, including your occupation, travel history, and any risk factors f
+      A: 'The patient is a retired schoolteacher who lives with her husband in a rural town in the northeastern United States. She has no history of travel outside the region, and she has not had any travel-related vaccinations. S'
+[0] info          g=False Q: What is your vital sign status currently?
+      A: "The patient's current vital signs are as follows: temperature 38.6°C, heart rate 104 beats per minute, blood pressure 138/82 mm Hg, respiratory rate 18 breaths per minute, and oxygen saturation 96% on ambient air."
+[0] info          g=False Q: What medications is the patient currently taking, including over-the-counter drugs, supplement
+      A: 'The patient is currently taking lisinopril, levothyroxine, and atorvastatin. She has no known over-the-counter drugs, supplements, or herbal remedies that she is currently taking.'
+[0] info          g=False Q: What medications is the patient currently taking?
+      A: 'The patient is currently taking lisinopril, levothyroxine, and atorvastatin. She had recently completed a course of amoxicillin–clavulanate and nitrofurantoin, which were prescribed for presumed sinusitis and urinary tra'
+[0] info          g=False Q: What relevant social history does the patient have, including occupation, travel, and risk fac
+      A: 'The patient is a retired schoolteacher who lives with her husband in a rural town in the northeastern United States. She has no history of travel outside the region, no consumption of unpasteurized dairy products, no exp'
+[1] info          g=False Q: Are you experiencing any anxiety or stress?
+      A: 'The patient denies experiencing anxiety or stress.'
+[1] info          g=False Q: Are you experiencing any chest pain, shortness of breath, or palpitations? If so, can you desc
+      A: 'The patient denies chest pain at rest, exertional angina, orthopnea, paroxysmal nocturnal dyspnea, syncope, visual disturbance, focal weakness, polydipsia, kidney stones, bone pain, or change in his voice or swallowing. '
+[1] info          g=False Q: Are you experiencing any other symptoms, such as dizziness, headache, or vision changes?
+      A: 'The patient denies dizziness, vision changes, or other neurological symptoms. He reports episodic headache, palpitations, diaphoresis, and pallor during his spells, but no dizziness or visual disturbances.'
+[1] info          g=False Q: Can you describe your paroxysmal symptoms in more detail? For example, what happens immediatel
+      A: 'The patient described the episodes as abrupt, stereotyped, and self-limited. Each episode began abruptly with a pounding, bilateral, holocephalic headache, accompanied by forceful palpitations, profuse sweating, and a fi'
+[1] info          g=False Q: Could you please describe the paroxysmal symptoms in more detail? What triggers them, and what
+      A: 'The patient described the paroxysmal symptoms as discrete, stereotyped episodes that began abruptly with a pounding, bilateral, holocephalic headache, accompanied by forceful palpitations, profuse sweating, and a fine tr'
+[1] info          g=False Q: Do you have a family history of hypertension, heart disease, or stroke?
+      A: 'The patient\'s family history includes hypertension in his father, who had a thyroid tumor and was treated with thyroid hormone. There is a paternal uncle with a tumor removed "from near one kidney." No known family histo'
+[1] info          g=False Q: Do you have any chest pain, shortness of breath, or palpitations?
+      A: 'The patient denies chest pain at rest, exertional angina, orthopnea, paroxysmal nocturnal dyspnea, syncope, visual disturbance, focal weakness, polydipsia, kidney stones, bone pain, or change in his voice or swallowing.'
+[1] info          g=False Q: Do you have any known allergies?
+      A: 'The patient has no known drug allergies. He has not had any adverse reactions to medications, and his medical history does not mention any allergies to foods, environmental agents, or other substances.'
+[1] info          g=False Q: Do you smoke, drink alcohol, or use illicit drugs? If so, how much and how often?
+      A: 'The patient does not smoke, does not use illicit drugs, and drinks alcohol rarely.'
+[1] info          g=False Q: Does the patient consume alcohol or tobacco?
+      A: 'The patient does not consume alcohol or tobacco.'
+[1] info          g=False Q: Does the patient experience any lightheadedness or near-syncope during or after these episodes
+      A: 'The patient reports experiencing lightheadedness and a sensation of near-syncope during and immediately after the episodes. He describes it as a feeling of unsteadiness and a brief loss of consciousness, though he does n'
+[1] info          g=False Q: Does the patient have a history of any other medical conditions, such as thyroid disorders or 
+      A: 'The patient\'s medical history is notable for hypertension, diagnosed two years earlier and difficult to control. His family history includes a father with longstanding hypertension and a surgically treated "tumor of the '
+[1] info          g=False Q: Does the patient have any history of anxiety or panic disorder?
+      A: 'The patient has no history of anxiety or panic disorder. He was previously diagnosed with panic disorder based on his symptoms, but this diagnosis did not alleviate his clinical presentation, and he questioned the accura'
+[1] info          g=False Q: Does the patient have any history of diabetes or thyroid problems?
+      A: 'The patient has no known history of diabetes or thyroid problems. He was diagnosed with hypertension two years earlier and has been managed with amlodipine and lisinopril. His father had longstanding hypertension and a s'
+[1] info          g=False Q: Does the patient have any history of kidney problems or other relevant medical conditions?
+      A: 'The patient denies any history of kidney problems or other relevant medical conditions. He has no history of kidney stones, renal dysfunction, or renal disease. His family history includes hypertension and a paternal his'
+[1] info          g=False Q: Does the patient have any history of neurological issues?
+      A: 'The patient has no history of neurological issues. He has no focal neurological deficits, no seizures, no history of stroke, and no prior episodes of syncope or transient ischemic attack. His mental status is intact, and'
+[1] info          g=False Q: Does the patient have any known allergies?
+      A: 'The patient has no known drug allergies.'
+[1] info          g=False Q: Does the patient have polyuria or polyphagia?
+      A: 'The patient described new intermittent constipation and weight loss. He denied polyuria, polydipsia, or polyphagia.'
+[1] info          g=False Q: Has a doctor ever said that you have a heart condition?
+      A: 'The patient has not been diagnosed with a heart condition. However, he has a history of hypertension, which is a known risk factor for cardiovascular disease.'
+[1] info          g=False Q: Has the patient ever experienced any chest pain, shortness of breath, palpitations, or dizzine
+      A: 'The patient described experiencing palpitations during the episodes, which he perceived as a hammering in his chest and neck. He did not report chest pain at rest or during the episodes. He occasionally felt breathlessne'
+[1] info          g=False Q: Has the patient ever experienced any chest pain, shortness of breath, palpitations, or dizzine
+      A: 'The patient described experiencing palpitations during the episodes, which he perceived as a hammering in his chest and neck. He also reported a profound sense of apprehension and impending doom, along with nausea and, a'
+[1] info          g=False Q: Has the patient ever experienced these paroxysmal events before?
+      A: 'The patient has experienced these paroxysmal events for approximately six months.'
+[1] info          g=False Q: Has the patient experienced any episodes of chest pain, shortness of breath, palpitations, or 
+      A: 'The patient has experienced episodes of palpitations, which he described as a hammering in his chest and neck. He also reported a profound sense of apprehension and impending doom, along with nausea and, at times, breath'
+[1] info          g=False Q: Has the patient experienced any episodes of chest pain, shortness of breath, palpitations, or 
+      A: 'The patient has experienced episodes of palpitations, which he described as a hammering in his chest and neck. He also reported a profound sense of apprehension and impending doom, along with nausea and, at times, breath'
+[1] info          g=False Q: Have the symptoms been consistently recurring for the past six months?
+      A: 'The symptoms have been consistently recurring for the past six months.'
+[1] info          g=False Q: Have there been any changes in the patient's medication regimen recently?
+      A: "The patient's medication regimen has not changed recently. He has been on amlodipine, lisinopril, and sertraline, and there have been no recent additions or modifications to these medications."
+[1] info          g=False Q: Have you had any previous medical conditions, such as diabetes, kidney disease, or thyroid pro
+      A: 'The patient has no prior history of diabetes, kidney disease, or thyroid problems. He was diagnosed with hypertension two years earlier, which has been difficult to control despite medication. His father had longstanding'
+[1] info          g=False Q: Have you had any recent illnesses or injuries?
+      A: 'The patient denied recent illnesses or injuries.'
+[1] info          g=False Q: Have you had any recent infections, such as a cold or flu?
+      A: 'The patient has not had any recent infections, such as a cold or flu.'
+[1] info          g=False Q: Have you noticed any swelling in your legs or ankles?
+      A: 'No swelling in the legs or ankles was noted during the physical examination.'
+[1] info          g=False Q: How much does the patient exercise regularly?
+      A: 'The patient exercises minimally, with no regular structured exercise regimen. He denies any consistent relationship between episodes and physical activity, and curtailing coffee and exercise had not helped.'
+[1] info          g=False Q: Is the patient currently experiencing any other symptoms, even mild ones, that might be releva
+      A: 'The patient denies any other symptoms, even mild ones, that might be relevant.'
+[1] info          g=False Q: Is the patient currently taking any medications at all (prescription or over-the-counter)?
+      A: 'The patient is currently taking amlodipine, lisinopril, and sertraline. He has no known drug allergies.'
+[1] info          g=False Q: Is there a history of hypercoagulability?
+      A: "No history of hypercoagulability or thromboembolic events is documented in the patient's history."
+[1] info          g=False Q: Is your blood pressure medication working?
+      A: "The patient's blood pressure medications, amlodipine and lisinopril, were not adequately controlling his hypertension, as evidenced by his labile blood pressure readings and the documented hypertensive crisis during a sp"
+[1] info          g=False Q: What is the patient's age?
+      A: 'The patient is 39 years old.'
+[1] info          g=False Q: What is the patient's current weight and height?
+      A: "The patient's height is 175 cm and his weight is 65 kg."
+[1] info          g=False Q: What is the patient's typical daily routine and lifestyle factors like diet, exercise, and smo
+      A: 'The patient is an accountant who lives with his wife and two children. He has no occupational exposures of note. He has never smoked or used electronic cigarettes, drinks alcohol rarely, and has never used illicit drugs '
+[1] info          g=False Q: What is your blood pressure typically when you are not experiencing these episodes? And what i
+      A: "The patient's typical blood pressure between episodes is 150/95 mm Hg, and his typical heart rate is 96 beats per minute."
+[1] info          g=False Q: What is your body mass index (BMI)?
+      A: 'Body mass index is 21.4.'
+[1] info          g=False Q: What is your current diet like? and regular exercise habits?
+      A: "The patient's diet is typically regular, with no significant restrictions or special modifications. He consumes a balanced diet with no known food allergies or intolerances. His regular exercise habits include light phys"
+[1] info          g=False Q: What is your history of alcohol consumption?
+      A: 'The patient denies alcohol consumption, reporting that he drinks alcohol rarely.'
+[1] info          g=False Q: What is your occupation and level of physical activity?
+      A: 'The patient works as an accountant and lives with his wife and two children. He has no occupational exposures of note.'
+[1] info          g=False Q: What medications are you currently taking, including over-the-counter drugs and supplements?
+      A: 'The patient is currently taking amlodipine, lisinopril, and sertraline. He does not take any over-the-counter drugs or supplements.'
+[1] info          g=False Q: What medications are you currently taking?
+      A: 'The patient is currently taking amlodipine, lisinopril, and sertraline.'
+[1] info          g=False Q: What type of diet does the patient follow?
+      A: "The patient follows a diet that is not specifically documented in the chart. However, based on the information provided, there is no mention of a restricted or specialized diet. The patient's dietary habits are not furth"
+[1] info          g=False Q: When did the symptoms begin?
+      A: "The patient's symptoms began approximately six months before admission."
+[1] info          g=False Q: When did your symptoms start and how often do they occur?
+      A: "The patient's symptoms began approximately six months before admission. The episodes initially occurred once or twice weekly but increased to several times per week over the ensuing months."
+[1] info          g=False Q: When the patient describes these episodes, is the diaphoresis (sweating) profuse, minimal, or 
+      A: 'The diaphoresis during the episodes is described as profuse.'
+[0] rejected      g=False Q: Folate Level: Normal
+      A: "Folate level was not specifically documented in the patient's chart. Would you like to order this test?"
+[0] rejected      g=False Q: Iron Studies (Serum Iron, TIBC, Transferrin Saturation): Low serum iron, elevated TIBC, and lo
+      A: 'Iron studies were not specifically documented in the chart. Would you like to order this test?'
+[0] test_result   g=True Q: Given the recent history of amoxicillin-clavulanate and nitrofurantoin use without improvement
+      A: 'The patient had no evidence of infection on urinalysis, and the cultures were negative. However, given the persistent fever and systemic symptoms, the clinical team considered a variety of infectious etiologies, includin'
+[0] test_result   g=True Q: Is the patient experiencing any skin rashes or other physical findings?
+      A: 'The patient has faint, irregular, reddish-violaceous mottling over the thighs and the proximal arms that do not fully resolve with warming, more consistent with pathologic livedo (livedo racemosa-like mottling) than phys'
+[0] test_result   g=True Q: Order a C-reactive protein (CRP)
+      A: 'C-reactive protein (mg/L): 96'
+[0] test_result   g=True Q: Order a CBC
+      A: "The patient's complete blood count (CBC) is as follows: hemoglobin 9.4 g/dL, hematocrit 28.5%, mean corpuscular volume 89 fL, white-cell count 3.6 × 10⁹/L, neutrophils 68%, lymphocytes 19%, platelet count 96 × 10⁹/L, ret"
+[0] test_result   g=True Q: Order a CT scan of the head
+      A: 'A computed tomography (CT) scan of the head was ordered. The scan demonstrated multiple small foci of restricted diffusion scattered throughout both cerebral hemispheres, the right cerebellar hemisphere, and the left tha'
+[0] test_result   g=True Q: Order a Chest X-ray
+      A: 'The chest X-ray was performed and showed no acute cardiopulmonary abnormalities. The lungs were clear, and there was no evidence of pleural effusion or consolidation.'
+[0] test_result   g=True Q: Order a blood culture
+      A: 'Blood cultures were obtained on admission and were negative.'
+[0] test_result   g=True Q: Order a complete metabolic panel
+      A: "The patient's complete metabolic panel is as follows:\n\nSodium (mmol/L): 137 (Reference Range: 135–145)\nPotassium (mmol/L): 4.1 (Reference Range: 3.5–5.0)\nCreatinine (mg/dL): 1.0 (Reference Range: 0.6–1.1)\nUrea nitrogen ("
+[0] test_result   g=True Q: Order a lumbar puncture
+      A: 'A lumbar puncture was performed. The opening pressure was 17 cm of water. The cerebrospinal fluid (CSF) contained 14 nucleated cells per cubic millimeter (90% lymphocytes) and 2 red cells per cubic millimeter; the protei'
+[0] test_result   g=True Q: Order a serum protein electrophoresis (SPEP)
+      A: 'Serum protein electrophoresis (SPEP) was performed and showed no monoclonal protein.'
+[0] test_result   g=True Q: Order a throat swab
+      A: "The patient's throat swab was performed and showed no evidence of bacterial or viral pathogens. The result was negative for Group A beta-hemolytic streptococcus, viral cultures, and other common pathogens."
+[0] test_result   g=True Q: Order a thyroid-stimulating hormone (TSH)
+      A: 'Thyrotropin (TSH) level: 2.3 µIU/mL (Reference range: 0.4–4.0 µIU/mL)'
+[0] test_result   g=True Q: Order a urinalysis
+      A: 'The urinalysis showed a specific gravity of 1.015, trace protein, no glucose, no leukocyte esterase or nitrites, and 0–2 red cells and 0–2 white cells per high-power field, without casts.'
+[0] test_result   g=True Q: Order a urine culture
+      A: 'Urine culture was ordered and is pending results.'
+[0] test_result   g=True Q: Order an HIV test
+      A: 'HIV antigen and antibody testing was performed, and the result was negative.'
+[0] test_result   g=True Q: Order an erythrocyte sedimentation rate (ESR)
+      A: 'ESR is 88 mm/hr.'
+[0] test_result   g=True Q: Order hepatitis B and C serology
+      A: 'Hepatitis B surface antigen, hepatitis B core antibody, and hepatitis C antibody were all negative.'
+[0] test_result   g=True Q: What are the patient's liver function tests (LFTs)?
+      A: 'Aspartate aminotransferase (U/L): 76 (Reference range: 10–40)\nAlanine aminotransferase (U/L): 52 (Reference range: 7–35)\nAlkaline phosphatase (U/L): 168 (Reference range: 35–105)\nTotal bilirubin (mg/dL): 1.1 (Reference r'
+[0] test_result   g=True Q: What are your liver function tests (LFTs)?
+      A: 'Aspartate aminotransferase (U/L): 76 (Reference range: 10–40)\nAlanine aminotransferase (U/L): 52 (Reference range: 7–35)\nAlkaline phosphatase (U/L): 168 (Reference range: 35–105)\nTotal bilirubin (mg/dL): 1.1 (Reference r'
+[0] test_result   g=True Q: What is performed the next day?
+      A: 'The next day, a diagnostic lumbar puncture was performed.'
+[0] test_result   g=True Q: What is performed today?
+      A: 'The patient underwent a diagnostic lumbar puncture today. The procedure was performed to evaluate the cerebrospinal fluid (CSF) for potential infectious or inflammatory causes of her encephalopathy. The opening pressure '
+[0] test_result   g=True Q: What is performed tomorrow?
+      A: "The patient's scheduled procedure tomorrow is a random skin biopsy to evaluate the cutaneous findings of livedo and telangiectatic patches."
+[0] test_result   g=True Q: What is the C-reactive protein (CRP)?
+      A: 'C-reactive protein (CRP) is 96 mg/L.'
+[0] test_result   g=True Q: What is the HIV test?
+      A: 'HIV antigen and antibody testing was performed, and the result was negative.'
+[0] test_result   g=True Q: What is the blood count?
+      A: 'Hemoglobin: 9.4 g/dL; Hematocrit: 28.5%; Mean corpuscular volume: 89 fL; White-cell count: 3.6 × 10⁹/L; Neutrophils: 68%; Lymphocytes: 19%; Platelet count: 96 × 10⁹/L; Reticulocyte count: 1.0%; Peripheral smear: Normochr'
+[0] test_result   g=True Q: What is the complete metabolic panel?
+      A: 'Sodium (mmol/L): 137 (Reference Range: 135–145)  \nPotassium (mmol/L): 4.1 (Reference Range: 3.5–5.0)  \nCreatinine (mg/dL): 1.0 (Reference Range: 0.6–1.1)  \nUrea nitrogen (mg/dL): 18 (Reference Range: 7–20)  \nGlucose (mg/'
+[0] test_result   g=True Q: What is the erythrocyte sedimentation rate (ESR)?
+      A: 'ESR is 88 mm/hr.'
+[0] test_result   g=True Q: What is the haptoglobin level
+      A: 'Haptoglobin: 15 mg/dL'
+[0] test_result   g=True Q: What is the haptoglobin level?
+      A: 'Haptoglobin: 15 mg/dL'
+[0] test_result   g=True Q: What is the hepatitis B and C serology?
+      A: 'Hepatitis B surface antigen, hepatitis B core antibody, and hepatitis C antibody were all negative.'
+[0] test_result   g=True Q: What is the patient's C-reactive protein (CRP) level?
+      A: 'CRP level is 96 mg/L.'
+[0] test_result   g=True Q: What is the patient's albumin level?
+      A: 'Albumin: 3.0 g/dL'
+[0] test_result   g=True Q: What is the patient's creatinine level?
+      A: 'Creatinine level is 1.0 mg/dL.'
+[0] test_result   g=True Q: What is the patient's erythrocyte sedimentation rate (ESR) level?
+      A: 'ESR is 88 mm/hr.'
+[0] test_result   g=True Q: What is the patient's glucose level?
+      A: 'Glucose level was 102 mg/dL on the day of admission, with a cerebrospinal fluid glucose level of 64 mg/dL.'
+[0] test_result   g=True Q: What is the patient's hemoglobin and hematocrit?
+      A: 'Hemoglobin: 9.4 g/dL; Hematocrit: 28.5%'
+[0] test_result   g=True Q: What is the patient's liver function test (LFT)?
+      A: 'Albumin: 3.0 g/dL (reference range, 3.5–5.0 g/dL); total bilirubin: 1.1 mg/dL (reference range, 0.1–1.0 mg/dL); aspartate aminotransferase: 76 U/L (reference range, 10–40 U/L); alanine aminotransferase: 52 U/L (reference'
+[0] test_result   g=True Q: What is the patient's platelet count?
+      A: 'Platelet count: 96 × 10⁹/L.'
+[0] test_result   g=True Q: What is the patient's procalcitonin level?
+      A: 'Procalcitonin level is 0.12 ng/mL.'
+[0] test_result   g=True Q: What is the patient's renal function test (RFT)?
+      A: 'Creatinine (mg/dL) | 1.0 | 0.6–1.1\nUrea nitrogen (mg/dL) | 18 | 7–20'
+[0] test_result   g=True Q: What is the patient's serum sodium, potassium, chloride, bicarbonate, and BUN?
+      A: 'Serum sodium: 137 mmol/L; potassium: 4.1 mmol/L; chloride: not specified; bicarbonate: not specified; BUN: 18 mg/dL.'
+[0] test_result   g=True Q: What is the patient's urine output?
+      A: 'Urine output was not specifically documented in the chart. The urinalysis showed a specific gravity of 1.015, trace protein, no glucose, no leukocyte esterase or nitrites, and 0–2 red cells and 0–2 white cells per high-p'
+[0] test_result   g=True Q: What is the patient's white blood cell count and differential?
+      A: 'White-cell count: 3.6 × 10⁹/L. Differential: neutrophils 68%, lymphocytes 19%.'
+[0] test_result   g=True Q: What is the patient's white blood cell count?
+      A: 'White-cell count: 3.6 × 10⁹/L.'
+[0] test_result   g=True Q: What is the serum protein electrophoresis (SPEP)?
+      A: 'Serum protein electrophoresis with immunofixation showed no monoclonal protein.'
+[0] test_result   g=True Q: What is the significance of the low hemoglobin and hematocrit, and the fact that the periphera
+      A: 'The low hemoglobin and hematocrit, along with the normochromic, normocytic anemia without blasts, suggest a chronic, non-anemic process. These findings are not consistent with acute blood loss or hemolysis, but rather wi'
+[0] test_result   g=True Q: What is the significance of the normal serum protein electrophoresis (SPEP) and immunofixation
+      A: 'The significance of the normal serum protein electrophoresis (SPEP) and immunofixation is that they rule out the presence of a monoclonal protein, which would be expected in conditions such as multiple myeloma or other p'
+[0] test_result   g=True Q: What is the thyroid-stimulating hormone (TSH)?
+      A: 'Thyrotropin (TSH) level: 2.3 µIU/mL (reference range, 0.4–4.0 µIU/mL).'
+[0] test_result   g=True Q: What is the urinalysis?
+      A: 'The urinalysis showed a specific gravity of 1.015, trace protein, no glucose, no leukocyte esterase or nitrites, and 0–2 red cells and 0–2 white cells per high-power field, without casts.'
+[0] test_result   g=True Q: What is your erythrocyte sedimentation rate (ESR) and C-reactive protein (CRP)?
+      A: 'ESR is 88 mm/hr, and CRP is 96 mg/L.'
+[0] test_result   g=True Q: What is your glucose level?
+      A: 'Glucose level was 102 mg/dL on the day of admission, with a cerebrospinal fluid glucose level of 64 mg/dL.'
+[0] test_result   g=True Q: What is your renal function test (RFT)?
+      A: 'Creatinine (mg/dL): 1.0 (Reference Range: 0.6–1.1)\nUrea nitrogen (mg/dL): 18 (Reference Range: 7–20)'
+[0] test_result   g=True Q: What is your sodium, potassium, chloride, bicarbonate, BUN, and creatinine levels?
+      A: 'Sodium: 137 mmol/L, Potassium: 4.1 mmol/L, Chloride: Not specified, Bicarbonate: Not specified, BUN: 18 mg/dL, Creatinine: 1.0 mg/dL.'
+[0] test_result   g=True Q: What is your white blood cell count and differential?
+      A: 'White-cell count: 3.6 × 10⁹/L (reference range, 4.5–11.0). Differential: neutrophils 68%, lymphocytes 19%, with the remainder composed of monocytes and other granulocytes.'
+[0] test_result   g=True Q: Would you like to order TIBC, Transferrin Saturation, and Ferritin to further study the Iron s
+      A: "The patient's ferritin level is 3,150 ng/mL, which is significantly elevated. However, the specific request for TIBC (total iron-binding capacity), transferrin saturation, and ferritin has already been addressed in the l"
+[1] test_result   g=True Q: What is your cholesterol level?
+      A: 'Total cholesterol: 192 mg/dL (reference range: <200 mg/dL)'
