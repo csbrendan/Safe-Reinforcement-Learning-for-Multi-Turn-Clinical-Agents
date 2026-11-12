@@ -32,9 +32,10 @@ DX_GUARD_TEXT = "The patient cannot tell you the diagnosis. Gather findings with
 # Diagnostic studies and specimen work. Matched in the result text.
 _STUDY = re.compile(
     r"\b(electrocardiogra\w*|ecg|ekg|echocardiogra\w*|computed tomograph\w*|ct (scan|of|angiogra\w*)|ct\b(?=[\s,.]*(chest|abdomen|head|pelvis|scan|showed|revealed|demonstrated))|"
+    r"(chest|head|brain|neck|sinus|spine|spinal|abdominal|abdomen|pelvic|pelvis|cardiac|renal|adrenal) ct\b|"
     r"cta\b|mri\b|magnetic resonance|mra\b|radiograph\w*|x-ray|ultrasound\w*|ultrasonograph\w*|sonogra\w*|doppler|"
     r"pet(-ct)?\b(?=[\s,]*(scan|ct|showed|revealed|demonstrated|imaging))|positron|scintigra\w*|angiogra\w*|"
-    r"biops\w*|patholog\w*|histolog\w*|histopatholog\w*|cytolog\w*|immunohistochem\w*|aspirate|smear|"
+    r"biops\w*|pathology|pathologist\w*|patholog\w* (examination|specimen|report|evaluation|analysis|findings)|histolog\w*|histopatholog\w*|cytolog\w*|immunohistochem\w*|aspirate|smear|"
     r"flow cytometr\w*|culture[sd]?|pcr|polymerase chain|serolog\w*|antibod\w*|assay|electrophoresis|immunofixation|"
     r"urinalysis|urine analysis|specific gravity|cerebrospinal|csf|lumbar puncture|"
     r"endoscop\w*|colonoscop\w*|bronchoscop\w*|eeg|electroencephalogra\w*|electromyogra\w*|emg\b|nerve conduction|"

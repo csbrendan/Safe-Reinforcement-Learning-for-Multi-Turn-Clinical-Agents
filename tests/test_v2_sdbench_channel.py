@@ -100,6 +100,9 @@ def _record(runner, extra=None):
     ("What did your fat pad biopsy show?", "The fat-pad biopsy showed amyloid by Congo red staining."),
     ("What did your genetic testing show?", "A pathogenic variant in RET at codon 634."),
     ("What were your free light chains?", "Lambda light chain 240 mg/L."),
+    # out-of-sample misses from the 16-episode run (V2/sdbench_env_validation.md, section 3)
+    ("Order a chest CT", "The patient has had a chest CT performed. The study did not reveal any lymphadenopathy."),
+    ("What did the pathology show?", "Pathology showed large atypical cells within small vessels."),
 ])
 def test_classifier_flags_test_results_in_questions(q, res):
     assert ch.classify(Q + q, res) == "test_result"
@@ -114,6 +117,7 @@ def test_classifier_flags_test_results_in_questions(q, res):
     ("Are you taking any medications?", "Amlodipine 5 mg once daily and lisinopril 10 mg once daily."),
     ("What is your diet like?", "Regular diet; he has not restricted his sodium intake."),
     ("Family history?", "His father took thyroid hormone afterward and was monitored with blood tests."),
+    ("Any skin rashes?", "Reddish-violaceous mottling over the thighs, more consistent with pathologic livedo."),
 ])
 def test_classifier_leaves_history_vitals_and_exam_free(q, res):
     assert ch.classify(Q + q, res) == "info"
