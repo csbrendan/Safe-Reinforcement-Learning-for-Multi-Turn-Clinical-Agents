@@ -321,3 +321,22 @@ def test_dx_fishing_question_is_classified_and_guarded(tmp_path):
     assert "pheochromocytoma" in log["withheld_result"] and not log["record_grounded"]
     corr = _cost_model().corrected_cost(_record(r))
     assert corr["n_question_tests_charged"] == 0                 # the answer key isn't a test
+
+
+def test_price_prefetch_is_concurrent_and_cached():
+    import threading
+    seen, lock = [], threading.Lock()
+
+    def fake_llm(messages, **kw):
+        time.sleep(0.2)
+        with lock:
+            seen.append(1)
+        txt = messages[-1]["content"]
+        return _resp('{"tests": [{"name": "x", "cost": 42}]}' if txt else "")
+    fake_llm.model_id = "fake-price"
+    cm = CostModel(fake_llm, JsonlCache(None))
+    calls = []
+    cm.price = (lambda orig: (lambda n: (calls.append(n), time.sleep(0.2), 42.0)[2]))(cm.price)
+    t0 = time.time()
+    cm.prefetch(["CBC", "CMP", "troponin", "CBC"])
+    assert sorted(calls) == ["CBC", "CMP", "troponin"] and time.time() - t0 < 0.5

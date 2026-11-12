@@ -14,6 +14,7 @@ Two cost views per episode (both always reported):
                   * a compound order ("CBC, CMP; troponin") is priced per component, not as one item.
 """
 from __future__ import annotations
+from concurrent.futures import ThreadPoolExecutor
 from typing import Callable
 
 from tasks.v2_sdbench import sdb  # noqa: F401  (puts the SD-Bench clone on sys.path)
@@ -23,6 +24,7 @@ from tasks.v2_sdbench.channel import canonical_request, question_subject, split_
 from tasks.v2_sdbench.runner import is_rejected, normalize_request
 
 CLINICIAN_COST = 300
+_PRICE_POOL = ThreadPoolExecutor(max_workers=16, thread_name_prefix="price")
 TEST_PREFIX = "Test to order: "
 
 
@@ -55,6 +57,25 @@ class CostModel:
             self.cache.put(key, float(r["cost"]), meta={"test": name})
             return float(r["cost"])
         return None  # failures are not cached (may be transient)
+
+    def prefetch(self, names: list[str]) -> None:
+        """Price uncached names concurrently. Each name is an independent cached call, so this changes wall time
+        only. Results land in the cache; the cost functions then read them."""
+        todo = list(dict.fromkeys(n for n in names if self.cache.get(
+            make_key("price", normalize_request(strip_prefix(n)), self.model_id)) is None))
+        if self.llm is not None and len(todo) > 1:
+            list(_PRICE_POOL.map(self.price, todo))
+
+    def names_for(self, record: dict, case: dict | None = None) -> list[str]:
+        """Every name the official, corrected and workup costs will price for this episode."""
+        out = [strip_prefix(t) for t in record["requested_tests_only"]]
+        for t in record["requested_tests_only"]:
+            out.extend(split_compound(strip_prefix(t)))
+        out.extend(question_subject(l["test_name"]) for l in record["test_logs"]
+                   if l.get("is_question") and l.get("channel_kind") == "test_result")
+        if case is not None:
+            out.extend(t["name"] for t in case.get("tests", []) if not t.get("in_initial_presentation", False))
+        return out
 
     def episode_cost(self, record: dict) -> dict:
         """Costs for one episode record (from Episode.record())."""

@@ -284,6 +284,12 @@ def main():
     ap.add_argument("--env-config", default=None, help="JSON settings for envs defining build_train_prompts")
     ap.add_argument("--max-completion-length", type=int, default=512,
                     help="trl max_completion_length (V1 default 512; SD-Bench transcripts need ~12k+)")
+    # Defaults reproduce V1 (8 x 4, no checkpointing). Long multi-turn envs (SD-Bench) need a small micro-batch
+    # and gradient checkpointing; completions per step = per_device_batch * grad_accum.
+    ap.add_argument("--per-device-batch", type=int, default=8)
+    ap.add_argument("--grad-accum", type=int, default=4)
+    ap.add_argument("--num-generations", type=int, default=8)
+    ap.add_argument("--grad-ckpt", action="store_true")
     args = ap.parse_args()
     MAX_DIALOG_TURNS = args.max_turns
     env = importlib.import_module(args.env)
@@ -308,7 +314,9 @@ def main():
     lora = LoraConfig(r=32, lora_alpha=64, task_type="CAUSAL_LM",
                       target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"])
     cfg = GRPOConfig(
-        output_dir=args.out, per_device_train_batch_size=8, num_generations=8, gradient_accumulation_steps=4,
+        output_dir=args.out, per_device_train_batch_size=args.per_device_batch, num_generations=args.num_generations,
+        gradient_accumulation_steps=args.grad_accum, gradient_checkpointing=args.grad_ckpt,
+        generation_batch_size=args.per_device_batch * args.grad_accum,
         max_completion_length=args.max_completion_length, temperature=args.rollout_temp, beta=args.beta, learning_rate=args.lr,
         max_steps=args.max_steps, logging_steps=1, bf16=True, report_to=[], seed=args.seed,
         save_strategy="steps", save_steps=args.save_steps, save_total_limit=4,

@@ -117,6 +117,7 @@ class Services:
         t0 = time.time()
         j = self.judge.score(ep.case, rec["diagnosis"], rec["test_logs"])
         t1 = time.time()
+        self.costs.prefetch(self.costs.names_for(rec, ep.case))
         cost = self.costs.episode_cost(rec)
         corr = self.costs.corrected_cost(rec)
         t2 = time.time()
