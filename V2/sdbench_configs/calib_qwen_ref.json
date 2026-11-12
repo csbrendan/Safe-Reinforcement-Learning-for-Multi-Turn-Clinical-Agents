@@ -1,0 +1,33 @@
+{
+ "_note": "PLUMBING ONLY on SD-Bench's 5 synthetic cases. Not an experiment: Qwen3-8B is gatekeeper, judge and pricer, unvalidated. Arm C uses the record-grounded relevance proxy.",
+ "dataset": "synthetic",
+ "split": "train",
+ "arm": "C",
+ "lam_gather": 0.1,
+ "max_turns": 12,
+ "turn_max_tokens": 400,
+ "max_context_tokens": 14000,
+ "gatekeeper": {
+  "url": "http://192.168.100.2:8101/v1",
+  "model": "local-aux"
+ },
+ "judge": {
+  "url": "http://192.168.100.2:8101/v1",
+  "model": "local-aux",
+  "prompt": "v4_reasoning_with_tests"
+ },
+ "costing": {
+  "url": "http://192.168.100.2:8101/v1",
+  "model": "local-aux"
+ },
+ "reader": {
+  "url": "http://192.168.100.2:8100/v1",
+  "model": "base",
+  "tokenizer": "/home/brendan/rl-gains-in-clinical-tasks/checkpoints/medgemma4b_text"
+ },
+ "question_guard": true,
+ "cost_mode": "corrected",
+ "gather": "record_grounded",
+ "log_phi": false,
+ "cache_dir": "results/v2_sdbench/calibration/qwen_ref"
+}

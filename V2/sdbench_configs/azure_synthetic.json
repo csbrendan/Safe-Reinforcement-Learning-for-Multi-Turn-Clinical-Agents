@@ -1,0 +1,20 @@
+{
+  "_note": "Azure AI Foundry auxiliary roles, SD-Bench official choices: GPT-5 judge (v4_reasoning_with_tests) and gatekeeper, GPT-5-mini pricer. Deployment names must match your Foundry deployments. No temperature or token caps (official). Synthetic cases only until the MIMIC data-policy blocker is cleared (V2/sdbench_azure_switch.md).",
+  "dataset": "synthetic",
+  "split": "train",
+  "arm": "C",
+  "lam_gather": 0.1,
+  "max_turns": 12,
+  "turn_max_tokens": 400,
+  "max_context_tokens": 14000,
+  "gatekeeper": {"provider": "azure", "deployment": "gpt-5", "model_args": {}, "max_concurrency": 16},
+  "judge": {"provider": "azure", "deployment": "gpt-5", "model_args": {}, "prompt": "v4_reasoning_with_tests", "max_concurrency": 16},
+  "costing": {"provider": "azure", "deployment": "gpt-5-mini", "model_args": {}, "max_concurrency": 8},
+  "question_guard": true,
+  "canonicalize": true,
+  "cost_mode": "corrected",
+  "gather": "record_grounded",
+  "log_phi": false,
+  "azure_mimic_human_review_opt_out": false,
+  "cache_dir": "results/v2_sdbench/azure_cache"
+}

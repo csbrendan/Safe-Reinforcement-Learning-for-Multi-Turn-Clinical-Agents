@@ -28,7 +28,7 @@ from tasks.v2_sdbench.cache import JsonlCache
 from tasks.v2_sdbench.cases import assert_not_test, load_split
 from tasks.v2_sdbench.costs import CostModel
 from tasks.v2_sdbench.episode import Episode, SYSTEM_PROMPT, first_user_message
-from tasks.v2_sdbench.llm import local_chat, qwen_no_think
+from tasks.v2_sdbench.llm import make_aux_llm
 from tasks.v2_sdbench.reward import Judge, OutcomeWeights, format_flags, outcome_reward
 from tasks.v2_sdbench.runner import CachedTestRunner, Timer, make_config
 
@@ -37,7 +37,7 @@ DEFAULTS: dict[str, Any] = {
     "max_turns": 12, "turn_max_tokens": 400, "max_context_tokens": 14000,
     "outcome": {"lam_cost": 0.0, "cost_scale": 1000.0, "fmt_penalty": 0.25},
     "gatekeeper": {"url": "http://192.168.100.2:8101/v1", "model": "local-aux", "max_tokens": 800},
-    "judge": {"url": "http://192.168.100.2:8101/v1", "model": "local-aux", "prompt": "v3_reasoning",
+    "judge": {"url": "http://192.168.100.2:8101/v1", "model": "local-aux", "prompt": "v4_reasoning_with_tests",
               "max_tokens": 800},
     "costing": {"url": "http://192.168.100.2:8101/v1", "model": "local-aux", "max_tokens": 300},
     "reader": {"url": "http://192.168.100.2:8000/v1", "model": None, "findings_mode": "results_only"},
@@ -48,7 +48,27 @@ DEFAULTS: dict[str, Any] = {
     # SD-Bench's own per-turn limits (official default: none). Opt-in task change: set for all arms and the guarded
     # evaluation alike, never for the official evaluation.
     "max_questions_per_turn": None, "max_tests_per_turn": None,
+    # Must be set true (deliberately, per run config) before MIMIC case content may go to an Azure deployment.
+    # PhysioNet's guidance for Azure OpenAI requires opting out of human review (modified abuse monitoring);
+    # the default stateless deployment is not enough. See V2/sdbench_azure_switch.md.
+    "azure_mimic_human_review_opt_out": False,
 }
+
+# Roles that send case content (presentation, record, reference diagnosis) to the model. The pricer only sends
+# test names, as SD-Bench notes (its costing model runs without ZDR).
+CASE_CONTENT_ROLES = ("gatekeeper", "judge")
+
+
+def check_data_policy(cfg: dict) -> None:
+    """Refuse to send MIMIC case content to Azure unless the human-review opt-out is confirmed."""
+    if cfg["dataset"] != "mimic":
+        return
+    azure = [r for r in CASE_CONTENT_ROLES if cfg[r].get("provider", "local") == "azure"]
+    if azure and not cfg.get("azure_mimic_human_review_opt_out"):
+        raise PermissionError(
+            f"MIMIC case content would go to Azure ({', '.join(azure)}). PhysioNet requires opting out of human "
+            "review (modified abuse monitoring) for Azure OpenAI; set azure_mimic_human_review_opt_out only once "
+            "that is approved for this subscription.")
 
 
 def load_config(path: str | None) -> dict:
@@ -69,6 +89,10 @@ def load_config(path: str | None) -> dict:
         raise ValueError("cost_mode must be official or corrected")
     if cfg["gather"] not in ("record_grounded", "phi"):
         raise ValueError("gather must be record_grounded or phi")
+    for r in ("gatekeeper", "judge", "costing"):
+        if cfg[r].get("provider", "local") not in ("local", "azure"):
+            raise ValueError(f"{r}.provider must be local or azure")
+    check_data_policy(cfg)
     return cfg
 
 
@@ -87,18 +111,19 @@ class Services:
     def __init__(self, cfg: dict, tokenizer=None):
         cd = cfg["cache_dir"]
         os.makedirs(cd, exist_ok=True)
-        eb = qwen_no_think() if cfg.get("aux_no_think") else None
+        check_data_policy(cfg)
+        nt = bool(cfg.get("aux_no_think"))
         g, j, c = cfg["gatekeeper"], cfg["judge"], cfg["costing"]
         self.cfg = cfg
         self.sdb_cfg = make_config(cfg["dataset"], max_turns=cfg["max_turns"],
                                    max_questions_per_turn=cfg["max_questions_per_turn"],
                                    max_tests_per_turn=cfg["max_tests_per_turn"])
-        self.gk_llm = local_chat(g["url"], g["model"], max_tokens=g["max_tokens"], extra_body=eb)
+        self.gk_llm = make_aux_llm(g, nt)
         self.gk_cache = JsonlCache(os.path.join(cd, "gatekeeper.jsonl"))
-        self.judge = Judge(local_chat(j["url"], j["model"], max_tokens=j["max_tokens"], extra_body=eb),
+        self.judge = Judge(make_aux_llm(j, nt),
                            JsonlCache(os.path.join(cd, "judge.jsonl")), cfg["dataset"], j["prompt"],
                            cfg["max_turns"])
-        self.costs = CostModel(local_chat(c["url"], c["model"], max_tokens=c["max_tokens"], extra_body=eb),
+        self.costs = CostModel(make_aux_llm(c, nt),
                                JsonlCache(os.path.join(cd, "prices.jsonl")))
         self.timer = Timer()
         self.reader = None
