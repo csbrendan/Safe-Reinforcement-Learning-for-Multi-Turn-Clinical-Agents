@@ -280,17 +280,25 @@ def main():
                     help="JSONL cache for judge calls (reused across steps/arms)")
     ap.add_argument("--claude-log", default="", help="optional JSONL log of raw/norm/analytic/total per rollout")
     ap.add_argument("--out", required=True)
+    # --- V2: envs that bring their own prompts + rollout (e.g. tasks.v2_sdbench.env). V1 envs ignore these. ---
+    ap.add_argument("--env-config", default=None, help="JSON settings for envs defining build_train_prompts")
+    ap.add_argument("--max-completion-length", type=int, default=512,
+                    help="trl max_completion_length (V1 default 512; SD-Bench transcripts need ~12k+)")
     args = ap.parse_args()
     MAX_DIALOG_TURNS = args.max_turns
     env = importlib.import_module(args.env)
     torch.manual_seed(args.seed); torch.cuda.manual_seed_all(args.seed)
     t0 = time.time()
-    cases = env.gen_cases(args.n_cases, rho=0.0, seed=12345, families=env.DEEP_FAMILIES)
-    for c in cases:
-        CASES[c["case_id"]] = c
-    ds = Dataset.from_list([{"prompt": [{"role": "system", "content": env.SYS},
-                                        {"role": "user", "content": f"[case {c['case_id']}]\n" + env.user_msg(c)}]}
-                            for c in cases])
+    custom_env = hasattr(env, "build_train_prompts")
+    if custom_env:
+        ds = Dataset.from_list(env.build_train_prompts(args))
+    else:
+        cases = env.gen_cases(args.n_cases, rho=0.0, seed=12345, families=env.DEEP_FAMILIES)
+        for c in cases:
+            CASES[c["case_id"]] = c
+        ds = Dataset.from_list([{"prompt": [{"role": "system", "content": env.SYS},
+                                            {"role": "user", "content": f"[case {c['case_id']}]\n" + env.user_msg(c)}]}
+                                for c in cases])
     print(f"[grpo] env={args.env} {len(ds)} cases init={Path(args.base).name} "
           f"lr={args.lr} beta={args.beta} temp={args.rollout_temp} steps={args.max_steps} "
           f"{'dream=ON' if args.dream else f'infogain={args.infogain_coef}'}", flush=True)
@@ -301,7 +309,7 @@ def main():
                       target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"])
     cfg = GRPOConfig(
         output_dir=args.out, per_device_train_batch_size=8, num_generations=8, gradient_accumulation_steps=4,
-        max_completion_length=512, temperature=args.rollout_temp, beta=args.beta, learning_rate=args.lr,
+        max_completion_length=args.max_completion_length, temperature=args.rollout_temp, beta=args.beta, learning_rate=args.lr,
         max_steps=args.max_steps, logging_steps=1, bf16=True, report_to=[], seed=args.seed,
         save_strategy="steps", save_steps=args.save_steps, save_total_limit=4,
         use_vllm=True, vllm_mode="server", vllm_server_host=args.server_host, vllm_server_port=args.server_port,
@@ -312,10 +320,13 @@ def main():
         claude_judge = RolloutJudge(env, args.claude_cache)
         print(f"[grpo] Claude process reward ON: alpha={args.claude_alpha} norm={args.claude_norm} "
               f"cache={args.claude_cache}", flush=True)
-    rollout = (make_dream_rollout(tok, env, args.rollout_temp) if args.dream
-               else make_rollout(tok, env, args.rollout_temp, args.infogain_coef,
-                                 claude_judge=claude_judge, claude_alpha=args.claude_alpha,
-                                 claude_norm=args.claude_norm, claude_log=(args.claude_log or None)))
+    if custom_env:
+        rollout = env.make_rollout_func(tok, args, {"ids": _ids, "env_mask": _env_mask})
+    else:
+        rollout = (make_dream_rollout(tok, env, args.rollout_temp) if args.dream
+                   else make_rollout(tok, env, args.rollout_temp, args.infogain_coef,
+                                     claude_judge=claude_judge, claude_alpha=args.claude_alpha,
+                                     claude_norm=args.claude_norm, claude_log=(args.claude_log or None)))
     trainer = GRPOTrainer(model=model, reward_funcs=[reward_echo], args=cfg, train_dataset=ds,
                           processing_class=tok, peft_config=lora, rollout_func=rollout)
     print("[grpo] trainer built; train()", flush=True)
