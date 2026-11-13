@@ -19,6 +19,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from tasks.v2_sdbench.cases import assert_not_test, load_split
 from tasks.v2_sdbench.env import Services, load_config
+from tasks.v2_sdbench import turn_format
 from tasks.v2_sdbench.llm import local_chat
 from tasks.v2_sdbench.runner import Timer
 
@@ -68,6 +69,8 @@ def main():
     ap.add_argument("--no-stop-fix", action="store_true",
                     help="benchmark/reproduction only: don't send stop_token_ids (pre-fix behaviour)")
     ap.add_argument("--timeout", type=float, default=0, help="seconds; stop submitting and exit after this")
+    ap.add_argument("--policy-format", default="", choices=["", *turn_format.VARIANTS],
+                    help="override the config's agent-side turn-format variant (see turn_format.py)")
     ap.add_argument("--unseal-test", action="store_true")
     ap.add_argument("--out", required=True)
     a = ap.parse_args()
@@ -92,7 +95,11 @@ def main():
         from transformers import AutoTokenizer
         tok = AutoTokenizer.from_pretrained(cfg["reader"]["tokenizer"])
     svc = Services(cfg, tokenizer=tok)
+    if a.policy_format:
+        cfg["policy_format"] = a.policy_format
+    a.policy_format = cfg["policy_format"]
     stop = {} if a.no_stop_fix else {"stop_token_ids": cfg["policy_stop_token_ids"], "skip_special_tokens": False}
+    stop.update(turn_format.openai_extra(cfg["policy_format"]))
     policy = local_chat(a.policy_url, a.policy_model, temperature=a.temperature, max_tokens=a.max_tokens,
                         seed=None if a.temperature > 0 else 0, extra_body=stop or None)
     done = set()
@@ -124,7 +131,7 @@ def main():
 
 def _write(f, row, a):
     row.update({"arm": a.arm_name, "split": a.split, "policy_model": a.policy_model,
-                "temperature": a.temperature, "condition": a.condition})
+                "temperature": a.temperature, "condition": a.condition, "policy_format": a.policy_format})
     f.write(json.dumps(row) + "\n")
     f.flush()
     print(f"[eval] case={row['case_id']} k={row['k']} score={row['judge_score']} "

@@ -67,11 +67,11 @@ def first_user_message(case: dict) -> str:
 
 
 class Episode:
-    def __init__(self, case: dict, runner, max_agent_msgs: int | None = None):
+    def __init__(self, case: dict, runner, max_agent_msgs: int | None = None, system_prompt: str = SYSTEM_PROMPT):
         self.case = case
         self.runner = runner
         self.collector: dict[str, Any] = runner._collector
-        self.messages: list[dict] = [{"role": "system", "content": SYSTEM_PROMPT},
+        self.messages: list[dict] = [{"role": "system", "content": system_prompt},
                                      {"role": "user", "content": first_user_message(case)}]
         self.max_agent_msgs = max_agent_msgs or 2 * runner.max_turns
         self.n_agent_msgs = 0

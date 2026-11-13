@@ -28,6 +28,7 @@ from tasks.v2_sdbench.cache import JsonlCache
 from tasks.v2_sdbench.cases import assert_not_test, load_split
 from tasks.v2_sdbench.costs import CostModel
 from tasks.v2_sdbench.episode import Episode, SYSTEM_PROMPT, first_user_message
+from tasks.v2_sdbench import turn_format
 from tasks.v2_sdbench.llm import make_aux_llm
 from tasks.v2_sdbench.reward import Judge, OutcomeWeights, format_flags, outcome_reward
 from tasks.v2_sdbench.runner import CachedTestRunner, Timer, make_config
@@ -52,6 +53,9 @@ DEFAULTS: dict[str, Any] = {
     # PhysioNet's guidance for Azure OpenAI requires opting out of human review (modified abuse monitoring);
     # the default stateless deployment is not enough. See V2/sdbench_azure_switch.md.
     "azure_mimic_human_review_opt_out": False,
+    # Agent-side turn-format intervention (tasks/v2_sdbench/turn_format.py). "official" = SD-Bench's baseline agent.
+    # Whatever is chosen must be identical for every arm and for every evaluation of those arms.
+    "policy_format": "official",
 }
 
 # Roles that send case content (presentation, record, reference diagnosis) to the model. The pricer only sends
@@ -92,6 +96,7 @@ def load_config(path: str | None) -> dict:
     for r in ("gatekeeper", "judge", "costing"):
         if cfg[r].get("provider", "local") not in ("local", "azure"):
             raise ValueError(f"{r}.provider must be local or azure")
+    turn_format.check(cfg["policy_format"])
     check_data_policy(cfg)
     return cfg
 
@@ -138,7 +143,7 @@ class Services:
         runner = CachedTestRunner(self.sdb_cfg, case, {}, self.gk_llm, self.gk_cache, self.cfg["dataset"],
                                   question_guard=self.cfg["question_guard"], canonicalize=self.cfg["canonicalize"],
                                   parallel=self.cfg["gk_parallel"], timer=timer or self.timer)
-        return Episode(case, runner)
+        return Episode(case, runner, system_prompt=policy_system_prompt(self.cfg))
 
     def score(self, ep: Episode) -> dict:
         rec = ep.record()
@@ -199,6 +204,10 @@ def _dx_in_tests(logs: list, dx_terms: set) -> int:
     return sum(1 for l in logs if not l.get("is_question") and mentions_dx(l.get("result", ""), dx_terms))
 
 
+def policy_system_prompt(cfg: dict) -> str:
+    return turn_format.system_prompt(SYSTEM_PROMPT, cfg.get("policy_format", "official"))
+
+
 def build_train_prompts(args) -> list[dict]:
     cfg = load_config(getattr(args, "env_config", None))
     cases = load_split(cfg["dataset"], cfg["split"])
@@ -213,7 +222,8 @@ def build_train_prompts(args) -> list[dict]:
         if u in _CASE_BY_USER:
             raise ValueError(f"two cases share the same opening message: {c['case_id']}")
         _CASE_BY_USER[u] = c
-        rows.append({"prompt": [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": u}]})
+        rows.append({"prompt": [{"role": "system", "content": policy_system_prompt(cfg)},
+                                {"role": "user", "content": u}]})
     return rows
 
 
@@ -245,7 +255,8 @@ def make_rollout_func(tok, args, helpers: dict):
                 break
             out = client.chat([e.messages for e in active], n=1, temperature=temp,
                               max_tokens=cfg["turn_max_tokens"], logprobs=0,
-                              generation_kwargs={"stop_token_ids": cfg["policy_stop_token_ids"]})
+                              generation_kwargs={"stop_token_ids": cfg["policy_stop_token_ids"]},
+                              **turn_format.trl_kwargs(cfg["policy_format"]))
             # keep special tokens so Episode.step can cut at <end_of_turn> if a server ignores the stop id
             texts = tok.batch_decode(out["completion_ids"], skip_special_tokens=False)
             for e, c in zip(active, out["completion_ids"]):
