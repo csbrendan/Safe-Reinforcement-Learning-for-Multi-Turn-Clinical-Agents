@@ -87,6 +87,11 @@ from tasks.v2_sdbench import channel  # noqa: E402
     "She received three cycles of R-CHOP and responded well to treatment.",
     "He underwent a right adrenalectomy and was discharged on hospital day 6.",
     "After starting antibiotics her diarrhea improved.",
+    # 2026-11-13 leak-route probe (Qwen gatekeeper answers):
+    "The patient's scheduled procedure tomorrow is a random skin biopsy to evaluate the cutaneous findings.",
+    "The plan for tomorrow includes a surgical consultation to discuss the upcoming laparoscopic right adrenalectomy.",
+    "The care plan includes continuation of the current antibiotic regimen.",
+    "He was later managed with phenoxybenzamine and a beta-blocker after adequate alpha-blockade was established.",
 ])
 def test_course_of_care_detected(text):
     assert channel.reveals_course(text)
@@ -97,6 +102,9 @@ def test_course_of_care_detected(text):
     "Her medications were lisinopril, levothyroxine, and atorvastatin.",
     "She has no history of chemotherapy or other immunosuppressive therapy.",
     "The fever is intermittent, worse in the evenings, with night sweats.",
+    "His father had a thyroid tumor and was treated with thyroid hormone.",
+    "He has a history of panic disorder, for which he was treated with sertraline.",
+    "She had a cholecystectomy in 2010 and an appendectomy as a child.",
 ])
 def test_history_is_not_course_of_care(text):
     assert not channel.reveals_course(text)

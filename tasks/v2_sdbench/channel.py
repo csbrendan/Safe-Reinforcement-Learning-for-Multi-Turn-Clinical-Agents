@@ -162,7 +162,14 @@ _COURSE = re.compile(
     r"underwent (surgery|surgical|resection|an? \w+ectomy)|\w+ectomy was performed|(was|were) resected|"
     r"(resolved|improved|subsided|normalized|regressed) (within|after|with|following|during|on) "
     r"(the |her |his )?(\w+ )?(therapy|treatment|chemotherapy|antibiotics?|steroids?|surgery|week|weeks|days?|"
-    r"first|initiation))", re.I)
+    r"first|initiation)|"
+    # added 2026-11-13 from the leak-route probe (in-hospital management and plans):
+    r"(was|were) ((later|subsequently|then) (managed|treated)|managed) with|"
+    r"(scheduled|planned|upcoming|plan(ned)? for|will undergo) (a |an |the )?([\w-]+ ){0,3}"
+    r"(surgery|surgical|\w+ectomy|resection|procedure|chemotherapy|therapy|treatment)|"
+    r"(continu(ation|e|ed|ing)( of)?|current|ongoing) (the )?(current )?([\w-]+ )?"
+    r"(regimen|antibiotics?|antibiotic therapy|chemotherapy|treatment)|"
+    r"(alpha|α|beta|β)[- ]blockade|preoperative (preparation|blockade|management))", re.I)
 
 
 def reveals_course(text: str) -> bool:

@@ -166,4 +166,57 @@ without a fault), or about 8–20 h under the 85 °C ceiling.
   Each node then carries roughly half the heat.
 - **Never two long RL runs at once:** neither node has the thermal or memory headroom.
 
-(Sections 3, 6 and 7 below.)
+## 3. MedGemma formatting: fixed, or is format SFT needed?
+
+**Status: the rejection failure is fixed at the interface; the base model's turn-length behaviour is not; the full-
+episode check didn't finish (thermal throttling, section 1). My recommendation: constrained decoding for the plumbing
+smoke; a narrow format SFT is still likely needed before learning runs.**
+
+**Audit of the raw sampled outputs** (saved runs at T = 0.7 and 1.0):
+- Mixed turns are long lists: about 12 questions and 7 tests per turn. Often each test is paired with a question
+  about it ("What is the patient's CBC showing?" next to `<test>CBC</test>`).
+- After SD-Bench's "turn type violation" notice the model apologises and usually repeats the mix (P = 0.79–0.86).
+
+**Template, parsing, stopping.**
+- The chat template is standard Gemma 3: the system prompt goes into the first user turn, and roles alternate
+  correctly.
+- The parser and the turn rule are SD-Bench's own (`test_runner_enforce_single_turn_type=True`, kept).
+- Stopping at `<end_of_turn>` (106) was already fixed. One new issue: grammar-constrained decoding can only end on
+  an EOS id, and stop ids don't count. MedGemma is now served from `medgemma4b_text_v2stop` (hard links to the same
+  weights; `generation_config` lists 106 as EOS), which is equivalent for unconstrained decoding.
+
+**Interventions** (`tasks/v2_sdbench/turn_format.py`, config key `policy_format`, default `official` = unchanged).
+First-turn probe, 5 synthetic cases × 16 samples per cell (`results/v2_format/first_turn.json.parts.jsonl`):
+
+| variant | T | mixed (rejected) | question-only | hit 400-token cap | requests per turn | diversity (Jaccard) |
+|---|---|---|---|---|---|---|
+| official | 0.7 | 0.54 | 0.46 | 0.65 | 22.0 | 0.94 |
+| official | 1.0 | **0.79** | 0.21 | 0.42 | 18.5 | 0.95 |
+| + one prompt sentence | 1.0 | 0.76 | 0.24 | 0.33 | 18.9 | 0.94 |
+| constrained decoding | 0.7 | **0.00** | 0.99 | 1.00 | 23.5 | 0.97 |
+| constrained decoding | 1.0 | **0.00** | 1.00 | 1.00 | 21.1 | 0.98 |
+| prompt + constrained | 1.0 | 0.00 | 1.00 | 0.60 | 17.8 | 0.98 |
+
+- **The prompt sentence does nothing** (0.76 vs 0.79 mixed).
+- **Constrained decoding** (a vLLM structured-output regex: all `<question>`, all `<test>`, or one `<diagnosis>`)
+  removes mixing completely. Diversity and question topics are unchanged (history 13→16%, medications 7→8%,
+  lab-type questions 16→10% because tests can no longer be mixed in).
+- **But the base model doesn't end a question list on its own.** Even unconstrained, 82–100% of question-only first
+  turns hit the 400-token cap; switching to tests is how it usually ends a list. Under the constraint every opening
+  turn becomes ~21 questions cut at the cap. That's a valid SD-Bench turn (complete tags are parsed), but it costs
+  ~20 gatekeeper calls per turn.
+- Plumbing: TRL's `VLLMClient.chat(structured_outputs_regex=…)` is passed through in the GRPO rollout, so training
+  and evaluation use one interface. Use an unbounded regex: counted repeats cost 30× more grammar-compile CPU and
+  caused a thermal trip.
+
+**Full episodes** (guarded condition, 2 at a time, under the governor): started 07:19 UTC. 
+(Result at the cut-off is filled in below.)
+
+**Format SFT: designed, not built.** The SFT data has to come from well-formed trajectories. The only cases
+available are the 5 public synthetic ones, which are also the plumbing and evaluation cases, so SFT on them would
+contaminate. The MIMIC training split isn't available. Plan once there is data: LoRA SFT on base temperature-0
+trajectories filtered for validity, with long question lists split into turns of at most 8 requests and one short
+`<diagnosis>`. That gives one shared initialisation for arms A/B/C (arm A = that checkpoint). Constrained decoding
+needs no new checkpoint: every arm uses the base weights plus the same decoding interface.
+
+(Sections 6 and 7 below.)
