@@ -1,28 +1,169 @@
 # V2 overnight report — 2026-11-13
 
-Draft, written as results came in. Raw evidence: `V2/hw_stability/PROGRESS.md`, `results/v2_hw/`,
-`results/v2_format/`, `results/v2_sdbench/`.
+Evidence:
+- `V2/hw_stability/PROGRESS.md` (hardware log, written incrementally);
+- `results/v2_hw/` (telemetry CSVs and trainer benchmarks; Spark 2 copies in `~/v2_hw/`);
+- `results/v2_format/` and `results/v2_sdbench/`.
 
-## 1. Hardware
+Nothing was sent to Azure. No GRPO training was run. V1 and the paper are untouched.
 
-See `V2/hw_stability/PROGRESS.md` for the full log. (Summary filled in at the end.)
+## 1. Spark stability, temperatures, power, shutdown evidence
 
-## 2. MedGemma turn format
+**Shutdown evidence (Spark 1).** All 7 earlier boots end abruptly: no shutdown sequence, no kernel panic, thermal,
+Xid, OOM or MCE line, and pstore is empty. Spark 2's boots also all end without a shutdown sequence, so an abrupt end
+alone can't separate a fault from a pulled plug.
 
-(pending)
+Both machines' firmware sets `critical = 104.8 °C` on every ACPI zone, and the GPU slowdown point is ≈ 95–97 °C.
+Hitting the firmware trip would have produced a logged, orderly shutdown. So **Spark 1's power-offs at a GPU
+reading of ~88 °C were not the OS thermal trip.** The cut came from something outside the OS: the power brick or
+PSU, an embedded-controller cut-off, or the supply. The logs can't say which.
 
-## 3. Qwen judge reliability
+**Idle after the electrical change (both rebooted 03:43 UTC, both reachable, P8 state, ~5 W GPU):**
 
-(pending)
+| | GPU | ACPI max | NVMe | NIC |
+|---|---|---|---|---|
+| Spark 1 | 55–57 °C | 59–61 °C | 55 °C | 64 °C |
+| Spark 2 | 43–44 °C | 45 °C | 43 °C | 50 °C |
 
-## 4. Two-node configuration
+- Spark 1 idles about 16 °C hotter on every sensor, NVMe and NIC included, so the whole chassis is warmer.
+- No throttle bits on either machine.
+- Driver: Spark 1 580.126.09, Spark 2 580.159.03.
 
-(pending)
+**Spark 1 ramp (supervised, 03:53 UTC): stopped in stage 1.**
+- At ~50 W GPU (the SW power cap; the "25% duty" stage still ran at the cap), ACPI went 60.9 → 85.3 °C in 55 s and
+  was still rising.
+- The independent watchdog killed the load. No crash, no kernel error, no throttle bit.
+- Per your rule I did **not** re-stress Spark 1 and skipped its 20–30 min realistic test. Spark 1 did no GPU work
+  for the rest of the night.
 
-## 5. SD-Bench leak routes
+**Spark 2 control (same stage, 120 s): plateau.** ACPI 44.8 → 70.3 °C, levelling off.
 
-(pending)
+| t from load start | Spark 1 ACPI | Spark 2 ACPI |
+|---|---|---|
+| idle | 60.9 | 44.8 |
+| +15 s | 74.6 | 58.9 |
+| +30 s | 78.1 | 63.1 |
+| +55 s | 85.3 (stopped) | 68.8 |
+| +115 s | – | 70.3 |
 
-## 6. Blockers before a 3-step GRPO smoke
+The rise over the first minute is the same on both (+24 °C). The difference is Spark 1's 16 °C higher starting point.
 
-(pending)
+**Spark 2 under real V2 work (Qwen gatekeeper and judge, MedGemma rollouts, trainer benchmark).**
+- **Fine at sustained ~40–50 W:** ACPI 70–80 °C.
+- **85 W bursts are the problem.** Gatekeeper and judge calls, and training steps, spike to ~85–92 W. At that
+  power the SoC hot spot climbs ~2.7 °C/s, from 66 to 85 °C in ~7 s.
+- **Reaching the 85 °C kill.** The watchdog reached its 85 °C hard limit 4 times, plus 2 earlier trips at my lower
+  limits (83 and 82). Once (05:24, when I let two jobs overlap; my error), ACPI read 88.8 °C for ~3 s while the
+  servers were exiting.
+- **Pausing helps, but late.** A pause/resume governor (SIGSTOP/SIGCONT of the server group) takes 2–7 s to cut
+  power, because the GPU keeps running queued work.
+- **Final setting:** pause at 68 °C, resume at 62 °C, kill at 85 °C. Since 06:50, peaks stayed at 81–82 °C with no
+  further trip, at ~30 W average and about one third of normal throughput.
+- **History:** Spark 2's 11-11 log shows sustained GPU 83–84 °C at 79–85 W with no fault, so these temperatures
+  are inside what it has run before. I kept your 85 °C limit regardless.
+- **No crash or hardware error on either machine tonight.** The only kernel errors were NVRM out-of-memory
+  allocation failures, caused by my co-residence memory test (section 5). Every watchdog trip was a limit I set.
+
+Harness: `V2/hw_stability/` holds `telemetry.py` (1 Hz, mirrored live to Spark 2), `watchdog.py` (NVML, fail-safe,
+optional governor), `run_supervised.sh` and `serve_spark2.sh`.
+
+Bug found and fixed: the first watchdog let a GPU reading of 80–81 °C pass for 8 s. nvidia-smi stalls under load,
+so it now reads NVML in-process. The ACPI limit had stopped that run anyway.
+
+## 2. Did the electrical change help?
+
+Not shown either way.
+- Spark 1 did not power off tonight, but its test stopped at 85 °C, below the ~88 °C where it shut down before, and
+  ran for only about a minute.
+- Absence of a crash in that window says nothing about brownouts or supply quality.
+- What the data does show: Spark 1's problem at load is thermal headroom that starts 16 °C behind Spark 2's. That
+  is a placement, airflow or fan issue, independent of the power strip.
+- Next steps, your call:
+  1. check Spark 1's position, vents and fan, and whether it is drawing in Spark 2's exhaust;
+  2. swap the two machines' positions (and power bricks) to see whether the offset follows the machine or the
+     location.
+
+## 4. Is the Qwen judge stable enough for GRPO?
+
+**Short answer: usable only with mitigations; noisy enough to matter in low-spread groups.** No new paid calls.
+
+The calibration from 11-12 scored each saved episode four times with the same Qwen3-8B and official prompt (logged,
+reference re-score, two fresh-cache re-scores). I rebuilt the full GRPO groups from it, giving duplicates their
+episode's scores (`V2/judge_stability_from_calibration.py`, metrics in `tasks/v2_sdbench/judge_stability.py`).
+Data: 4 groups, 24 episodes, 19 judged; synthetic cases 0–1; T = 0.7 and 1.0; base policy.
+
+| Pairwise over the 4 scorings | Value |
+|---|---|
+| Judged episodes with the same score all 4 times | 58% |
+| GRPO advantage sign agrees (zero counted as its own sign) | 82% |
+| Advantage sign strictly flips | 5.6% |
+| Within-group Kendall τ of rewards | 0.81 |
+| Cosine between the groups' advantage vectors | 0.84 |
+| Groups that gain or lose all spread between scorings | 12.5% |
+| Judge-noise variance ÷ within-group reward variance | 0.15 |
+
+- **Groups with real spread are stable.** Case 1 at T = 1.0 has std ≈ 0.3, and its advantage vector matches the
+  consensus with cosine 0.92–0.99.
+- **Groups without real spread are noise.** Case 1 at T = 0.7 has a std of 0 to 0.125 depending on the scoring, with
+  consensus 0.04. Its advantage direction is set by the judge. **Standard GRPO divides by the group std, so judge
+  noise in such a group becomes a full-size random update.**
+- **Caveats.** The data is small and mostly format-invalid episodes (the format penalty is constant within a group,
+  so it doesn't mask judge noise, but scores sit mostly at 1–2). Re-measure on format-valid rollouts.
+- **Recommended before GRPO** (both are training-side, all arms alike):
+  1. Don't divide advantages by the group std: TRL `scale_rewards="batch"` or `"none"`. Tiny, noise-only spreads
+     then give tiny updates.
+  2. Score each unique training trajectory with the median of 3 judge calls (noise variance ÷ ~3). The cache keeps
+     the median fixed. At the measured ~1 min per governed judge call this costs time, not money.
+- **The cache doesn't remove the noise.** First-write-wins caching makes rewards reproducible, but each unique
+  trajectory still gets one noisy draw.
+
+## 5. Two-node training configuration (measured)
+
+**Memory.** Trainer microbenchmark (`V2/hw_stability/trainer_mem_bench.py`): MedGemma-4B text, LoRA r 32 on all
+projections, gradient checkpointing, reference forward plus policy forward/backward/AdamW, one sequence. Runs:
+standalone on Spark 2, and next to idle Qwen (0.45) + MedGemma (0.20) servers.
+
+| tokens | peak, standard loss | peak, Liger fused loss | time (ref + update), governed |
+|---|---|---|---|
+| 4,096 | 12.4 GiB | 13.3 GiB | 27–42 s |
+| 8,192 | 17.8 GiB | 14.5 GiB | 69–96 s |
+| 12,288 | 22.8 GiB | 15.4 GiB | 117–162 s |
+
+- **Co-resident with both servers:** the Liger run completed 4k–12k at 15.4 GiB peak.
+- **Without Liger, at the 26.8 GiB cap,** the first attempt failed with kernel `NVRM: Out of memory` errors. That run
+  also lacked checkpointing (my benchmark bug, now fixed). The point it shows: unified memory had only ~9–10 GiB truly
+  free and ~25 GiB of page cache, which the driver does not reclaim fast enough, and clearing it needs root.
+- Added `--liger` to `framework/rl/grpo_disagg.py` (TRL `use_liger_kernel`; it honours `env_mask`). Off by default.
+- Transcript lengths in saved episodes: median 4–6k tokens, tail to 12–17k (the context guard stops at 14k).
+
+**Thermal and throughput.**
+- **Spark 1:** no GPU role until its airflow is fixed. It reaches 85 °C ACPI in under a minute at 50 W, and every
+  GPU role here (Qwen bursts, training steps) draws 85–92 W.
+- **Spark 2:** carries everything. Under the 85 °C ceiling the governor holds it at ~30 W average.
+- Measured throughput under the governor:
+  - Qwen ~6 tokens/s across 3–4 streams;
+  - one judge call ≈ 1–2 min;
+  - one guarded full episode ≈ 30–60+ min.
+- Unthrottled reference: MedGemma decode ~150 tokens/s at 32 streams; 16 concurrent episodes in 40 min (11-12).
+
+**GRPO step-time estimate** (16 episodes per step = 2 prompts × 8):
+
+| | Rollouts | Update (measured per-episode times × median 5–6k, tail to 12k) | Step |
+|---|---|---|---|
+| Unthrottled (11-12 throughput) | 40–80 min | 12–20 min | ≈ 1–1.7 h |
+| Under the 85 °C governor | ~2–6 h (≈ 10–35% throughput) | 15–25 min | ≈ 2.5–6.5 h |
+
+A 3-step smoke therefore takes about 3–5 h if Spark 2 may run unthrottled (it ran 83–84 °C GPU for hours on 11-11
+without a fault), or about 8–20 h under the 85 °C ceiling.
+
+**Best configuration.**
+- **Now:** all GPU work on Spark 2 — Qwen3-8B :8101 (0.45), MedGemma rollout server via `trl vllm-serve` (0.20),
+  and the trainer with `--liger --grad-ckpt`. That totals ~94 GiB, measured to fit.
+  - Trainer and rollout server on one node also avoids the V1 two-node NCCL weight-sync problem.
+  - Spark 1 runs only CPU work: orchestration, evaluation clients, analysis, monitoring.
+- **After Spark 1's airflow is fixed:** trainer + MedGemma server on Spark 2, Qwen on Spark 1. GRPO alternates
+  phases, so Spark 1's load (gatekeeper and judge) falls only in the rollout phase and it cools during updates.
+  Each node then carries roughly half the heat.
+- **Never two long RL runs at once:** neither node has the thermal or memory headroom.
+
+(Sections 3, 6 and 7 below.)
