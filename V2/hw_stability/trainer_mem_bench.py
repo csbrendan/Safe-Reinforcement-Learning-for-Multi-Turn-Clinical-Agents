@@ -24,6 +24,9 @@ def main():
     ap.add_argument("--mem-fraction", type=float, default=0.28)
     ap.add_argument("--completion-frac", type=float, default=0.7, help="share of tokens that are policy tokens")
     ap.add_argument("--repeats", type=int, default=2)
+    ap.add_argument("--liger", action="store_true",
+                    help="policy loss via liger_kernel's LigerFusedLinearGRPOLoss (TRL use_liger_kernel=True): the "
+                         "262k-vocab logits are never materialised")
     ap.add_argument("--out", required=True)
     a = ap.parse_args()
     torch.cuda.set_per_process_memory_fraction(a.mem_fraction)
@@ -40,11 +43,17 @@ def main():
     model = get_peft_model(model, lora)
     model.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False})
     model.enable_input_require_grads()
+    model.train()  # HF applies gradient checkpointing only in train mode (from_pretrained returns eval mode)
     opt = torch.optim.AdamW([p for p in model.parameters() if p.requires_grad], lr=1e-5)
     load_s = time.time() - t0
     base_mem = torch.cuda.memory_allocated() / 2**30
     vocab = model.config.get_text_config().vocab_size if hasattr(model.config, "get_text_config") else 262208
-    out = {"load_s": load_s, "weights_gib": base_mem, "mem_fraction": a.mem_fraction,
+    liger = None
+    if a.liger:
+        from liger_kernel.chunked_loss import LigerFusedLinearGRPOLoss
+        liger = LigerFusedLinearGRPOLoss(beta=0.02, use_ref_model=True)
+    inner = model.base_model.model  # Gemma3ForCausalLM under PEFT
+    out = {"liger": a.liger, "load_s": load_s, "weights_gib": base_mem, "mem_fraction": a.mem_fraction,
            "cap_gib": a.mem_fraction * torch.cuda.get_device_properties(0).total_memory / 2**30, "runs": []}
     print(json.dumps(out), flush=True)
 
@@ -58,6 +67,13 @@ def main():
             torch.cuda.empty_cache()
             torch.cuda.reset_peak_memory_stats()
             ids = torch.randint(10, vocab - 10, (1, L), device="cuda")
+            if liger is not None:
+                return_row = _liger_step(model, inner, liger, ids, int(L * a.completion_frac), opt, logps, L, rep)
+                out["runs"].append(return_row)
+                print(json.dumps(return_row), flush=True)
+                if not return_row["ok"]:
+                    break
+                continue
             n_comp = int(L * a.completion_frac)
             row = {"L": L, "rep": rep}
             try:
@@ -89,6 +105,41 @@ def main():
         if not out["runs"][-1]["ok"]:
             break
     json.dump(out, open(a.out, "w"), indent=1)
+
+
+def _liger_step(model, inner, liger, ids, n_comp, opt, logps, L, rep):
+    row = {"L": L, "rep": rep}
+    try:
+        torch.cuda.synchronize()
+        t = time.time()
+        with torch.no_grad(), model.disable_adapter():
+            ref = _chunked_logps(inner, ids, n_comp)
+        torch.cuda.synchronize()
+        row["ref_fwd_s"] = time.time() - t
+        t = time.time()
+        h = inner.model(input_ids=ids).last_hidden_state[:, -n_comp - 1:-1, :]
+        loss, _ = liger(_input=h, lin_weight=inner.lm_head.weight, selected_token_ids=ids[:, -n_comp:],
+                        attention_mask=torch.ones_like(ids[:, -n_comp:]), advantages=torch.tensor([0.5], device="cuda"),
+                        ref_per_token_logps=ref)
+        loss.backward()
+        opt.step()
+        opt.zero_grad(set_to_none=True)
+        torch.cuda.synchronize()
+        row.update({"policy_fwd_bwd_step_s": time.time() - t, "peak_gib": torch.cuda.max_memory_allocated() / 2**30,
+                    "ok": True})
+    except torch.cuda.OutOfMemoryError:
+        row.update({"ok": False, "error": "OOM", "peak_gib": torch.cuda.max_memory_allocated() / 2**30})
+    return row
+
+
+def _chunked_logps(inner, ids, n_comp, chunk=1024):
+    """Reference log-probs without materialising all logits at once (no grad)."""
+    from trl.trainer.utils import selective_log_softmax
+    h = inner.model(input_ids=ids).last_hidden_state[:, -n_comp - 1:-1, :]
+    tgt = ids[:, -n_comp:]
+    out = [selective_log_softmax(inner.lm_head(h[:, i:i + chunk]).float(), tgt[:, i:i + chunk])
+           for i in range(0, n_comp, chunk)]
+    return torch.cat(out, dim=1)
 
 
 if __name__ == "__main__":

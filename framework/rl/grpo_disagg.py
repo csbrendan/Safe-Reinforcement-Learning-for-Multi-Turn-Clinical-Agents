@@ -290,6 +290,10 @@ def main():
     ap.add_argument("--grad-accum", type=int, default=4)
     ap.add_argument("--num-generations", type=int, default=8)
     ap.add_argument("--grad-ckpt", action="store_true")
+    ap.add_argument("--liger", action="store_true",
+                    help="TRL use_liger_kernel (fused linear GRPO loss; the 262k-vocab logits are never "
+                         "materialised). V2 SD-Bench: peak 15.4 GiB at 12k tokens vs 22.8 GiB without "
+                         "(V2/hw_stability/trainer_mem_bench.py). Off by default: V1 runs are unchanged.")
     args = ap.parse_args()
     MAX_DIALOG_TURNS = args.max_turns
     env = importlib.import_module(args.env)
@@ -321,7 +325,8 @@ def main():
         max_steps=args.max_steps, logging_steps=1, bf16=True, report_to=[], seed=args.seed,
         save_strategy="steps", save_steps=args.save_steps, save_total_limit=4,
         use_vllm=True, vllm_mode="server", vllm_server_host=args.server_host, vllm_server_port=args.server_port,
-        vllm_importance_sampling_correction=False)
+        vllm_importance_sampling_correction=False,
+        **({"use_liger_kernel": True} if args.liger else {}))
     claude_judge = None
     if args.claude_alpha > 0.0:
         from framework.procreward.rollout_judge import RolloutJudge
