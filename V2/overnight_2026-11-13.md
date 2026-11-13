@@ -52,13 +52,15 @@ The rise over the first minute is the same on both (+24 °C). The difference is 
 - **Fine at sustained ~40–50 W:** ACPI 70–80 °C.
 - **85 W bursts are the problem.** Gatekeeper and judge calls, and training steps, spike to ~85–92 W. At that
   power the SoC hot spot climbs ~2.7 °C/s, from 66 to 85 °C in ~7 s.
-- **Reaching the 85 °C kill.** The watchdog reached its 85 °C hard limit 4 times, plus 2 earlier trips at my lower
-  limits (83 and 82). Once (05:24, when I let two jobs overlap; my error), ACPI read 88.8 °C for ~3 s while the
-  servers were exiting.
+- **Reaching the 85 °C kill.** The watchdog reached its 85 °C hard limit 4 times (05:58 and 06:15 serving, 06:40
+  and 06:46 in the trainer benchmark at 16k tokens), after 5 earlier trips at my lower limits (83 °C three times,
+  82 °C twice). One of those (04:37) was a CPU burst from grammar compilation. Another (05:24, when I let two jobs
+  overlap; my error) read ACPI 88.8 °C for ~3 s while the servers were exiting.
 - **Pausing helps, but late.** A pause/resume governor (SIGSTOP/SIGCONT of the server group) takes 2–7 s to cut
   power, because the GPU keeps running queued work.
 - **Final setting:** pause at 68 °C, resume at 62 °C, kill at 85 °C. Since 06:50, peaks stayed at 81–82 °C with no
-  further trip, at ~30 W average and about one third of normal throughput.
+  further trip, at ~30 W average and roughly 10–35% of normal
+  throughput.
 - **History:** Spark 2's 11-11 log shows sustained GPU 83–84 °C at 79–85 W with no fault, so these temperatures
   are inside what it has run before. I kept your 85 °C limit regardless.
 - **No crash or hardware error on either machine tonight.** The only kernel errors were NVRM out-of-memory
@@ -82,6 +84,59 @@ Not shown either way.
   1. check Spark 1's position, vents and fan, and whether it is drawing in Spark 2's exhaust;
   2. swap the two machines' positions (and power bricks) to see whether the offset follows the machine or the
      location.
+
+## 3. MedGemma formatting: fixed, or is format SFT needed?
+
+**Status: the rejection failure is fixed at the interface; the base model's turn-length behaviour is not; the full-
+episode check didn't finish (thermal throttling, section 1). My recommendation: constrained decoding for the plumbing
+smoke; a narrow format SFT is still likely needed before learning runs.**
+
+**Audit of the raw sampled outputs** (saved runs at T = 0.7 and 1.0):
+- Mixed turns are long lists: about 12 questions and 7 tests per turn. Often each test is paired with a question
+  about it ("What is the patient's CBC showing?" next to `<test>CBC</test>`).
+- After SD-Bench's "turn type violation" notice the model apologises and usually repeats the mix (P = 0.79–0.86).
+
+**Template, parsing, stopping.**
+- The chat template is standard Gemma 3: the system prompt goes into the first user turn, and roles alternate
+  correctly.
+- The parser and the turn rule are SD-Bench's own (`test_runner_enforce_single_turn_type=True`, kept).
+- Stopping at `<end_of_turn>` (106) was already fixed. One new issue: grammar-constrained decoding can only end on
+  an EOS id, and stop ids don't count. MedGemma is now served from `medgemma4b_text_v2stop` (hard links to the same
+  weights; `generation_config` lists 106 as EOS), which is equivalent for unconstrained decoding.
+
+**Interventions** (`tasks/v2_sdbench/turn_format.py`, config key `policy_format`, default `official` = unchanged).
+First-turn probe, 5 synthetic cases × 16 samples per cell (`results/v2_format/first_turn.json.parts.jsonl`):
+
+| variant | T | mixed (rejected) | question-only | hit 400-token cap | requests per turn | diversity (Jaccard) |
+|---|---|---|---|---|---|---|
+| official | 0.7 | 0.54 | 0.46 | 0.65 | 22.0 | 0.94 |
+| official | 1.0 | **0.79** | 0.21 | 0.42 | 18.5 | 0.95 |
+| + one prompt sentence | 1.0 | 0.76 | 0.24 | 0.33 | 18.9 | 0.94 |
+| constrained decoding | 0.7 | **0.00** | 0.99 | 1.00 | 23.5 | 0.97 |
+| constrained decoding | 1.0 | **0.00** | 1.00 | 1.00 | 21.1 | 0.98 |
+| prompt + constrained | 1.0 | 0.00 | 1.00 | 0.60 | 17.8 | 0.98 |
+
+- **The prompt sentence does nothing** (0.76 vs 0.79 mixed).
+- **Constrained decoding** (a vLLM structured-output regex: all `<question>`, all `<test>`, or one `<diagnosis>`)
+  removes mixing completely. Diversity and question topics are unchanged (history 13→16%, medications 7→8%,
+  lab-type questions 16→10% because tests can no longer be mixed in).
+- **But the base model doesn't end a question list on its own.** Even unconstrained, 82–100% of question-only first
+  turns hit the 400-token cap; switching to tests is how it usually ends a list. Under the constraint every opening
+  turn becomes ~21 questions cut at the cap. That's a valid SD-Bench turn (complete tags are parsed), but it costs
+  ~20 gatekeeper calls per turn.
+- Plumbing: TRL's `VLLMClient.chat(structured_outputs_regex=…)` is passed through in the GRPO rollout, so training
+  and evaluation use one interface. Use an unbounded regex: counted repeats cost 30× more grammar-compile CPU and
+  caused a thermal trip.
+
+**Full episodes** (guarded condition, 2 at a time, under the governor): started 07:19 UTC. 
+(Result at the cut-off is filled in below.)
+
+**Format SFT: designed, not built.** The SFT data has to come from well-formed trajectories. The only cases
+available are the 5 public synthetic ones, which are also the plumbing and evaluation cases, so SFT on them would
+contaminate. The MIMIC training split isn't available. Plan once there is data: LoRA SFT on base temperature-0
+trajectories filtered for validity, with long question lists split into turns of at most 8 requests and one short
+`<diagnosis>`. That gives one shared initialisation for arms A/B/C (arm A = that checkpoint). Constrained decoding
+needs no new checkpoint: every arm uses the base weights plus the same decoding interface.
 
 ## 4. Is the Qwen judge stable enough for GRPO?
 
@@ -166,59 +221,6 @@ without a fault), or about 8–20 h under the 85 °C ceiling.
   Each node then carries roughly half the heat.
 - **Never two long RL runs at once:** neither node has the thermal or memory headroom.
 
-## 3. MedGemma formatting: fixed, or is format SFT needed?
-
-**Status: the rejection failure is fixed at the interface; the base model's turn-length behaviour is not; the full-
-episode check didn't finish (thermal throttling, section 1). My recommendation: constrained decoding for the plumbing
-smoke; a narrow format SFT is still likely needed before learning runs.**
-
-**Audit of the raw sampled outputs** (saved runs at T = 0.7 and 1.0):
-- Mixed turns are long lists: about 12 questions and 7 tests per turn. Often each test is paired with a question
-  about it ("What is the patient's CBC showing?" next to `<test>CBC</test>`).
-- After SD-Bench's "turn type violation" notice the model apologises and usually repeats the mix (P = 0.79–0.86).
-
-**Template, parsing, stopping.**
-- The chat template is standard Gemma 3: the system prompt goes into the first user turn, and roles alternate
-  correctly.
-- The parser and the turn rule are SD-Bench's own (`test_runner_enforce_single_turn_type=True`, kept).
-- Stopping at `<end_of_turn>` (106) was already fixed. One new issue: grammar-constrained decoding can only end on
-  an EOS id, and stop ids don't count. MedGemma is now served from `medgemma4b_text_v2stop` (hard links to the same
-  weights; `generation_config` lists 106 as EOS), which is equivalent for unconstrained decoding.
-
-**Interventions** (`tasks/v2_sdbench/turn_format.py`, config key `policy_format`, default `official` = unchanged).
-First-turn probe, 5 synthetic cases × 16 samples per cell (`results/v2_format/first_turn.json.parts.jsonl`):
-
-| variant | T | mixed (rejected) | question-only | hit 400-token cap | requests per turn | diversity (Jaccard) |
-|---|---|---|---|---|---|---|
-| official | 0.7 | 0.54 | 0.46 | 0.65 | 22.0 | 0.94 |
-| official | 1.0 | **0.79** | 0.21 | 0.42 | 18.5 | 0.95 |
-| + one prompt sentence | 1.0 | 0.76 | 0.24 | 0.33 | 18.9 | 0.94 |
-| constrained decoding | 0.7 | **0.00** | 0.99 | 1.00 | 23.5 | 0.97 |
-| constrained decoding | 1.0 | **0.00** | 1.00 | 1.00 | 21.1 | 0.98 |
-| prompt + constrained | 1.0 | 0.00 | 1.00 | 0.60 | 17.8 | 0.98 |
-
-- **The prompt sentence does nothing** (0.76 vs 0.79 mixed).
-- **Constrained decoding** (a vLLM structured-output regex: all `<question>`, all `<test>`, or one `<diagnosis>`)
-  removes mixing completely. Diversity and question topics are unchanged (history 13→16%, medications 7→8%,
-  lab-type questions 16→10% because tests can no longer be mixed in).
-- **But the base model doesn't end a question list on its own.** Even unconstrained, 82–100% of question-only first
-  turns hit the 400-token cap; switching to tests is how it usually ends a list. Under the constraint every opening
-  turn becomes ~21 questions cut at the cap. That's a valid SD-Bench turn (complete tags are parsed), but it costs
-  ~20 gatekeeper calls per turn.
-- Plumbing: TRL's `VLLMClient.chat(structured_outputs_regex=…)` is passed through in the GRPO rollout, so training
-  and evaluation use one interface. Use an unbounded regex: counted repeats cost 30× more grammar-compile CPU and
-  caused a thermal trip.
-
-**Full episodes** (guarded condition, 2 at a time, under the governor): started 07:19 UTC. 
-(Result at the cut-off is filled in below.)
-
-**Format SFT: designed, not built.** The SFT data has to come from well-formed trajectories. The only cases
-available are the 5 public synthetic ones, which are also the plumbing and evaluation cases, so SFT on them would
-contaminate. The MIMIC training split isn't available. Plan once there is data: LoRA SFT on base temperature-0
-trajectories filtered for validity, with long question lists split into turns of at most 8 requests and one short
-`<diagnosis>`. That gives one shared initialisation for arms A/B/C (arm A = that checkpoint). Constrained decoding
-needs no new checkpoint: every arm uses the base weights plus the same decoding interface.
-
 ## 6. SD-Bench leak routes (Priority 5)
 
 Probe (`V2/leak_probe/v2_leak_routes.py`). The same 16 generic requests for every case, nothing case-specific, sent
@@ -249,7 +251,8 @@ Changes (training environment only; the official condition is unchanged and stil
     biopsy", "upcoming laparoscopic right adrenalectomy" and "later managed with phenoxybenzamine … alpha-blockade".
   - It does not match medication history or past surgical history: 2 of the 486 logged answers match, both real
     leaks.
-- New metrics `n_course_leak_q` and `n_meta_requests`; 22 new regression tests (116 + 1 pass in total).
+- New metrics `n_course_leak_q` and `n_meta_requests`, with regression tests. All 117 V2 tests pass (72 at the start
+  of the night).
 
 **Remaining routes not caught:**
 - Bare in-hospital drug names: "What medications were you given in the hospital?" → "phenoxybenzamine". The
