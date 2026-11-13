@@ -71,13 +71,14 @@ def kill_group(pgid_file: str, log) -> None:
     except Exception:
         log("no pgid file; nothing to kill")
         return
-    for sig in (signal.SIGTERM, signal.SIGKILL):
+    # 1 s grace, not 5: on 2026-11-13 the SoC kept rising ~2 C/s for the 3 s a vLLM server took to exit on SIGTERM
+    for sig, wait in ((signal.SIGTERM, 1), (signal.SIGKILL, 2)):
         try:
             os.killpg(pgid, sig)
             log(f"sent {sig.name} to pgid {pgid}")
         except ProcessLookupError:
             return
-        time.sleep(5)
+        time.sleep(wait)
 
 
 def main():

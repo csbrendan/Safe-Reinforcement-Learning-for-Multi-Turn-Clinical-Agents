@@ -5,7 +5,7 @@
 # Same args as the 2026-11-11/12 runs, so the gatekeeper/judge caches stay valid. MedGemma is served from
 # medgemma4b_text_v2stop (hard links to the same weights; generation_config adds <end_of_turn>=106 as EOS) because a
 # grammar-constrained decode can only end on an EOS id, and stop_token_ids are not EOS ids. Logs and telemetry: ~/v2_hw/serve/
-# on Spark 2. The watchdog kills the whole group at GPU or ACPI >= 83 C, on throttle bits, kernel errors, or the
+# on Spark 2. The watchdog kills the whole group at GPU or ACPI >= 80 C, on throttle bits, kernel errors, or the
 # wall-clock cap.
 set -u
 S2=192.168.100.2
@@ -28,8 +28,8 @@ setsid bash -c "echo \\\$\\\$ > srv.pgid
   wait" > /dev/null 2>&1 < /dev/null &
 sleep 2
 nohup timeout $((HRS*3600+600)) python3 ~/v2_hw/telemetry.py > telemetry.csv 2>/dev/null < /dev/null &
-nohup ~/spark1/.venv/bin/python ~/v2_hw/watchdog.py --pgid-file srv.pgid --log watchdog.log --gpu-max 83 \
-   --acpi-max 83 --gpu-warn 78 --max-seconds $((HRS*3600)) > /dev/null 2>&1 < /dev/null &
+nohup ~/spark1/.venv/bin/python ~/v2_hw/watchdog.py --pgid-file srv.pgid --log watchdog.log --gpu-max 80 \
+   --acpi-max 80 --gpu-warn 76 --max-seconds $((HRS*3600)) > /dev/null 2>&1 < /dev/null &
 echo started pgid \$(cat srv.pgid)
 EOF
   ;;

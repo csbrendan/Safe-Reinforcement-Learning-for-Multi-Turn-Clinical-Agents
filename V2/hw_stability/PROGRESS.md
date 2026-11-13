@@ -65,3 +65,14 @@ Qwen3-8B (:8101, 0.45) + MedGemma (:8100, 0.20) on Spark 2 under `watchdog.py` (
   baseline is ~16 °C lower than Spark 1's. Neither trip was a crash or a hardware error; both were my 83 °C limit.
 - Decode throughput (MedGemma, 32 sequences): ~150 tokens/s total (~5 tokens/s per sequence), the same rate as the
   11-11 runs (~90 tokens/s at 16 sequences).
+- **Trip 3, 05:24:52 (my error):** I let the end of the first-turn probe overlap the start of the full-episode
+  runs. GPU power went 44 → 61 → 83 W within 10 s, and ACPI went 77.9 → 83.0 °C. The watchdog fired at 83.0, but
+  ACPI read **88.8 °C** 3 s later while the servers were still exiting on SIGTERM (5 s grace). Nothing crashed and
+  nothing logged an error, but that is past the 85 °C rule. Changes:
+  - kill grace 1 s, then SIGKILL;
+  - server limits lowered to 80 °C GPU and 80 °C ACPI;
+  - only one GPU workload at a time on Spark 2.
+  Logs: Spark 2 `~/v2_hw/serve_trip3/`.
+- **What Spark 2 tolerates:** about 45 W of GPU power settles at 75–80 °C ACPI. 60–85 W reaches 83–89 °C within
+  10–30 s. Spark 1 already reached 85 °C at 50 W. Neither machine can run at full GPU power for long within an
+  80–85 °C limit, so throughput plans must budget around 40–45 W.
