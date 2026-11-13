@@ -87,9 +87,9 @@ Not shown either way.
 
 ## 3. MedGemma formatting: fixed, or is format SFT needed?
 
-**Status: the rejection failure is fixed at the interface; the base model's turn-length behaviour is not; the full-
-episode check didn't finish (thermal throttling, section 1). My recommendation: constrained decoding for the plumbing
-smoke; a narrow format SFT is still likely needed before learning runs.**
+**Status: not fixed. Constrained decoding removes the turn-rejection failure, but the base model never ends a list,
+so full episodes overflow the context before diagnosing. A turn-length control is needed: SD-Bench's own per-turn
+request caps first (cheap, not yet tested), and a narrow format SFT if that isn't enough.**
 
 **Audit of the raw sampled outputs** (saved runs at T = 0.7 and 1.0):
 - Mixed turns are long lists: about 12 questions and 7 tests per turn. Often each test is paired with a question
@@ -128,8 +128,29 @@ First-turn probe, 5 synthetic cases × 16 samples per cell (`results/v2_format/f
   and evaluation use one interface. Use an unbounded regex: counted repeats cost 30× more grammar-compile CPU and
   caused a thermal trip.
 
-**Full episodes** (guarded condition, 2 at a time, under the governor): started 07:19 UTC. 
-(Result at the cut-off is filled in below.)
+**Full episodes** (constrained, T = 1.0, guarded condition, 2 at a time, under the governor; 07:19–09:40 UTC). One
+episode finished in 2.3 h (case 0): every turn single-type and valid, **every turn cut at 400 tokens**:
+
+| turn | 1 | 2 | 3 | 4 | 5 | 6 |
+|---|---|---|---|---|---|---|
+| requests | 17 questions | 33 tests | 25 tests | 26 tests | 28 tests | 28 tests |
+
+- It ordered the decisive studies: bone-marrow biopsy, then a repeat biopsy with CD20-positive large atypical cells.
+- With 136 tests and their results, the context passed 16,384 tokens at turn 7. The episode ended on **overflow
+  with no diagnosis**: judge score 1, cost $95,360, 17 repeated requests.
+- I stopped the second episode and the remaining runs at 09:40. The answer was already clear, and each further
+  episode took ~2 h of thermally cycled serving.
+- The official-vs-constrained greedy comparison (T = 0) did not run.
+
+**What this means.**
+- At sampling temperature the base model's "list everything" habit is the real format problem; tag mixing was only
+  how it showed up.
+- Constrained decoding is still needed (it is the only thing that removes rejection), but it isn't sufficient.
+- Cheapest next test: constrained decoding plus SD-Bench's own per-turn limits (`max_questions_per_turn` /
+  `max_tests_per_turn`, already implemented, opt-in, e.g. 5 each). That bounds results per turn and so context
+  growth, without new weights. It's a task change applied to all arms and the guarded evaluation, as the config
+  comment says.
+- If episodes then still don't reach a diagnosis, format SFT.
 
 **Format SFT: designed, not built.** The SFT data has to come from well-formed trajectories. The only cases
 available are the 5 public synthetic ones, which are also the plumbing and evaluation cases, so SFT on them would
@@ -278,10 +299,11 @@ Caveats:
      on 11-11; firmware critical is 104.8 °C;
    - (c) accept a slow governed smoke.
 2. **Turn format (decision needed).**
-   - Constrained decoding removes the rejection failure but caps every opening turn at 400 tokens. Full-episode
-     validation was incomplete tonight.
-   - For a plumbing smoke, constrained decoding is enough: `policy_format: "constrained"` in the env config.
-   - For learning runs, a format SFT needs non-synthetic training trajectories (MIMIC train split).
+   - Constrained decoding alone yields valid turns but overflowing, diagnosis-less episodes (1 full episode: 136
+     tests, overflow at turn 7).
+   - For a plumbing smoke that only tests NCCL, masks, logging and checkpoints, this is tolerable.
+   - For any learning signal, first test constrained decoding plus per-turn caps. If that fails, a format SFT, which
+     needs non-synthetic training trajectories (MIMIC train split).
 3. **Trainer configuration untested end to end.** Next run: `--liger --grad-ckpt --scale-rewards batch` with
    `trl vllm-serve` for MedGemma on Spark 2, same node as the trainer (avoids the two-node NCCL issue). Memory
    co-residence is measured (section 5); NCCL weight sync on one node is not.
