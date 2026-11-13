@@ -225,17 +225,20 @@ Probe (`V2/leak_probe/v2_leak_routes.py`). The same 16 generic requests for ever
 through the training runner with the guard on. Qwen3-8B as gatekeeper, the 5 public synthetic cases, a separate
 cache. Results: `results/v2_sdbench/leak_probe2/routes.jsonl`; summary: `V2/leak_probe/summarize_routes.py`.
 
-| Route | Requests (cases 0–3; case 4 cut off by the throttling) | Gatekeeper revealed diagnosis or course | Reached the agent after tonight's guard |
-|---|---|---|---|
-| Documents ordered as `<test>` | 28 | 19 | 0 |
-| Treatment questions | 12 | 7 | 0 |
-| Timeline questions | 12 | 4 | 0 |
-| Interpretation questions | 12 | 8 | 0 |
+| Route | Requests (5 cases) | Gatekeeper revealed diagnosis or course | Reached the agent with the probe-time guard | With tonight's final detector |
+|---|---|---|---|---|
+| Documents ordered as `<test>` | 35 | 24 | 0 (all refused) | 0 |
+| Treatment questions | 15 | 8 | 0 detected; 7 passed as info | 3 more withheld |
+| Timeline questions | 15 | 5 | 0 detected; 10 passed as info | (included above) |
+| Interpretation questions | 15 | 11 | 0 (dx_leak) | 0 |
+
+Per document request, cases naming the diagnosis: discharge summary 5/5, consultant's impression 5/5, assessment and
+plan 5/5, pathology report final diagnosis 3/5, problem list 2/5, hospital course 1/5, final diagnosis 0/5 (refused).
 
 **Worst route (new, test channel, open in the official condition):** "Discharge summary", "Consultant's
-impression" and "Assessment and plan" named the reference diagnosis in **4 of 4 cases** (e.g. "Primary Diagnosis:
+impression" and "Assessment and plan" named the reference diagnosis in **5 of 5 cases** (e.g. "Primary Diagnosis:
 Intravascular large B-cell lymphoma…", "…most likely a pheochromocytoma"). Only "Final diagnosis" was refused,
-4/4. Before tonight the guard only covered questions, so this route was open in training too.
+5/5. Before tonight the guard only covered questions, so this route was open in training too.
 
 Changes (training environment only; the official condition is unchanged and still reports these as `channel_kind`):
 - **`meta_request`:** a `<test>` naming a document or conclusion is answered with a refusal that carries
@@ -252,6 +255,9 @@ Changes (training environment only; the official condition is unchanged and stil
 - Bare in-hospital drug names: "What medications were you given in the hospital?" → "phenoxybenzamine". The
   detector reads wording, not pharmacology.
 - Gatekeeper interpretation with no diagnosis words ("a complex multisystem illness…"); low content.
+- In-admission course without post-diagnosis wording (case 4: "congestive symptoms have stabilized with meticulous
+  diuretic and blood-pressure management"; "admitted for decompensated heart failure… IV diuresis limited by
+  orthostatic hypotension"). I did not add patterns for these, to avoid overfitting to individual answers.
 - Everything in the official condition, by design.
 
 Caveats:
