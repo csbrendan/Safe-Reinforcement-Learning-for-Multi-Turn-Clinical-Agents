@@ -15,10 +15,13 @@ Each log entry adds:
                     (not the "Results not available" placeholder a parse failure produces, not a refusal such as
                     "not available in the patient's current record", and not withheld by the guard).
   repeat          = same canonical request was already made in this episode.
-  channel_kind    = channel.classify(request, result): rejected | test_result | historic_test | info.
-  guarded         = (guard on) a question whose answer was a test result or named the reference diagnosis; the
-                    agent got GUARD_TEXT / DX_GUARD_TEXT instead and the real answer is kept in `withheld_result`
-                    for audit only.
+  channel_kind    = channel.classify(request, result): rejected | dx_leak | test_result | historic_test | info, plus
+                    course_leak (a question answered with the post-diagnosis course) and meta_request (a <test>
+                    that names a document or conclusion, e.g. "Final diagnosis").
+  guarded         = (guard on) a question whose answer was a test result, named the reference diagnosis or told the
+                    post-diagnosis course, or a meta_request; the agent got the matching *_GUARD_TEXT instead and
+                    the real answer is kept in `withheld_result` for audit only. META_GUARD_TEXT carries SD-Bench's
+                    rejection phrase, so the request is not charged.
 
 Options (training environment; official SD-Bench behaviour is all-off except parallelism):
   question_guard  block test results returned through the question channel (information-leakage fix).
@@ -37,7 +40,8 @@ from typing import Any, Callable
 
 from tasks.v2_sdbench import sdb
 from tasks.v2_sdbench.cache import JsonlCache, make_key
-from tasks.v2_sdbench.channel import DX_GUARD_TEXT, GUARD_TEXT, canonical_request, classify, dx_key_terms, is_question
+from tasks.v2_sdbench.channel import (COURSE_GUARD_TEXT, DX_GUARD_TEXT, GUARD_TEXT, META_GUARD_TEXT, canonical_request,
+                                      classify, dx_key_terms, is_meta_request, is_question, reveals_course)
 
 UNAVAILABLE_RE = re.compile(r"^\s*results not available for", re.I)
 _REJECTION = ("i can only provide specific test results or answer specific patient questions",
@@ -140,7 +144,12 @@ class CachedTestRunner(sdb.gatekeeper.BatchTestRunner):
             unavailable = bool(UNAVAILABLE_RE.match(r["results"]))
             q = is_question(r["test_name"])
             kind = "rejected" if unavailable else classify(r["test_name"], r["results"], self.dx_terms)
-            guarded = self.question_guard and q and kind in ("test_result", "dx_leak")
+            if q and kind == "info" and reveals_course(r["results"]):
+                kind = "course_leak"     # post-diagnosis treatment course told to a patient question
+            elif not q and kind != "rejected" and is_meta_request(r["test_name"]):
+                kind = "meta_request"    # "Test to order: Final diagnosis" and similar
+            guarded = self.question_guard and (
+                (q and kind in ("test_result", "dx_leak", "course_leak")) or kind == "meta_request")
             log = {
                 "test_name": r["test_name"], "reason": "", "result": r["results"],
                 "is_synthetic": r["is_synthetic"], "timestamp": datetime.datetime.now().isoformat(),
@@ -154,7 +163,8 @@ class CachedTestRunner(sdb.gatekeeper.BatchTestRunner):
                 "guarded": guarded,
             }
             if guarded:
-                text = DX_GUARD_TEXT if kind == "dx_leak" else GUARD_TEXT
+                text = {"dx_leak": DX_GUARD_TEXT, "course_leak": COURSE_GUARD_TEXT,
+                        "meta_request": META_GUARD_TEXT}.get(kind, GUARD_TEXT)
                 log["withheld_result"], log["result"] = r["results"], text
                 r["results"] = text
             if r["sent"] != r["test_name"]:

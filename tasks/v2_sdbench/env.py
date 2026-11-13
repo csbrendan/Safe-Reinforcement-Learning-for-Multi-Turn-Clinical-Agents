@@ -183,6 +183,8 @@ class Services:
                 "n_q_test_results": sum(1 for l in q if l.get("channel_kind") == "test_result"),
                 "n_guarded": sum(1 for l in q if l.get("guarded")),
                 "n_dx_leak_q": sum(1 for l in q if l.get("channel_kind") == "dx_leak"),
+                "n_course_leak_q": sum(1 for l in q if l.get("channel_kind") == "course_leak"),
+                "n_meta_requests": sum(1 for l in logs if l.get("channel_kind") == "meta_request"),
                 "n_dx_in_test_results": _dx_in_tests(logs, ep.runner.dx_terms),
                 "n_historic_tests": sum(1 for l in q if l.get("channel_kind") == "historic_test"),
                 "n_canonicalized": sum(1 for l in logs if "sent" in l),

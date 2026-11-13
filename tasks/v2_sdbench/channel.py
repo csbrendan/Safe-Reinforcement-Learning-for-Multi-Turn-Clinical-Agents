@@ -28,6 +28,11 @@ TEST_PREFIX = "Test to order:"
 GUARD_TEXT = ("This is a diagnostic test result, which the patient cannot report. "
               "To obtain it, order it as a test using <test> tags.")
 DX_GUARD_TEXT = "The patient cannot tell you the diagnosis. Gather findings with questions and tests."
+COURSE_GUARD_TEXT = ("The patient cannot tell you what happened after the diagnostic workup. Gather findings with "
+                     "questions and tests.")
+# Contains SD-Bench's own rejection phrase, so costs.is_rejected() leaves the request uncharged.
+META_GUARD_TEXT = ("This is not an orderable diagnostic test. Please request a specific diagnostic test or ask a "
+                   "specific question.")
 
 # Diagnostic studies and specimen work. Matched in the result text.
 _STUDY = re.compile(
@@ -162,6 +167,22 @@ _COURSE = re.compile(
 
 def reveals_course(text: str) -> bool:
     return bool(_COURSE.search(text or ""))
+
+
+# A <test> request that names a document or a conclusion rather than an investigation ("Final diagnosis",
+# "Discharge summary", "Hospital course", "Consultant's impression"). SD-Bench's gatekeeper prompt only permits
+# orderable investigations, but an LLM gatekeeper may still answer these from the chart. Matched in the REQUEST.
+# "diagnostic X" is not matched (only the nouns diagnosis/diagnoses).
+_META = re.compile(
+    r"\b(diagnos(is|es)|discharge (summary|note|diagnosis)|hospital course|clinical course|course in (the )?hospital|"
+    r"consult(ant|ation)?(['’]s)? (note|impression|opinion|report|recommendations?)|impression|assessment and plan|"
+    r"problem list|progress notes?|case summary|clinical summary|outcome|autopsy|post-?mortem|"
+    r"treatment (plan|course|response)|response to (treatment|therapy)|medical records?|chart review|"
+    r"physician(['’]s)? notes?)\b", re.I)
+
+
+def is_meta_request(name: str) -> bool:
+    return not is_question(name) and bool(_META.search(body(name)))
 
 
 def classify(request: str, result: str, dx_terms: set[str] | None = None) -> str:

@@ -36,6 +36,11 @@ ANSWERS = {
     "plasma metanephrines": ("Plasma free metanephrine: 2.8 nmol/L (reference <0.50).", False),
     "cbc": ("Hemoglobin 13.1 g/dL; white-cell count 7.2 × 10⁹/L.", False),
     "mystery assay": ("Synthetic normal result.", True),
+    "has there been any improvement?": ("His headaches resolved after the adrenalectomy and he was discharged home.",
+                                       False),
+    "final diagnosis": ("Catecholamine-secreting tumor of the right adrenal gland.", False),
+    "hospital course": ("He was admitted, started on phenoxybenzamine and underwent surgery.", False),
+    "diagnostic lumbar puncture": ("Opening pressure 18 cm H2O; CSF protein 40 mg/dL.", False),
 }
 
 
@@ -351,3 +356,44 @@ def test_optional_per_turn_cap_uses_sdbench_limits(tmp_path):
     r = CachedTestRunner(cfg, CASE, {}, FakeGK(), JsonlCache(str(tmp_path / "cap.jsonl")), "synthetic")
     out = r([Q + "Do you smoke?", Q + "What is your temperature?", Q + "What is your pulse rate?"])
     assert len(out.test_results) == 2 and out.limit_messages and "limited to 2" in out.limit_messages[0]
+
+
+# ---------------------------------------------------------------- leak routes added 2026-11-13
+def test_course_of_care_answer_is_withheld_when_guarded(tmp_path):
+    r, _ = _runner(tmp_path, guard=True)
+    out = r([Q + "Has there been any improvement?"])
+    log = r._collector["test_logs"][-1]
+    assert log["channel_kind"] == "course_leak" and log["guarded"]
+    assert out.test_results[0]["results"] == ch.COURSE_GUARD_TEXT
+    assert "adrenalectomy" in log["withheld_result"] and not log["record_grounded"]
+
+
+def test_course_of_care_passes_unguarded_official(tmp_path):
+    r, _ = _runner(tmp_path, guard=False, name="off")
+    out = r([Q + "Has there been any improvement?"])
+    assert "adrenalectomy" in out.test_results[0]["results"]                 # official behaviour unchanged
+    assert r._collector["test_logs"][-1]["channel_kind"] == "course_leak"   # still labelled for audit
+
+
+def test_meta_test_requests_refused_and_uncharged(tmp_path):
+    r, _ = _runner(tmp_path, guard=True)
+    out = r([T + "Final diagnosis", T + "Hospital course", T + "Diagnostic lumbar puncture"])
+    logs = r._collector["test_logs"]
+    kinds = [l["channel_kind"] for l in logs]
+    assert kinds == ["meta_request", "meta_request", "test_result"]
+    assert [l["guarded"] for l in logs] == [True, True, False]
+    assert out.test_results[0]["results"] == ch.META_GUARD_TEXT
+    assert "CSF protein" in out.test_results[2]["results"]                    # a real "diagnostic" test is untouched
+    from tasks.v2_sdbench.runner import is_rejected
+    assert is_rejected(ch.META_GUARD_TEXT)                                    # so costs.py does not charge it
+
+
+@pytest.mark.parametrize("name,meta", [
+    ("Final diagnosis", True), ("Discharge summary", True), ("Consultant's impression", True),
+    ("Pathology report final diagnosis", True), ("Hospital course", True), ("Problem list", True),
+    ("Diagnostic lumbar puncture", False), ("Confirmatory testing for pheochromocytoma", False),
+    ("Bone marrow biopsy with histopathology", False), ("Chest CT", False), ("CBC with differential", False),
+])
+def test_is_meta_request(name, meta):
+    assert ch.is_meta_request(ch.TEST_PREFIX + " " + name) is meta
+    assert not ch.is_meta_request(ch.QUESTION_PREFIX + " " + name)
