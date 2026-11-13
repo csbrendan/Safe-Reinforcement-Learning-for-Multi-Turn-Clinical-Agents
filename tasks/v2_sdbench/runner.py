@@ -28,6 +28,7 @@ Options (training environment; official SD-Bench behaviour is all-off except par
 """
 from __future__ import annotations
 import datetime
+import os
 import re
 import threading
 import time
@@ -61,7 +62,9 @@ def make_config(dataset: str, max_turns: int = 12, config_name: str = "default",
     return replace(cfg, max_turns=max_turns, **overrides)
 
 
-_GK_POOL = ThreadPoolExecutor(max_workers=32, thread_name_prefix="gk")  # separate from callers' pools: no deadlock
+# Separate from callers' pools (no deadlock). V2_GK_POOL lowers gatekeeper concurrency: each request carries the
+# whole case record (~11k tokens), so 32 parallel prefills drive a Spark's GPU to ~85 W in bursts.
+_GK_POOL = ThreadPoolExecutor(max_workers=int(os.environ.get("V2_GK_POOL", "32")), thread_name_prefix="gk")
 
 
 class Timer:

@@ -76,3 +76,14 @@ Qwen3-8B (:8101, 0.45) + MedGemma (:8100, 0.20) on Spark 2 under `watchdog.py` (
 - **What Spark 2 tolerates:** about 45 W of GPU power settles at 75–80 °C ACPI. 60–85 W reaches 83–89 °C within
   10–30 s. Spark 1 already reached 85 °C at 50 W. Neither machine can run at full GPU power for long within an
   80–85 °C limit, so throughput plans must budget around 40–45 W.
+- **Trip 4, 05:45:29:** the pause/resume governor paused at 74–75 °C, but ACPI still reached 82.3 °C at 84 W 4 s
+  later. vLLM keeps running already-queued GPU steps after SIGSTOP (a Qwen prefill step over the ~11k-token case
+  record is about 1 s), so a pause takes 3–4 s to cut power.
+- **Firmware limits (both Sparks):** every ACPI zone has `critical = 104.8 °C`. The GPU slowdown point is
+  ≈ 95–97 °C. Spark 2's 11-11 log (30 s samples) shows GPU 83–84 °C at 79–85 W with no fault. So 80–85 °C is well
+  inside the design envelope, and **Spark 1's earlier power-offs were not the firmware's critical thermal trip**,
+  which would have produced a logged, orderly shutdown. An abrupt cut at a GPU reading of about 88 °C points to a
+  protection outside the OS: the power brick or PSU, an embedded-controller cut-off, or a supply problem. This is
+  not determinable from the OS logs.
+- Settings from 05:53: hard kill at 85 °C (your stop rule), pause at 80, resume at 74. Load: 3 episodes in
+  flight, gatekeeper concurrency 8 (`V2_GK_POOL`).
