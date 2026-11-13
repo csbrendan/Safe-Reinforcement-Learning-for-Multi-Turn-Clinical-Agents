@@ -28,7 +28,21 @@ def now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
 
 
+_NV = None
+
+
 def gpu():
+    """(temp C, power W, clock-event mask) via NVML (fast, no subprocess); nvidia-smi if NVML is unavailable."""
+    global _NV
+    try:
+        import pynvml as nv
+        if _NV is None:
+            nv.nvmlInit()
+            _NV = nv.nvmlDeviceGetHandleByIndex(0)
+        return (float(nv.nvmlDeviceGetTemperature(_NV, 0)), nv.nvmlDeviceGetPowerUsage(_NV) / 1000,
+                int(nv.nvmlDeviceGetCurrentClocksEventReasons(_NV)))
+    except ImportError:
+        pass
     out = subprocess.run(["nvidia-smi", "--query-gpu=temperature.gpu,power.draw,clocks_throttle_reasons.active",
                           "--format=csv,noheader,nounits"], capture_output=True, text=True, timeout=5).stdout
     t, w, m = [x.strip() for x in out.strip().split(",")]
@@ -85,19 +99,23 @@ def main():
         os.fsync(f.fileno())
 
     since = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    start, fails, warned = time.time(), 0, False
+    start, fails, warned, last_t = time.time(), 0, False, 0.0
+    last_k = 0.0
+    samples = open(a.log + ".samples.csv", "a", buffering=1)
     log(f"watchdog start gpu_max={a.gpu_max} acpi_max={a.acpi_max} max_s={a.max_seconds}")
     while True:
         reason = None
         try:
             t, w, mask = gpu()
-            fails = 0
+            fails, last_t = 0, t
         except Exception as e:  # noqa: BLE001
             fails += 1
             t, w, mask = -1, -1, 0
-            if fails >= 5:
-                reason = f"gpu query failed 5x ({e})"
+            # fail safe: a sensor that stops answering while hot is a trip, not a pass
+            if fails >= 3 or last_t >= a.gpu_warn:
+                reason = f"gpu query failed {fails}x, last good {last_t} C ({e})"
         am = acpi_max()
+        samples.write(f"{now()},{t},{w:.1f},0x{mask:x},{am:.1f}\n")
         if t >= a.gpu_max:
             reason = f"gpu {t} C >= {a.gpu_max}"
         elif am >= a.acpi_max:
@@ -106,7 +124,8 @@ def main():
             reason = f"throttle {','.join(bad)} mask=0x{mask:x}"
         elif time.time() - start > a.max_seconds:
             reason = f"wall clock > {a.max_seconds}s"
-        if reason is None and int(time.time() - start) % 5 == 0:
+        if reason is None and time.time() - last_k > 5:
+            last_k = time.time()
             ke = kernel_errors(since)
             if ke:
                 reason = f"kernel error: {ke[-1][:160]}"
@@ -122,7 +141,7 @@ def main():
         if not os.path.exists(a.pgid_file + ".running"):
             log("workload finished; watchdog exit")
             return
-        time.sleep(1)
+        time.sleep(0.5)
 
 
 if __name__ == "__main__":
