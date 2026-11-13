@@ -290,6 +290,9 @@ def main():
     ap.add_argument("--grad-accum", type=int, default=4)
     ap.add_argument("--num-generations", type=int, default=8)
     ap.add_argument("--grad-ckpt", action="store_true")
+    ap.add_argument("--scale-rewards", default=None, choices=["group", "batch", "none"],
+                    help="TRL scale_rewards (default: TRL's 'group'). 'batch' or 'none' stop a group whose only "
+                         "spread is judge noise from becoming a full-size update (V2/overnight_2026-11-13.md §4).")
     ap.add_argument("--liger", action="store_true",
                     help="TRL use_liger_kernel (fused linear GRPO loss; the 262k-vocab logits are never "
                          "materialised). V2 SD-Bench: peak 15.4 GiB at 12k tokens vs 22.8 GiB without "
@@ -326,7 +329,8 @@ def main():
         save_strategy="steps", save_steps=args.save_steps, save_total_limit=4,
         use_vllm=True, vllm_mode="server", vllm_server_host=args.server_host, vllm_server_port=args.server_port,
         vllm_importance_sampling_correction=False,
-        **({"use_liger_kernel": True} if args.liger else {}))
+        **({"use_liger_kernel": True} if args.liger else {}),
+        **({"scale_rewards": args.scale_rewards} if args.scale_rewards else {}))
     claude_judge = None
     if args.claude_alpha > 0.0:
         from framework.procreward.rollout_judge import RolloutJudge

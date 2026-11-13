@@ -108,3 +108,26 @@ def test_course_of_care_detected(text):
 ])
 def test_history_is_not_course_of_care(text):
     assert not channel.reveals_course(text)
+
+
+# --- judge median-of-N (V2/overnight_2026-11-13.md §4) ---
+def test_judge_median_of_three(tmp_path, monkeypatch):
+    from tasks.v2_sdbench import reward
+    from tasks.v2_sdbench.cache import JsonlCache
+    seq = iter([2, 5, 4])
+    calls = []
+
+    def fake_check(cfg, dx, case, test_logs=None, llm=None):
+        s = next(seq)
+        calls.append(s)
+        return s >= 4, {"diagnosis_score": s, "diagnosis_reasoning": "r"}
+
+    monkeypatch.setattr(reward.sdb.judge, "check_diagnosis", fake_check)
+    j = reward.Judge(lambda **k: None, JsonlCache(str(tmp_path / "j.jsonl")), "synthetic", "v4_reasoning_with_tests",
+                     repeats=3)
+    case = {"case_id": "c1"}
+    out = j.score(case, "Pheochromocytoma", [])
+    assert out["score"] == 4 and out["scores"] == [2, 5, 4] and len(calls) == 3
+    assert j.score(case, "Pheochromocytoma", [])["score"] == 4 and len(calls) == 3      # all three cached
+    j1 = reward.Judge(lambda **k: None, JsonlCache(str(tmp_path / "j.jsonl")), "synthetic", "v4_reasoning_with_tests")
+    assert j1.score(case, "Pheochromocytoma", [])["score"] == 2                          # repeat 0 = original key

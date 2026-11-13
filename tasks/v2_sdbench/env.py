@@ -127,7 +127,7 @@ class Services:
         self.gk_cache = JsonlCache(os.path.join(cd, "gatekeeper.jsonl"))
         self.judge = Judge(make_aux_llm(j, nt),
                            JsonlCache(os.path.join(cd, "judge.jsonl")), cfg["dataset"], j["prompt"],
-                           cfg["max_turns"])
+                           cfg["max_turns"], repeats=int(j.get("repeats", 1)))
         self.costs = CostModel(make_aux_llm(c, nt),
                                JsonlCache(os.path.join(cd, "prices.jsonl")))
         self.timer = Timer()

@@ -36,7 +36,7 @@ def format_flags(record: dict) -> dict:
 
 class Judge:
     def __init__(self, judge_llm: Callable, cache: JsonlCache, dataset: str, prompt_version: str = "v3_reasoning",
-                 max_turns: int = 12):
+                 max_turns: int = 12, repeats: int = 1):
         from tasks.v2_sdbench.runner import make_config
         self.llm = judge_llm
         self.cache = cache
@@ -45,14 +45,26 @@ class Judge:
         self.cfg = make_config(dataset, max_turns=max_turns, judge_prompt_version=prompt_version)
         self.model_id = getattr(judge_llm, "model_id", "unknown")
         self.uses_tests = "with_tests" in prompt_version
+        # repeats > 1: score = median of that many independent judge calls (separate cache entries; repeat 0 keeps
+        # the original key, so existing caches stay valid). Reduces judge-noise variance roughly by the count.
+        self.repeats = repeats
 
     def score(self, case: dict, diagnosis: str | None, test_logs: list | None = None) -> dict:
+        if self.repeats <= 1 or not diagnosis:
+            return self._score_once(case, diagnosis, test_logs, 0)
+        import statistics
+        outs = [self._score_once(case, diagnosis, test_logs, r) for r in range(self.repeats)]
+        med = int(statistics.median_low([o["score"] for o in outs]))
+        pick = next(o for o in outs if o["score"] == med)
+        return {**pick, "scores": [o["score"] for o in outs]}
+
+    def _score_once(self, case: dict, diagnosis: str | None, test_logs: list | None, rep: int) -> dict:
         if not diagnosis:
             return {"score": 1, "passed": False, "reasoning": "no diagnosis", "judged": False}
         logs = [{k: l[k] for k in ("test_name", "result") if k in l} for l in (test_logs or [])] \
             if self.uses_tests else None
         key = make_key("judge", self.dataset, str(case["case_id"]), diagnosis.strip(), self.prompt_version,
-                       self.model_id, logs)
+                       self.model_id, logs, *([rep] if rep else []))
 
         def compute():
             passed, resp = sdb.judge.check_diagnosis(self.cfg, diagnosis, case, test_logs=logs, llm=self.llm)
