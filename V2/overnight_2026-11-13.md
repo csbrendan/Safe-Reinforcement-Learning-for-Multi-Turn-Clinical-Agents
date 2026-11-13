@@ -219,4 +219,67 @@ trajectories filtered for validity, with long question lists split into turns of
 `<diagnosis>`. That gives one shared initialisation for arms A/B/C (arm A = that checkpoint). Constrained decoding
 needs no new checkpoint: every arm uses the base weights plus the same decoding interface.
 
-(Sections 6 and 7 below.)
+## 6. SD-Bench leak routes (Priority 5)
+
+Probe (`V2/leak_probe/v2_leak_routes.py`). The same 16 generic requests for every case, nothing case-specific, sent
+through the training runner with the guard on. Qwen3-8B as gatekeeper, the 5 public synthetic cases, a separate
+cache. Results: `results/v2_sdbench/leak_probe2/routes.jsonl`; summary: `V2/leak_probe/summarize_routes.py`.
+
+| Route | Requests (cases 0–3; case 4 cut off by the throttling) | Gatekeeper revealed diagnosis or course | Reached the agent after tonight's guard |
+|---|---|---|---|
+| Documents ordered as `<test>` | 28 | 19 | 0 |
+| Treatment questions | 12 | 7 | 0 |
+| Timeline questions | 12 | 4 | 0 |
+| Interpretation questions | 12 | 8 | 0 |
+
+**Worst route (new, test channel, open in the official condition):** "Discharge summary", "Consultant's
+impression" and "Assessment and plan" named the reference diagnosis in **4 of 4 cases** (e.g. "Primary Diagnosis:
+Intravascular large B-cell lymphoma…", "…most likely a pheochromocytoma"). Only "Final diagnosis" was refused,
+4/4. Before tonight the guard only covered questions, so this route was open in training too.
+
+Changes (training environment only; the official condition is unchanged and still reports these as `channel_kind`):
+- **`meta_request`:** a `<test>` naming a document or conclusion is answered with a refusal that carries
+  SD-Bench's own rejection phrase, so it is never charged (`channel.is_meta_request`).
+- **`course_leak`:** a question answer revealing the post-diagnosis course, in-hospital management or planned
+  procedures is withheld (`channel.reveals_course`).
+  - It catches "fevers resolved within the first week of therapy", "scheduled procedure tomorrow is a random skin
+    biopsy", "upcoming laparoscopic right adrenalectomy" and "later managed with phenoxybenzamine … alpha-blockade".
+  - It does not match medication history or past surgical history: 2 of the 486 logged answers match, both real
+    leaks.
+- New metrics `n_course_leak_q` and `n_meta_requests`; 22 new regression tests (116 + 1 pass in total).
+
+**Remaining routes not caught:**
+- Bare in-hospital drug names: "What medications were you given in the hospital?" → "phenoxybenzamine". The
+  detector reads wording, not pharmacology.
+- Gatekeeper interpretation with no diagnosis words ("a complex multisystem illness…"); low content.
+- Everything in the official condition, by design.
+
+Caveats:
+- The detectors were tuned on these 5 public synthetic cases (not held-out data), so expect misses out of sample.
+- RL will search for gaps, so the stop criterion stays: rising `guarded`, `dx_leak_q`, `course_leak_q` or
+  `meta_requests` across steps.
+- Whether SD-Bench's official GPT-5 gatekeeper refuses document requests is unknown (needs Azure).
+
+## 7. Blockers before a 3-step GRPO smoke
+
+1. **Thermal limit (decision needed).** Under your 85 °C rule, Spark 2 runs the V2 stack at ~10–35% throughput, so
+   a 3-step smoke is ≈ 8–20 h. Options:
+   - (a) check and fix Spark 1's placement and airflow, then split the load across both nodes (section 5);
+   - (b) allow Spark 2 a higher hard limit, e.g. 90 °C ACPI, with the governor kept. It ran GPU 83–84 °C for hours
+     on 11-11; firmware critical is 104.8 °C;
+   - (c) accept a slow governed smoke.
+2. **Turn format (decision needed).**
+   - Constrained decoding removes the rejection failure but caps every opening turn at 400 tokens. Full-episode
+     validation was incomplete tonight.
+   - For a plumbing smoke, constrained decoding is enough: `policy_format: "constrained"` in the env config.
+   - For learning runs, a format SFT needs non-synthetic training trajectories (MIMIC train split).
+3. **Trainer configuration untested end to end.** Next run: `--liger --grad-ckpt --scale-rewards batch` with
+   `trl vllm-serve` for MedGemma on Spark 2, same node as the trainer (avoids the two-node NCCL issue). Memory
+   co-residence is measured (section 5); NCCL weight sync on one node is not.
+4. **Judge noise.** Use `--scale-rewards batch` (or `none`) and `judge.repeats: 3` for training (both opt-in,
+   implemented tonight). Re-measure stability on format-valid rollouts.
+5. **Still open from before:**
+   - Azure credentials and spend approval (the official GPT-5 gatekeeper and judge, and the leak re-check);
+   - MIMIC data access and the human-review opt-out;
+   - `lam_cost` set from arm-A development statistics.
+   None of these blocks a synthetic plumbing smoke.
