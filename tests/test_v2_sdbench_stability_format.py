@@ -76,3 +76,27 @@ def test_regex_rejects_mixed_or_empty(text):
 def test_constrained_variants_pass_regex_to_both_clients():
     assert tf.openai_extra("constrained") == {"structured_outputs": {"regex": tf.TURN_REGEX}}
     assert tf.trl_kwargs("prompt+constrained") == {"structured_outputs_regex": tf.TURN_REGEX}
+
+
+# --- leak routes (V2/leak_probe/v2_leak_routes.py) ---
+from tasks.v2_sdbench import channel  # noqa: E402
+
+
+@pytest.mark.parametrize("text", [
+    "The fevers resolved within the first week of therapy, and her mental status improved.",
+    "She received three cycles of R-CHOP and responded well to treatment.",
+    "He underwent a right adrenalectomy and was discharged on hospital day 6.",
+    "After starting antibiotics her diarrhea improved.",
+])
+def test_course_of_care_detected(text):
+    assert channel.reveals_course(text)
+
+
+@pytest.mark.parametrize("text", [
+    "She reported a rash with trimethoprim-sulfamethoxazole in the past.",
+    "Her medications were lisinopril, levothyroxine, and atorvastatin.",
+    "She has no history of chemotherapy or other immunosuppressive therapy.",
+    "The fever is intermittent, worse in the evenings, with night sweats.",
+])
+def test_history_is_not_course_of_care(text):
+    assert not channel.reveals_course(text)

@@ -2,7 +2,9 @@
 # Start the V2 SD-Bench inference servers on Spark 2 under the independent watchdog (run FROM Spark 1).
 #   V2/hw_stability/serve_spark2.sh start [max_hours]   # Qwen3-8B :8101 (0.45) + MedGemma :8100 (0.20), one pgid
 #   V2/hw_stability/serve_spark2.sh stop
-# Same args as the 2026-11-11/12 runs, so the gatekeeper/judge caches stay valid. Logs and telemetry: ~/v2_hw/serve/
+# Same args as the 2026-11-11/12 runs, so the gatekeeper/judge caches stay valid. MedGemma is served from
+# medgemma4b_text_v2stop (hard links to the same weights; generation_config adds <end_of_turn>=106 as EOS) because a
+# grammar-constrained decode can only end on an EOS id, and stop_token_ids are not EOS ids. Logs and telemetry: ~/v2_hw/serve/
 # on Spark 2. The watchdog kills the whole group at GPU or ACPI >= 83 C, on throttle bits, kernel errors, or the
 # wall-clock cap.
 set -u
@@ -21,7 +23,7 @@ setsid bash -c "echo \\\$\\\$ > srv.pgid
   \$V serve \$M/qwen3-8b --host 0.0.0.0 --port 8101 --dtype bfloat16 --seed 1 --max-model-len 32768 \
      --served-model-name local-aux --gpu-memory-utilization 0.45 > qwen.log 2>&1 &
   until curl -sf localhost:8101/v1/models >/dev/null; do sleep 5; done
-  \$V serve \$M/medgemma4b_text --host 0.0.0.0 --port 8100 --dtype bfloat16 --seed 1 --max-model-len 16384 \
+  \$V serve \$M/${MEDGEMMA_DIR:-medgemma4b_text_v2stop} --host 0.0.0.0 --port 8100 --dtype bfloat16 --seed 1 --max-model-len 16384 \
      --served-model-name base --gpu-memory-utilization 0.2 > medgemma.log 2>&1 &
   wait" > /dev/null 2>&1 < /dev/null &
 sleep 2

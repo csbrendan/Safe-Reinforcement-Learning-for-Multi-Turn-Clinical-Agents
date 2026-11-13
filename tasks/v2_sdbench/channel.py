@@ -141,6 +141,29 @@ def mentions_dx(text: str, key_terms: set[str]) -> list[str]:
     return sorted(hits)
 
 
+# Post-diagnosis course of care in an ANSWER: treatment response, cycles, discharge, surgery done. The gatekeeper
+# answers from the whole chart, including events after the diagnosis, so "Has there been any improvement?" can come
+# back with "fevers resolved within the first week of therapy". Course-of-care wording only: drug names alone are
+# not matched (allergies and home medications are legitimate history). On the 486 logged question answers this
+# matched only that one leak.
+_COURSE = re.compile(
+    r"\b((within|during|over|after|in) the (first|following|next|subsequent) (\w+ )?(weeks?|days?|months?|cycles?)"
+    r"( of (therapy|treatment|chemotherapy|\w+ therapy))?|"
+    r"\d+ cycles?|(two|three|four|five|six|several|first|second) cycles?|cycles? of \w+|"
+    r"(responded|response) (well )?to (the |her |his )?(treatment|therapy|chemotherapy|\w+ therapy|antibiotics?)|"
+    r"after (starting|initiating|beginning|receiving|completing) (the |her |his )?\w+|"
+    r"(was|were) (started|initiated|begun) on|treatment (was|has been) (started|initiated|begun)|"
+    r"(was|were) discharged|on discharge|at discharge|after discharge|discharge (diagnosis|summary)|"
+    r"underwent (surgery|surgical|resection|an? \w+ectomy)|\w+ectomy was performed|(was|were) resected|"
+    r"(resolved|improved|subsided|normalized|regressed) (within|after|with|following|during|on) "
+    r"(the |her |his )?(\w+ )?(therapy|treatment|chemotherapy|antibiotics?|steroids?|surgery|week|weeks|days?|"
+    r"first|initiation))", re.I)
+
+
+def reveals_course(text: str) -> bool:
+    return bool(_COURSE.search(text or ""))
+
+
 def classify(request: str, result: str, dx_terms: set[str] | None = None) -> str:
     """One of: rejected | dx_leak | test_result | historic_test | info.
 

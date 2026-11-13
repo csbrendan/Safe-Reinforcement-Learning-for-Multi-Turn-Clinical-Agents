@@ -51,3 +51,17 @@ are the more trustworthy limit.
 **Electrical change.** Spark 1 did not power off, but the test stopped at 85 °C, below the ~88 °C where it shut
 down before. So this neither shows that the electrical change helped nor rules out power events. No crash in a
 1-minute test does not show there are no brownouts.
+
+## Spark 2 under batched inference (04:05–05:10 UTC)
+Qwen3-8B (:8101, 0.45) + MedGemma (:8100, 0.20) on Spark 2 under `watchdog.py` (GPU or ACPI ≥ 83 °C).
+- **Trip 1, 04:19:54:** 8 requests × n = 32 = 256 MedGemma sequences in flight. GPU ~73 W, ACPI 55.6 → 83.0 °C in
+  ~30 s. Servers killed by the watchdog. No kernel errors. Logs: Spark 2 `~/v2_hw/serve_trip1/`.
+- Cut the load to 32 sequences: ~40 W GPU, ACPI steady at 75–80 °C.
+- **Trip 2, 04:37:54:** ACPI 84.7 °C (peak 85.7 in telemetry) with the GPU at only 13.7 W, between two probe
+  batches. Cause: a CPU burst. The first constrained-decoding request made vLLM compile my regex, which had large
+  counted repeats ({0,1500}). That costs 3.0 s on 8 threads, against 0.1 s for the equivalent unbounded regex.
+  The SoC zone rose ~10 °C in ~2 s. Fixed by using an unbounded regex. Logs: `~/v2_hw/serve_trip2/`.
+- So Spark 2 also reaches the low 80s ACPI under heavy load (high GPU power or an all-core CPU burst). Its idle
+  baseline is ~16 °C lower than Spark 1's. Neither trip was a crash or a hardware error; both were my 83 °C limit.
+- Decode throughput (MedGemma, 32 sequences): ~150 tokens/s total (~5 tokens/s per sequence), the same rate as the
+  11-11 runs (~90 tokens/s at 16 sequences).
