@@ -6,7 +6,11 @@ workload's whole process group when any limit trips.
 
 Trips (any one): GPU temp >= --gpu-max; any ACPI zone >= --acpi-max; HW slowdown, SW thermal, HW thermal or HW
 power-brake throttle bit active; a new kernel error line (Xid/NVRM/MCE/thermal/OOM/panic/hung task/hardware error);
-GPU query failing 5 times in a row; wall clock over --max-seconds. SW power capping (0x4) is normal under load and is
+GPU query failing 3 times in a row (or once while hot); wall clock over --max-seconds.
+
+Optional thermal governor (--pause-at / --resume-at): SIGSTOP the group when GPU or ACPI reaches --pause-at and
+SIGCONT it once both are back to --resume-at, so a compute-bound job runs at whatever duty cycle the cooling allows
+instead of being killed. The hard limits still apply while paused. SW power capping (0x4) is normal under load and is
 only logged. After a trip it writes TRIPPED to --trip-file so the driver does not start the next stage.
 """
 from __future__ import annotations
@@ -90,6 +94,8 @@ def main():
     ap.add_argument("--gpu-warn", type=float, default=75.0)
     ap.add_argument("--acpi-max", type=float, default=82.0)
     ap.add_argument("--max-seconds", type=float, default=2400)
+    ap.add_argument("--pause-at", type=float, default=None)
+    ap.add_argument("--resume-at", type=float, default=None)
     a = ap.parse_args()
     trip_file = a.trip_file or a.log + ".TRIPPED"
     f = open(a.log, "a", buffering=1)
@@ -103,7 +109,16 @@ def main():
     start, fails, warned, last_t = time.time(), 0, False, 0.0
     last_k = 0.0
     samples = open(a.log + ".samples.csv", "a", buffering=1)
-    log(f"watchdog start gpu_max={a.gpu_max} acpi_max={a.acpi_max} max_s={a.max_seconds}")
+    log(f"watchdog start gpu_max={a.gpu_max} acpi_max={a.acpi_max} max_s={a.max_seconds} "
+        f"pause_at={a.pause_at} resume_at={a.resume_at}")
+    paused, paused_s, n_pauses, t_pause = False, 0.0, 0, 0.0
+
+    def signal_group(sig):
+        try:
+            os.killpg(int(open(a.pgid_file).read().strip()), sig)
+            return True
+        except Exception:  # noqa: BLE001
+            return False
     while True:
         reason = None
         try:
@@ -133,14 +148,28 @@ def main():
         if not warned and t >= a.gpu_warn:
             warned = True
             log(f"WARN gpu {t} C >= {a.gpu_warn}")
+        if reason is None and a.pause_at is not None:
+            hot = max(t, am)
+            if not paused and hot >= a.pause_at and signal_group(signal.SIGSTOP):
+                paused, t_pause, n_pauses = True, time.time(), n_pauses + 1
+                log(f"PAUSE (SIGSTOP) at gpu={t} acpi={am}")
+            elif paused and hot <= (a.resume_at if a.resume_at is not None else a.pause_at - 6):
+                signal_group(signal.SIGCONT)
+                paused, paused_s = False, paused_s + time.time() - t_pause
+                log(f"RESUME (SIGCONT) at gpu={t} acpi={am}; paused {paused_s:.0f}s total over {n_pauses} pauses")
         if reason:
+            if paused:
+                signal_group(signal.SIGCONT)  # a stopped process can't act on SIGTERM
             log(f"TRIP {reason} (gpu={t} C, {w} W, acpi_max={am} C)")
             open(trip_file, "w").write(f"{now()} {reason}\n")
             kill_group(a.pgid_file, log)
             log("watchdog exit after trip")
             return
         if not os.path.exists(a.pgid_file + ".running"):
-            log("workload finished; watchdog exit")
+            if paused:
+                signal_group(signal.SIGCONT)
+                paused_s += time.time() - t_pause
+            log(f"workload finished; watchdog exit (paused {paused_s:.0f}s over {n_pauses} pauses)")
             return
         time.sleep(0.5)
 
