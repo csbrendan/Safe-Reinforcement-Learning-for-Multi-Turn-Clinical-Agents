@@ -27,7 +27,7 @@ touch "$PGF.running"
 setsid bash -c "echo \$\$ > '$PGF'; exec timeout --kill-after=10 $TMO $*" > "$OUT/workload.log" 2>&1 &
 WL=$!
 sleep 1
-$PY "$REPO/V2/hw_stability/watchdog.py" --pgid-file "$PGF" --log "$OUT/watchdog.log" --gpu-max "$GMAX" \
+$PY "$REPO/V2/hw_stability/watchdog.py" --pgid-file "$PGF" --log "$OUT/watchdog.log" --gpu-max "$GMAX" --acpi-max "${ACPI_MAX:-82}" \
     --max-seconds $((TMO+30)) &
 WD=$!
 wait $WL; RC=$?
