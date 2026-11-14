@@ -119,7 +119,7 @@ because the Python venv has `/home/brendan/...` paths hard-coded inside it.
    ```bash
    cd ~/rl-gains-in-clinical-tasks
    du -sh checkpoints results                       # ~89 GB / ~49 MB
-   ls checkpoints | wc -l                           # 34 entries as of 2026-11-14
+   ls checkpoints | wc -l                           # 33 entries as of 2026-11-14
    ~/spark1/.venv/bin/python -m pytest -q tests     # all tests should pass
    ssh 192.168.100.2 hostname                       # spark-04af
    ```
