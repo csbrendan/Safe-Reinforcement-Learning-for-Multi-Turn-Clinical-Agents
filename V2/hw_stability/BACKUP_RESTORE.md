@@ -15,7 +15,7 @@ First backup taken **2026-11-14**, before a firmware update and a possible RMA.
 | Backup location | Contents |
 |---|---|
 | Spark 2: `~/spark1_backup/` | **Everything** in the table below. Checksum-verified against Spark 1 on 2026-11-14. |
-| Mac mini (`BRENDANs-Mac-mini.local`, user `brendanmurphy`): `~/Desktop/spark1_backup/` | **Partial**, ~125 MB: `results/`, warranty files, `.secrets/`, `hf_token`, `claude_memory/`, `v2_bench/` without its venvs, the package list, and this README. **No `checkpoints/` and no `spark1/`.** The Mac had only ~49 GB really free, less than the ~54 GB of irreplaceable checkpoints. |
+| Mac mini (`BRENDANs-Mac-mini.local`, user `brendanmurphy`): `~/Desktop/spark1_backup/` | All trained MedGemma checkpoints: 28 folders, 929 files, 56.1 GB, checksum-verified 2026-11-14. Also `results/`, the warranty files, `.secrets/`, `hf_token`, `claude_memory/`, `v2_bench/` without its venvs, the package list and this README. **Left out:** `checkpoints/*_merged` (rebuild with `framework/rl/merge_adapter.py` from the matching SFT adapter plus the base) and `checkpoints/medgemma4b_text` (rebuild with `framework.infra.prep_text_base` from `google/medgemma-4b-it`), plus `spark1/` (Linux-only venv). |
 
 **Hard links:** `v2_bench` uses hard-linked files, and rsync without `-H` stores them as separate copies. So
 `du` shows the backup ~0.25 GB larger than the original, even though the contents are identical.
@@ -119,7 +119,7 @@ because the Python venv has `/home/brendan/...` paths hard-coded inside it.
    ```bash
    cd ~/rl-gains-in-clinical-tasks
    du -sh checkpoints results                       # ~89 GB / ~49 MB
-   ls checkpoints | wc -l                           # 33 entries as of 2026-11-14
+   ls checkpoints | wc -l                           # 34 entries as of 2026-11-14
    ~/spark1/.venv/bin/python -m pytest -q tests     # all tests should pass
    ssh 192.168.100.2 hostname                       # spark-04af
    ```
