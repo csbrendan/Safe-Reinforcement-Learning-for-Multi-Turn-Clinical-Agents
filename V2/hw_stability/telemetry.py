@@ -5,8 +5,9 @@ Pipe it to a local file and/or over SSH to the other Spark so the record survive
 
 Columns: UTC time, GPU temp/power/SM clock/util, active clock-event (throttle) bitmask, the cumulative
 SW-power-cap / HW-thermal / HW-power-brake counters (us), max and mean ACPI zone temp, NVMe composite, max mlx5 NIC
-temp, 1-min load, used memory (GiB), and a count of new kernel error lines since start (Xid, MCE, thermal, OOM,
-panic, hung task, hardware error).
+temp, 1-min load, used memory (GiB), a count of new kernel error lines since start (Xid, MCE, thermal, OOM,
+panic, hung task, hardware error), and the two fan speeds in RPM (blank if the firmware does not expose them; EC
+firmware 0x03000d07 does).
 """
 from __future__ import annotations
 import glob
@@ -20,7 +21,7 @@ Q = "temperature.gpu,power.draw,clocks.sm,utilization.gpu,clocks_throttle_reason
 KERR = re.compile(r"Xid|NVRM|mce|machine check|thermal|throttl|oom|out of memory|panic|hung task|hardware error|"
                   r"EDAC|segfault|watchdog", re.I)
 HEADER = ("utc,gpu_c,gpu_w,sm_mhz,util,throttle_mask,swpower_us,hwthermal_us,hwbrake_us,acpi_max_c,acpi_mean_c,"
-          "nvme_c,nic_max_c,load1,mem_used_gib,kerr_new")
+          "nvme_c,nic_max_c,load1,mem_used_gib,kerr_new,fan1_rpm,fan2_rpm")
 
 
 def read(p: str) -> float | None:
@@ -68,6 +69,14 @@ def mem_used_gib() -> float:
     return (m["MemTotal"] - m["MemAvailable"]) / 2**20
 
 
+def fans() -> list[str]:
+    out = []
+    for p in sorted(glob.glob("/sys/class/hwmon/hwmon*/fan1_input")):
+        v = read(p)
+        out.append("" if v is None else str(int(v)))
+    return (out + ["", ""])[:2]
+
+
 def main():
     since = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print(HEADER, flush=True)
@@ -89,7 +98,7 @@ def main():
         row = [datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S"), *g, *cnt,
                f"{max(acpi):.1f}" if acpi else "", f"{sum(acpi) / len(acpi):.1f}" if acpi else "",
                f"{nvme / 1000:.1f}" if nvme else "", f"{max(nic) / 1000:.1f}" if nic else "",
-               f"{open('/proc/loadavg').read().split()[0]}", f"{mem_used_gib():.1f}", str(kerr)]
+               f"{open('/proc/loadavg').read().split()[0]}", f"{mem_used_gib():.1f}", str(kerr), *fans()]
         try:
             print(",".join(row), flush=True)
         except BrokenPipeError:
