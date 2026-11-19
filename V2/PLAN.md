@@ -6,6 +6,15 @@ training has started, and every experiment below is proposed, not completed. Ext
 except the V1 stop-token check; see [`benchmark_smoke_report.md`](benchmark_smoke_report.md). v1 (arXiv preprint,
 submitted 2026-11-07) is a separate track and is NOT blocked by anything here.*
 
+> **Update 2026-11-19 (compute and SD-Bench models).**
+> - **Compute:** V2 GPU training moves to Azure GPU VMs, for 4B and 27B alike, because Spark 1 is going back to NVIDIA.
+>   A hybrid of Spark plus one Azure GPU was rejected. First choice is 1× H100 NVL 94 GB with SkyRL (vLLM sleep mode);
+>   the fallback is 2× A100 80 GB. See [`skyrl_plan.md`](skyrl_plan.md), which covers the wrapper, the pilot script
+>   and blockers. GPU quota is 0, and the request needs a support ticket.
+> - **Models:** gatekeeper and judge stay on SD-Bench's official gpt-5, with gpt-5-mini as the pricer only. Costs
+>   are reported after grounded CPT re-pricing. See [`sdbench_azure_switch.md` §6](sdbench_azure_switch.md).
+> - Sections below that assume two Sparks are superseded where they conflict.
+
 ## Goal
 
 Turn the current paper into a journal-grade article (style reference: Nature Machine Intelligence) by fixing every

@@ -153,8 +153,7 @@ breaks comparability with SD-Bench's published GPT-5 numbers.
 
 ## 4. Quota and cost
 
-**Quota: not checked.** It needs the Foundry portal (Manage → Quota) or `az`, and this machine has neither
-credentials nor the Azure CLI.
+**Quota: checked 2026-11-19; see section 6.** GPT-5 real-time quota is 0, and requests are open.
 
 Projected load against the Tier 1 defaults you quoted (250k tokens per minute, 2,500 requests per minute, Global
 Standard). Prompt sizes are measured with `o200k_base`; output sizes are assumed until the calibration measures
@@ -213,3 +212,50 @@ PYTHONPATH=$PWD python -m tasks.v2_sdbench.calibrate_judge \
   --ref V2/sdbench_configs/calib_qwen_ref.json --cand V2/sdbench_configs/azure_synthetic.json \
   --repeats 1 --max-calls 80 --out results/v2_sdbench/calibration/qwen_vs_gpt5.json
 ```
+
+## 6. Update 2026-11-19: model choice, quota and grounded costs
+
+**Model choice: stay on SD-Bench's published configuration.** From the clone's `sdbench/config.py` (commit
+`304ce96`):
+
+| Config | Dataset | Gatekeeper | Judge | Turn cap |
+|---|---|---|---|---|
+| `science` (the published paper) | MIMIC | **gpt-5**, prompt `v13_mimic` | **gpt-5**, `v4_reasoning_with_tests` | 70 |
+| `science` | NEJM | o4-mini, `v6_fixed` | gpt-5, `v3_reasoning` | 70 |
+| `default` | any | gpt-5 | gpt-5, `v4_reasoning_with_tests` | 70 |
+
+- `gpt-5-mini` is only ever the **pricer** (it sees test names only). It is never the gatekeeper or judge.
+- Decision: gpt-5 gatekeeper and gpt-5 judge, gpt-5-mini pricer. A gpt-5-mini or gpt-5.1 gatekeeper or judge would
+  be a reported deviation: it changes the reward during training and makes pass rates incomparable with the paper.
+- gpt-5.1 is not a drop-in replacement. Beyond being a different model, it does not reason by default, while gpt-5
+  defaults to medium effort, and our calls set no reasoning option. Fallback only, and deployed under its own name.
+- The same gatekeeper must be used in training and evaluation.
+- Final evaluation should use SD-Bench's 70-turn cap; training keeps 12.
+
+**Azure availability (eastus2 catalog, 2026-11-19).**
+- `gpt-5` (2025-08-07) is still generally available. **It retires from Azure on 2027-02-09**, so every gpt-5 run,
+  including final evaluation and any reviewer re-runs, has to finish before then.
+- `gpt-5.1` and newer models are listed. There is no `gpt-5.1-mini`.
+- `o4-mini` retires 2026-11-19, which makes MIMIC with gpt-5 the only official route.
+
+**Quota.**
+- Real-time quota for gpt-5 and gpt-5.1 is **0** in all 8 regions checked: eastus, eastus2, westus, westus3,
+  northcentralus, southcentralus, centralus and swedencentral.
+- The first gpt-5.1 request (eastus2 only) was declined for lack of capacity.
+- Open now: a gpt-5.1 Foundry quota request at 2M TPM listing all 8 regions, and an Azure support request for plain
+  gpt-5 at 2M TPM (1M minimum), with gpt-5.1 as the fallback.
+- If quota lands outside eastus2, create a resource in that region and deploy under the real model name. Never alias
+  gpt-5.1 as `gpt-5`, because caches and logs key on the deployment name.
+- The deployed `gpt-5-mini` pricer was cut to 50k TPM with auto-upgrade off.
+
+**Grounded costs.** SD-Bench's published costs are not LLM estimates. They come from matching CPT codes against the
+public Kaiser Permanente Washington chargemaster (`data/costing_data/README.md`, `--costing-method unified_cpt_llm`
+or `sdbench.cli.recost`). The README says gpt-5-mini estimates run 40–50% above grounded costs. Plan: keep the
+cached LLM price in the training reward, and re-price the final evaluation with SD-Bench's grounded method before
+reporting costs. Two open items:
+1. The CPT matcher only accepts an OpenAI or OpenRouter key for `text-embedding-3-large` embeddings, not Azure.
+2. Our `run_eval.py` writes JSONL rows rather than SD-Bench results directories, so it needs a small adapter
+   around `harness.compute_agent_costs`.
+
+GPU compute for training is planned separately in [`skyrl_plan.md`](skyrl_plan.md).
+
