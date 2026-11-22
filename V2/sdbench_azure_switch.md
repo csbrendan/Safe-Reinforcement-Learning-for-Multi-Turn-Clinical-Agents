@@ -254,8 +254,18 @@ or `sdbench.cli.recost`). The README says gpt-5-mini estimates run 40–50% abov
 cached LLM price in the training reward, and re-price the final evaluation with SD-Bench's grounded method before
 reporting costs. Two open items:
 1. The CPT matcher only accepts an OpenAI or OpenRouter key for `text-embedding-3-large` embeddings, not Azure.
-2. Our `run_eval.py` writes JSONL rows rather than SD-Bench results directories, so it needs a small adapter
-   around `harness.compute_agent_costs`.
+2. Done 2026-11-22: `tasks/v2_sdbench/grounded_costs.py` re-prices `run_eval.py` output with SD-Bench's own
+   `harness.compute_agent_costs` (method `unified_cpt_llm`), with prices cached per test. It reports the CPT hit
+   rate, the comparability check from SD-Bench's README. The chargemaster xlsx is downloaded into the clone.
+
+**Spend guard (2026-11-22).** Every Azure call is priced from its returned token usage and charged to a
+process-wide meter (`tasks/v2_sdbench/llm.py`). Calls are refused past `V2_AZURE_SPEND_CAP_USD` (default $5 per
+process) or `V2_AZURE_DAILY_CAP_USD` (default $25 per UTC day, shared through a ledger file). Unpriced deployments
+are refused. These limits guard against bugs; they are not the budget. Set them per approved run.
+
+**gpt-5 deployed (2026-11-22).** Quota arrived (Global Standard 250K TPM), and `gpt-5` (2025-08-07, auto-upgrade
+off) is deployed next to `gpt-5-mini`. That's enough for calibration and pilots. Training throughput still needs
+1–2M TPM (section 4).
 
 GPU compute for training is planned separately in [`skyrl_plan.md`](skyrl_plan.md).
 

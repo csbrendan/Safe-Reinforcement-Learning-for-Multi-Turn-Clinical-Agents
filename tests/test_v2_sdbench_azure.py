@@ -124,3 +124,71 @@ def test_make_aux_llm_dispatch():
     assert llm.make_aux_llm({"provider": "local", "url": "http://x/v1", "model": "m"}).model_id == "m@http://x/v1"
     with pytest.raises(ValueError):
         llm.make_aux_llm({"provider": "openrouter"})
+
+
+# ---------------------------------------------------------------- spend cap
+@pytest.fixture(autouse=True)
+def _isolated_meter(tmp_path, monkeypatch):
+    """Every test gets its own ledger, so no test touches the real ~/.cache ledger."""
+    monkeypatch.setenv("V2_AZURE_SPEND_LEDGER", str(tmp_path / "ledger.jsonl"))
+    llm.reset_spend_meter()
+    yield
+    llm.reset_spend_meter()
+
+
+def _usage(prompt=1_000_000, cached=0, out=0):
+    return SimpleNamespace(prompt_tokens=prompt, completion_tokens=out,
+                           prompt_tokens_details=SimpleNamespace(cached_tokens=cached))
+
+
+def test_call_cost_uses_list_prices_and_cached_rate():
+    assert llm.call_cost("gpt-5", _usage(prompt=1_000_000)) == pytest.approx(1.25)
+    assert llm.call_cost("gpt-5", _usage(prompt=1_000_000, cached=1_000_000)) == pytest.approx(0.125)
+    assert llm.call_cost("gpt-5", _usage(prompt=0, out=1_000_000)) == pytest.approx(10.0)
+    assert llm.call_cost("gpt-5-mini", _usage(prompt=1_000_000, out=1_000_000)) == pytest.approx(2.25)
+
+
+def test_unpriced_deployment_is_refused_before_any_call():
+    fc = FakeClient()
+    with pytest.raises(llm.SpendCapExceeded):
+        llm.azure_chat("gpt-6-unknown", {}, client=fc)
+    assert fc.calls == []
+
+
+def test_process_cap_stops_calls(tmp_path):
+    class Big(FakeClient):
+        def create(self, **kw):
+            self.calls.append(kw)
+            return SimpleNamespace(choices=[], usage=_usage(prompt=1_000_000))  # $1.25 per call on gpt-5
+    meter = llm.SpendMeter(cap_usd=2.0, daily_cap_usd=100.0, ledger=str(tmp_path / "l.jsonl"))
+    fc = Big()
+    call = llm.azure_chat("gpt-5", {}, client=fc, meter=meter)
+    call(messages=[]); call(messages=[])          # $2.50: the second call was allowed at $1.25 < $2
+    with pytest.raises(llm.SpendCapExceeded):
+        call(messages=[])
+    assert len(fc.calls) == 2 and meter.summary()["spent_usd"] == pytest.approx(2.5)
+
+
+def test_daily_cap_counts_other_processes_via_ledger(tmp_path):
+    led = tmp_path / "l.jsonl"
+    day = llm.SpendMeter._day()
+    led.write_text(json.dumps({"day": day, "usd": 9.5}) + "\n" + json.dumps({"day": "2000-01-01", "usd": 99}) + "\n")
+    meter = llm.SpendMeter(cap_usd=100.0, daily_cap_usd=10.0, ledger=str(led))
+    assert meter.others_today == pytest.approx(9.5)
+    class Big(FakeClient):
+        def create(self, **kw):
+            self.calls.append(kw)
+            return SimpleNamespace(choices=[], usage=_usage(prompt=1_000_000))
+    call = llm.azure_chat("gpt-5", {}, client=Big(), meter=meter)
+    call(messages=[])
+    with pytest.raises(llm.SpendCapExceeded):
+        call(messages=[])
+    rows = [json.loads(l) for l in led.read_text().splitlines()]
+    assert rows[-1]["deployment"] == "gpt-5" and rows[-1]["usd"] == pytest.approx(1.25)
+
+
+def test_default_meter_reads_env_caps(monkeypatch):
+    monkeypatch.setenv("V2_AZURE_SPEND_CAP_USD", "0")
+    llm.reset_spend_meter()
+    with pytest.raises(llm.SpendCapExceeded):
+        llm.azure_chat("gpt-5", {}, client=FakeClient())

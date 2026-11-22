@@ -25,3 +25,10 @@ __pycache__/
 .pytest_cache/
 .ipynb_checkpoints/
 results/**/*.jsonl
+
+# credentials / cloud identifiers: never in git (public repo)
+*.env
+.env*
+.secrets/
+**/huggingface/token
+*azure_spend*.jsonl

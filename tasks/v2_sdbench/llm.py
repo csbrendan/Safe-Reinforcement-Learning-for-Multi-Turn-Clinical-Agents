@@ -8,6 +8,18 @@ Two providers:
           temperature 0 nor max_tokens). Output is therefore not deterministic; the JSONL caches (first write wins)
           make a run reproducible, and arms must share them.
 
+Spend cap (azure only): every Azure call is priced from its returned token usage at list prices (PRICES_PER_M) and
+charged to one process-wide SpendMeter shared by all roles. Before each call the meter refuses (SpendCapExceeded)
+if this process has reached its cap or today's ledger total has reached the daily cap. Settings, from the
+environment:
+  V2_AZURE_SPEND_CAP_USD    per-process cap, default 5. Raise it deliberately, per approved run.
+  V2_AZURE_DAILY_CAP_USD    cap on today's total (UTC) across processes sharing the ledger, default 25.
+  V2_AZURE_SPEND_LEDGER     JSONL ledger, one line per call, default ~/.cache/v2_sdbench/azure_spend.jsonl.
+A deployment with no price entry is refused (fail closed). Calls already in flight when a cap is hit still finish,
+so the overshoot is at most max_concurrency calls per role. Other processes' spend is read from the ledger once,
+when the meter is created, so concurrent processes can each overshoot the daily cap by their own spend; the
+Azure budget alerts are the backstop.
+
 Azure credentials are read from a file (default ~/.secrets/azure.env, KEY=VALUE lines) into this process only,
 never exported to the shell: AZURE_OPENAI_API_KEY, AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_VERSION (optional).
 """
@@ -20,6 +32,122 @@ from typing import Any
 
 AZURE_ENV_FILE = "~/.secrets/azure.env"
 AZURE_API_VERSION = "2025-01-01-preview"  # SD-Bench's default
+
+# USD per 1M tokens (Azure Global Standard list prices, checked 2026-11-19): input, cached input, output.
+# Keyed by deployment name, which is always the real model name here (no aliases).
+PRICES_PER_M: dict[str, tuple[float, float, float]] = {
+    "gpt-5": (1.25, 0.125, 10.00),
+    "gpt-5-mini": (0.25, 0.025, 2.00),
+    "gpt-5.1": (1.25, 0.125, 10.00),
+}
+DEFAULT_LEDGER = "~/.cache/v2_sdbench/azure_spend.jsonl"
+
+
+class SpendCapExceeded(RuntimeError):
+    pass
+
+
+def call_cost(deployment: str, usage) -> float:
+    """USD for one response's usage object. Reasoning tokens are part of completion_tokens."""
+    if deployment not in PRICES_PER_M:
+        raise SpendCapExceeded(f"no price for Azure deployment {deployment!r}; add it to PRICES_PER_M first")
+    p_in, p_cached, p_out = PRICES_PER_M[deployment]
+    if usage is None:
+        return 0.0
+    prompt = getattr(usage, "prompt_tokens", 0) or 0
+    d = getattr(usage, "prompt_tokens_details", None)
+    cached = (getattr(d, "cached_tokens", 0) or 0) if d else 0
+    out = getattr(usage, "completion_tokens", 0) or 0
+    return ((prompt - cached) * p_in + cached * p_cached + out * p_out) / 1e6
+
+
+class SpendMeter:
+    def __init__(self, cap_usd: float, daily_cap_usd: float, ledger: str | None):
+        self.cap, self.daily_cap = float(cap_usd), float(daily_cap_usd)
+        self.ledger = os.path.expanduser(ledger) if ledger else None
+        self.spent = 0.0        # this process, all days (per-process cap)
+        self.spent_today = 0.0  # this process, current UTC day (daily cap)
+        self.calls = 0
+        self.lock = threading.Lock()
+        self.today = self._day()
+        self.others_today = self._ledger_total(self.today)
+
+    @staticmethod
+    def _day() -> str:
+        return time.strftime("%Y-%m-%d", time.gmtime())
+
+    def _roll(self) -> None:  # caller holds the lock
+        d = self._day()
+        if d != self.today:
+            self.today, self.spent_today = d, 0.0
+            self.others_today = self._ledger_total(d)
+
+    def _ledger_total(self, day: str) -> float:
+        if not self.ledger or not os.path.exists(self.ledger):
+            return 0.0
+        import json
+        tot = 0.0
+        with open(self.ledger) as f:
+            for line in f:
+                try:
+                    r = json.loads(line)
+                except ValueError:
+                    continue
+                if r.get("day") == day:
+                    tot += float(r.get("usd", 0.0))
+        return tot
+
+    def check(self, deployment: str) -> None:
+        if deployment not in PRICES_PER_M:
+            raise SpendCapExceeded(f"no price for Azure deployment {deployment!r}; add it to PRICES_PER_M first")
+        with self.lock:
+            self._roll()
+            if self.spent >= self.cap:
+                raise SpendCapExceeded(f"Azure spend cap reached: ${self.spent:.2f} of ${self.cap:.2f} this process "
+                                       "(V2_AZURE_SPEND_CAP_USD)")
+            if self.others_today + self.spent_today >= self.daily_cap:
+                raise SpendCapExceeded(f"Azure daily cap reached: ${self.others_today + self.spent_today:.2f} of "
+                                       f"${self.daily_cap:.2f} today (V2_AZURE_DAILY_CAP_USD)")
+
+    def charge(self, deployment: str, usage) -> float:
+        usd = call_cost(deployment, usage)
+        with self.lock:
+            self._roll()
+            self.spent += usd
+            self.spent_today += usd
+            self.calls += 1
+            if self.ledger:
+                import json
+                os.makedirs(os.path.dirname(self.ledger), exist_ok=True)
+                with open(self.ledger, "a") as f:
+                    f.write(json.dumps({"day": self.today, "t": round(time.time(), 1), "pid": os.getpid(),
+                                        "deployment": deployment, "usd": round(usd, 6)}) + "\n")
+        return usd
+
+    def summary(self) -> dict:
+        return {"spent_usd": round(self.spent, 4), "calls": self.calls, "cap_usd": self.cap,
+                "daily_cap_usd": self.daily_cap, "others_today_usd": round(self.others_today, 4)}
+
+
+_METER: SpendMeter | None = None
+_METER_LOCK = threading.Lock()
+
+
+def spend_meter() -> SpendMeter:
+    """The process-wide meter, built from the environment on first use."""
+    global _METER
+    with _METER_LOCK:
+        if _METER is None:
+            _METER = SpendMeter(float(os.environ.get("V2_AZURE_SPEND_CAP_USD", "5")),
+                                float(os.environ.get("V2_AZURE_DAILY_CAP_USD", "25")),
+                                os.environ.get("V2_AZURE_SPEND_LEDGER", DEFAULT_LEDGER))
+        return _METER
+
+
+def reset_spend_meter(meter: SpendMeter | None = None) -> None:
+    global _METER
+    with _METER_LOCK:
+        _METER = meter
 
 
 def local_chat(base_url: str, model: str, temperature: float = 0.0, max_tokens: int = 800,
@@ -93,11 +221,15 @@ def _retry_after(e: Exception) -> float | None:
 
 
 def azure_chat(deployment: str, model_args: dict | None = None, env_file: str = AZURE_ENV_FILE,
-               max_concurrency: int = 16, max_retries: int = 8, timeout: float = 600.0, client=None):
+               max_concurrency: int = 16, max_retries: int = 8, timeout: float = 600.0, client=None,
+               meter: SpendMeter | None = None):
     """Azure deployment as an SD-Bench llm. `model_args` are forwarded verbatim (default {} = SD-Bench official).
 
     A semaphore caps in-flight requests per role; 429/5xx/timeouts back off (honouring Retry-After) up to
-    `max_retries`, then raise. `client` is for tests."""
+    `max_retries`, then raise. Every call is checked against and charged to the spend meter (module docstring).
+    `client` and `meter` are for tests."""
+    meter = meter or spend_meter()
+    meter.check(deployment)  # fail closed at build time for unpriced deployments
     if client is None:
         from openai import AzureOpenAI
         s = azure_settings(env_file)
@@ -114,11 +246,13 @@ def azure_chat(deployment: str, model_args: dict | None = None, env_file: str = 
     def call(messages, **kw: Any):
         args: dict[str, Any] = {**margs, **kw}
         for attempt in range(max_retries + 1):
+            meter.check(deployment)
             try:
                 with sem:
                     r = client.chat.completions.create(model=deployment, messages=list(messages), stream=False,
                                                        **args)
                 u = getattr(r, "usage", None)
+                meter.charge(deployment, u)
                 with lock:
                     usage["calls"] += 1
                     if u is not None:
@@ -138,6 +272,7 @@ def azure_chat(deployment: str, model_args: dict | None = None, env_file: str = 
 
     call.model_id = f"azure:{deployment}"  # type: ignore[attr-defined]
     call.usage = usage  # type: ignore[attr-defined]
+    call.meter = meter  # type: ignore[attr-defined]
     return call
 
 
