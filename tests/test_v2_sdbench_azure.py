@@ -41,7 +41,7 @@ def test_azure_call_is_official_shape():
     assert not ({"temperature", "max_tokens", "seed", "extra_body"} & kw.keys())
     assert call.model_id == "azure:gpt-5"
     assert call.usage == {"calls": 1, "prompt_tokens": 100, "completion_tokens": 40, "reasoning_tokens": 30,
-                          "retries": 0}
+                          "retries": 0, "by_deployment": {"gpt-5": 1}}
 
 
 @pytest.mark.parametrize("bad", ["temperature", "max_tokens", "seed"])
@@ -62,6 +62,46 @@ def test_azure_gives_up_after_max_retries():
     with pytest.raises(openai.RateLimitError):
         llm.azure_chat("gpt-5", {}, client=fc, max_retries=1)(messages=[])
     assert len(fc.calls) == 2
+
+
+def test_overflow_moves_to_second_pool_after_429(monkeypatch):
+    monkeypatch.setattr(llm.time, "sleep", lambda s: None)
+    fc = FakeClient(fail_first=1, exc=_rate_limit())
+    call = llm.azure_chat("gpt-5", {}, client=fc, max_retries=3, overflow=["gpt-5-datazone"])
+    call(messages=[])
+    assert [c["model"] for c in fc.calls] == ["gpt-5", "gpt-5-datazone"]
+    assert call.model_id == "azure:gpt-5"  # caches unchanged
+    assert call.usage["by_deployment"] == {"gpt-5": 0, "gpt-5-datazone": 1}
+
+
+def test_overflow_first_attempt_always_primary_and_rotates_back(monkeypatch):
+    monkeypatch.setattr(llm.time, "sleep", lambda s: None)
+    fc = FakeClient(fail_first=2, exc=_rate_limit())
+    call = llm.azure_chat("gpt-5", {}, client=fc, max_retries=3, overflow=["gpt-5-datazone"])
+    call(messages=[])
+    assert [c["model"] for c in fc.calls] == ["gpt-5", "gpt-5-datazone", "gpt-5"]
+    call(messages=[])
+    assert fc.calls[-1]["model"] == "gpt-5"
+
+
+def test_overflow_deployment_charged_at_its_own_price(tmp_path):
+    m = llm.SpendMeter(100, 100, None)
+    fc = FakeClient(fail_first=1, exc=_rate_limit())
+    llm.azure_chat("gpt-5", {}, client=fc, max_retries=1, meter=m, overflow=["gpt-5-datazone"])(messages=[])
+    assert m.spent == pytest.approx((100 * 1.375 + 40 * 11.0) / 1e6)
+
+
+def test_unpriced_overflow_refused_at_build():
+    with pytest.raises(llm.SpendCapExceeded):
+        llm.azure_chat("gpt-5", {}, client=FakeClient(), overflow=["gpt-5-alias"])
+
+
+def test_make_aux_llm_passes_overflow():
+    import inspect
+    assert "overflow" in inspect.signature(llm.azure_chat).parameters
+    cfg = load_config("V2/sdbench_configs/azure_synthetic.json")
+    assert cfg["judge"]["overflow_deployments"] == ["gpt-5-datazone"]
+    assert cfg["gatekeeper"]["overflow_deployments"] == ["gpt-5-datazone"]
 
 
 def test_azure_does_not_retry_bad_requests():

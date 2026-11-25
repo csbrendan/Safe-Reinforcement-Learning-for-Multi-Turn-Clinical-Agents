@@ -34,11 +34,14 @@ AZURE_ENV_FILE = "~/.secrets/azure.env"
 AZURE_API_VERSION = "2025-01-01-preview"  # SD-Bench's default
 
 # USD per 1M tokens (Azure Global Standard list prices, checked 2026-11-19): input, cached input, output.
-# Keyed by deployment name, which is always the real model name here (no aliases).
+# Keyed by deployment name. Deployment names are the real model name, plus a suffix for a second deployment type of
+# the same model and version (e.g. "gpt-5-datazone"); never an alias for a different model.
 PRICES_PER_M: dict[str, tuple[float, float, float]] = {
     "gpt-5": (1.25, 0.125, 10.00),
     "gpt-5-mini": (0.25, 0.025, 2.00),
     "gpt-5.1": (1.25, 0.125, 10.00),
+    # Data Zone Standard: same gpt-5 2025-08-07; assumed +10% over Global (check the Azure rate card).
+    "gpt-5-datazone": (1.375, 0.1375, 11.00),
 }
 DEFAULT_LEDGER = "~/.cache/v2_sdbench/azure_spend.jsonl"
 
@@ -222,14 +225,19 @@ def _retry_after(e: Exception) -> float | None:
 
 def azure_chat(deployment: str, model_args: dict | None = None, env_file: str = AZURE_ENV_FILE,
                max_concurrency: int = 16, max_retries: int = 8, timeout: float = 600.0, client=None,
-               meter: SpendMeter | None = None):
+               meter: SpendMeter | None = None, overflow: list[str] | tuple[str, ...] = ()):
     """Azure deployment as an SD-Bench llm. `model_args` are forwarded verbatim (default {} = SD-Bench official).
 
     A semaphore caps in-flight requests per role; 429/5xx/timeouts back off (honouring Retry-After) up to
     `max_retries`, then raise. Every call is checked against and charged to the spend meter (module docstring).
+    `overflow`: extra deployments of the SAME model and version (e.g. "gpt-5-datazone"). The first attempt always goes
+    to `deployment`; after a retryable error the next attempt moves to the next deployment in the rotation, so a 429 on
+    one quota pool spills into the other. model_id stays f"azure:{deployment}", so caches are shared.
     `client` and `meter` are for tests."""
     meter = meter or spend_meter()
-    meter.check(deployment)  # fail closed at build time for unpriced deployments
+    rotation = [deployment, *[d for d in overflow if d != deployment]]
+    for d in rotation:
+        meter.check(d)  # fail closed at build time for unpriced deployments
     if client is None:
         from openai import AzureOpenAI
         s = azure_settings(env_file)
@@ -240,21 +248,23 @@ def azure_chat(deployment: str, model_args: dict | None = None, env_file: str = 
         if bad in margs:
             raise ValueError(f"{bad} is not an official SD-Bench argument for Azure GPT-5 roles")
     sem = threading.BoundedSemaphore(max_concurrency)
-    usage = {"calls": 0, "prompt_tokens": 0, "completion_tokens": 0, "reasoning_tokens": 0, "retries": 0}
+    usage = {"calls": 0, "prompt_tokens": 0, "completion_tokens": 0, "reasoning_tokens": 0, "retries": 0,
+             "by_deployment": {d: 0 for d in rotation}}
     lock = threading.Lock()
 
     def call(messages, **kw: Any):
         args: dict[str, Any] = {**margs, **kw}
         for attempt in range(max_retries + 1):
-            meter.check(deployment)
+            dep = rotation[attempt % len(rotation)]
+            meter.check(dep)
             try:
                 with sem:
-                    r = client.chat.completions.create(model=deployment, messages=list(messages), stream=False,
-                                                       **args)
+                    r = client.chat.completions.create(model=dep, messages=list(messages), stream=False, **args)
                 u = getattr(r, "usage", None)
-                meter.charge(deployment, u)
+                meter.charge(dep, u)
                 with lock:
                     usage["calls"] += 1
+                    usage["by_deployment"][dep] += 1
                     if u is not None:
                         usage["prompt_tokens"] += u.prompt_tokens or 0
                         usage["completion_tokens"] += u.completion_tokens or 0
@@ -266,7 +276,9 @@ def azure_chat(deployment: str, model_args: dict | None = None, env_file: str = 
                     raise
                 with lock:
                     usage["retries"] += 1
-                wait = _retry_after(e) or min(60.0, 2.0 ** attempt)
+                # Moving to another pool: short pause; same pool again (or one deployment): honour Retry-After.
+                nxt = rotation[(attempt + 1) % len(rotation)]
+                wait = 0.5 if nxt != dep else (_retry_after(e) or min(60.0, 2.0 ** attempt))
                 time.sleep(wait + random.uniform(0, 1))
         raise RuntimeError("unreachable")
 
@@ -284,7 +296,8 @@ def make_aux_llm(role: dict, no_think: bool = False):
     if p == "azure":
         return azure_chat(role["deployment"], role.get("model_args") or {},
                           env_file=role.get("env_file", AZURE_ENV_FILE),
-                          max_concurrency=role.get("max_concurrency", 16))
+                          max_concurrency=role.get("max_concurrency", 16),
+                          overflow=role.get("overflow_deployments", ()))
     if p == "local":
         return local_chat(role["url"], role["model"], max_tokens=role.get("max_tokens", 800),
                           extra_body=qwen_no_think() if no_think else None)
